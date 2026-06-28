@@ -16,10 +16,10 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
-  Loader2,
   Send,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { SkeletonCenter } from "@/components/ui/skeleton";
 
 const EVENT_OPTIONS = [
   "chat.completed",
@@ -87,11 +87,7 @@ export default function WebhooksPage() {
   });
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <SkeletonCenter label="Loading webhooks" minHeight={400} />;
   }
 
   return (

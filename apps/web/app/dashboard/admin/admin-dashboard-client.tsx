@@ -22,6 +22,7 @@ import {
   useProviderHealth,
   useCircuitBreakers,
 } from "@/lib/api/hooks";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminDashboardClient() {
   const [userPage, setUserPage] = useState(1);
@@ -402,13 +403,16 @@ function RoleBadge({ role }: { role: string }) {
 
 function LoadingRows({ count }: { count: number }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" aria-hidden="true">
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="h-10 bg-white/5 rounded animate-pulse"
+          className="flex items-center justify-between py-2 border-b border-white/5 last:border-0"
           style={{ animationDelay: `${i * 100}ms` }}
-        />
+        >
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-5 w-16 rounded-md" />
+        </div>
       ))}
     </div>
   );

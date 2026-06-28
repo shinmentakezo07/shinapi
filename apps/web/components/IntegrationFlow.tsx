@@ -23,6 +23,9 @@ import {
   ShieldCheck,
   Database,
   Users,
+  ListChecks,
+  FileX,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -104,6 +107,40 @@ const TRUST_METRICS: ReadonlyArray<{
   { label: "Uptime", value: "99.99%", icon: ShieldCheck },
   { label: "Models", value: "100+", icon: Database },
   { label: "Engineers", value: "12.4k", icon: Users },
+];
+
+/* ── Key stats for the header — visual reinforcement of
+ * "four steps, under ten minutes, zero paperwork" ── */
+const KEY_STAT_ACCENTS: Record<
+  "indigo" | "emerald" | "violet",
+  { color: string; glow: string; bg: string }
+> = {
+  indigo: {
+    color: "#a5b4fc",
+    glow: "rgba(129,140,248,0.5)",
+    bg: "rgba(99,102,241,0.12)",
+  },
+  emerald: {
+    color: "#6ee7b7",
+    glow: "rgba(110,231,183,0.5)",
+    bg: "rgba(16,185,129,0.12)",
+  },
+  violet: {
+    color: "#c4b5fd",
+    glow: "rgba(196,181,253,0.5)",
+    bg: "rgba(139,92,246,0.12)",
+  },
+};
+
+const KEY_STATS: ReadonlyArray<{
+  label: string;
+  value: string;
+  icon: typeof ListChecks;
+  accent: "indigo" | "emerald" | "violet";
+}> = [
+  { label: "Four steps", value: "4", icon: ListChecks, accent: "indigo" },
+  { label: "Under ten min", value: "<10m", icon: Clock, accent: "emerald" },
+  { label: "Zero paperwork", value: "0", icon: FileX, accent: "violet" },
 ];
 
 type TokenType = "kw" | "id" | "str" | "punct" | "t" | "fn";
@@ -1295,9 +1332,28 @@ export function IntegrationFlow() {
         {/* ── Header (asymmetric) ── */}
         <div className="mb-16 lg:mb-24 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-end">
           <div className="lg:col-span-7 relative">
+            {/* Subtle terminal decoration — reinforces "blank terminal".
+             * Contained inside the 7-col cell via right-2/lg:right-4 so it
+             * never spills into the description column. */}
+            <div
+              aria-hidden
+              className="pointer-events-none select-none absolute right-2 lg:right-4 top-2 opacity-[0.10] hidden sm:block"
+            >
+              <pre className="text-[9px] lg:text-[10px] font-mono leading-[1.6] text-white whitespace-pre">
+{`$ yapapa init
+OK workspace ready
+$ yapapa key create
+OK sk-yap-... provisioned
+$ yapapa deploy
+-> live in 8m 42s`}
+              </pre>
+            </div>
+
+            {/* "02" watermark with subtle indigo glow */}
             <span
               aria-hidden
               className="pointer-events-none absolute -top-16 lg:-top-24 -left-2 lg:-left-6 text-[10rem] lg:text-[18rem] font-display italic font-normal text-white/[0.025] select-none leading-none"
+              style={{ textShadow: "0 0 100px rgba(99,102,241,0.12)" }}
             >
               02
             </span>
@@ -1359,15 +1415,61 @@ export function IntegrationFlow() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2, duration: 0.6 }}
-            className="lg:col-span-5 lg:pb-2"
+            className="lg:col-span-5 lg:pb-2 space-y-6"
           >
+            {/* Engineer-first callout badge */}
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-indigo-300/30 bg-indigo-500/10 backdrop-blur">
+              <Sparkles className="w-3 h-3 text-indigo-300" strokeWidth={2} />
+              <span className="text-[10px] font-mono text-indigo-200 tracking-[0.2em] uppercase">
+                Engineer-first · Not procurement
+              </span>
+            </div>
+
+            {/* Description — key phrase in italic indigo */}
             <p className="text-base lg:text-lg text-white/55 max-w-md leading-relaxed text-pretty">
-              The whole path from blank terminal to live request — four steps,
-              under ten minutes, zero paperwork.{" "}
+              The whole path from blank terminal to live request —{" "}
               <span className="font-display italic text-indigo-200/85">
-                Designed for engineers, not procurement.
+                four steps, under ten minutes, zero paperwork.
               </span>
             </p>
+
+            {/* Stat chips — 4 steps · <10 min · 0 paperwork */}
+            <div className="flex flex-wrap gap-2">
+              {KEY_STATS.map((s) => {
+                const Icon = s.icon;
+                const accent = KEY_STAT_ACCENTS[s.accent];
+                return (
+                  <div
+                    key={s.label}
+                    className="group/stat relative inline-flex items-center gap-2.5 pl-2.5 pr-3.5 py-2 rounded-xl border border-white/[0.08] bg-white/[0.02] hover:border-white/[0.15] transition-all duration-300"
+                  >
+                    <div
+                      className="w-7 h-7 rounded-lg flex items-center justify-center border border-white/[0.06]"
+                      style={{
+                        background: `radial-gradient(circle, ${accent.bg} 0%, transparent 70%)`,
+                      }}
+                    >
+                      <Icon
+                        className="w-3.5 h-3.5"
+                        style={{ color: accent.color }}
+                        strokeWidth={1.75}
+                      />
+                    </div>
+                    <div>
+                      <div
+                        className="text-base font-semibold text-white tabular-nums leading-none"
+                        style={{ textShadow: `0 0 12px ${accent.glow}` }}
+                      >
+                        {s.value}
+                      </div>
+                      <div className="mt-0.5 text-[9px] font-mono tracking-[0.16em] uppercase text-white/45">
+                        {s.label}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </motion.div>
         </div>
 

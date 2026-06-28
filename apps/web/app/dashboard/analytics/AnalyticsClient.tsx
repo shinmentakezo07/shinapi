@@ -9,9 +9,9 @@ import {
   Zap,
   Activity,
   Calendar,
-  Loader2,
   AlertCircle,
 } from "lucide-react";
+import { SkeletonChart, SkeletonStats } from "@/components/ui/skeleton";
 import {
   BarChart,
   Bar,
@@ -182,10 +182,21 @@ export default function AnalyticsClient() {
           </div>
         )}
 
-        {/* Loading */}
+        {/* Loading — shape-matched: 4 KPIs + main charts + secondary charts + table */}
         {loading && (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          <div className="space-y-8">
+            <SkeletonStats
+              count={4}
+              className="!grid-cols-1 sm:!grid-cols-2 lg:!grid-cols-4"
+            />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <SkeletonChart height={300} />
+              <SkeletonChart height={300} />
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <SkeletonChart height={250} />
+              <SkeletonChart height={250} />
+            </div>
           </div>
         )}
 

@@ -15,6 +15,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { SkeletonCenter } from "@/components/ui/skeleton";
 
 const PRIORITY_CONFIG: Record<
   string,
@@ -76,11 +77,7 @@ export default function InboxPage() {
   const activeAnnouncements = announcements ?? [];
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
-      </div>
-    );
+    return <SkeletonCenter label="Loading inbox" minHeight={400} />;
   }
 
   return (

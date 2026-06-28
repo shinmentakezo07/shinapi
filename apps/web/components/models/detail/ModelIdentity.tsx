@@ -3,7 +3,14 @@
 import { useState } from "react";
 import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
-import { CheckCircle, Copy, ChevronLeft, ExternalLink } from "lucide-react";
+import {
+  CheckCircle,
+  Copy,
+  ChevronLeft,
+  ExternalLink,
+  Sparkles,
+  ArrowUpRight,
+} from "lucide-react";
 import type { OpenRouterModelData, ProviderTheme } from "@/types/model";
 import {
   formatPricePerM,
@@ -28,6 +35,25 @@ const stagger = {
     transition: { duration: 0.5, ease, delay: 0.45 + i * 0.06 },
   }),
 };
+
+function MonogramChip({ id, accent }: { id: string; accent: string }) {
+  // Take the model-name portion of `provider/name` and pull 1-3 letters
+  const namePart = id.split("/")[1] || id;
+  const cleaned = namePart.replace(/[^a-z0-9]/gi, "");
+  const mono = cleaned.slice(0, 3).toUpperCase() || "?";
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 px-2 py-[3px] rounded-md text-[9px] font-mono font-bold tracking-[0.18em] uppercase border border-white/[0.04] bg-white/[0.02]"
+      aria-hidden="true"
+    >
+      <span
+        className="inline-block w-1.5 h-1.5 rounded-[1px]"
+        style={{ backgroundColor: accent }}
+      />
+      {mono}
+    </span>
+  );
+}
 
 export function ModelIdentity({ model, theme, onBack }: ModelIdentityProps) {
   const [copied, setCopied] = useState(false);
@@ -63,6 +89,22 @@ export function ModelIdentity({ model, theme, onBack }: ModelIdentityProps) {
     { label: "Output", value: `$${outputPrice.toFixed(2)}`, sub: "/1M tokens" },
   ];
 
+  // Compute shorthand timeframe (e.g. "3d", "5w") from model.created epoch
+  function formatAgo(epoch: number | undefined): string | null {
+    if (!epoch) return null;
+    const diff = Math.max(0, Date.now() / 1000 - epoch);
+    const day = 86400;
+    const week = 7 * day;
+    const month = 30 * day;
+    const year = 365 * day;
+    if (diff < day) return "today";
+    if (diff < week) return `${Math.floor(diff / day)}d`;
+    if (diff < month) return `${Math.floor(diff / week)}w`;
+    if (diff < year) return `${Math.floor(diff / month)}mo`;
+    return `${Math.floor(diff / year)}y`;
+  }
+  const agoLabel = formatAgo(model.created);
+
   return (
     <section aria-label="Model identity">
       {/* Back button */}
@@ -84,7 +126,7 @@ export function ModelIdentity({ model, theme, onBack }: ModelIdentityProps) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease }}
-          className="flex items-center gap-3 mb-5"
+          className="flex items-center flex-wrap gap-3 mb-5"
         >
           <span
             className="text-[10px] font-mono tracking-[0.3em] uppercase font-semibold"
@@ -92,6 +134,10 @@ export function ModelIdentity({ model, theme, onBack }: ModelIdentityProps) {
           >
             {providerName}
           </span>
+
+          {/* Monogram badge */}
+          <MonogramChip id={model.id} accent={theme.accent} />
+
           {isFree && (
             <span
               className="px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold tracking-widest uppercase"
@@ -108,82 +154,132 @@ export function ModelIdentity({ model, theme, onBack }: ModelIdentityProps) {
         </motion.div>
 
         {/* Hero: name + logo badge */}
-        <div className="flex items-start justify-between gap-8 mb-8">
+        <div className="relative flex items-start justify-between gap-8 mb-8">
           <div className="flex-1 min-w-0">
             <motion.h1
               initial={prefersReduced ? { opacity: 0 } : { opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, ease, delay: 0.05 }}
-              className="text-[clamp(2.5rem,7vw,6.5rem)] font-black tracking-[-0.05em] leading-[0.85]"
+              className="text-[clamp(2.5rem,7vw,6.5rem)] font-black tracking-[-0.05em] leading-[0.85] relative"
             >
-              <span className="text-white">{displayName}</span>
+              {/* Gradient veil behind display name */}
+              <span aria-hidden="true" className="absolute inset-0 -z-10 blur-3xl opacity-30 pointer-events-none"
+                style={{
+                  background: `radial-gradient(ellipse at 20% 50%, ${theme.accent}55, transparent 70%)`,
+                }}
+              />
+              <span className="text-white relative">{displayName}</span>
               {nameVariant && (
                 <motion.span
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.5, ease, delay: 0.2 }}
-                  className="block text-gray-700 text-[clamp(1.1rem,3vw,3rem)] font-bold tracking-[-0.02em] mt-2"
+                  className="block text-gray-700 text-[clamp(1.1rem,3vw,3rem)] font-bold tracking-[-0.02em] mt-2 relative"
                 >
                   {nameVariant}
                 </motion.span>
               )}
             </motion.h1>
+
+            {/* NEW — Type chips (chat / completion / embedding) inferred from ID */}
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="flex flex-wrap gap-1.5 mt-4"
+            >
+              <TypeChip label="chat" active={!model.id.match(/embed|tts|whisper|image|moderation/i)} accent={theme.accent} />
+              <TypeChip label="streaming" active={true} accent={theme.accent} />
+              <TypeChip label="tools" active={!!model.supported_parameters?.includes("tools")} accent={theme.accent} />
+              <TypeChip label="json mode" active={!!model.supported_parameters?.includes("response_format")} accent={theme.accent} />
+              <TypeChip label="reasoning" active={!!(model.architecture?.instruct_type === "reasoning" || model.name.match(/reasoning|thinking|r1|o1|o3|qwq/i))} accent={theme.accent} />
+            </motion.div>
           </div>
 
-          {/* Logo badge — with accent glow on hover */}
-          <motion.div
-            initial={
-              prefersReduced
-                ? { opacity: 0 }
-                : { opacity: 0, scale: 0.85, rotate: -3 }
-            }
-            animate={{ opacity: 1, scale: 1, rotate: 0 }}
-            transition={{ duration: 0.6, ease, delay: 0.15 }}
-            className="relative shrink-0 mt-1 group"
-          >
-            <div
-              className="w-16 h-16 md:w-20 md:h-20 rounded-2xl overflow-hidden relative transition-shadow duration-500"
+          <div className="flex flex-col items-end gap-3 shrink-0 mt-1">
+            {/* Logo badge — with accent glow on hover */}
+            <motion.div
+              initial={
+                prefersReduced
+                  ? { opacity: 0 }
+                  : { opacity: 0, scale: 0.85, rotate: -3 }
+              }
+              animate={{ opacity: 1, scale: 1, rotate: 0 }}
+              transition={{ duration: 0.6, ease, delay: 0.15 }}
+              className="relative group"
+            >
+              <div
+                className="w-16 h-16 md:w-20 md:h-20 rounded-2xl overflow-hidden relative transition-shadow duration-500"
+                style={{
+                  borderColor: `${theme.accent}20`,
+                  backgroundColor: `${theme.accent}06`,
+                  borderWidth: 1,
+                  boxShadow: `0 0 0 0px ${theme.accent}00`,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = `0 0 30px ${theme.accent}15`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = `0 0 0 0px ${theme.accent}00`;
+                }}
+              >
+                {logo ? (
+                  <div className="w-full h-full flex items-center justify-center p-3">
+                    <Image
+                      src={logo}
+                      alt={`${providerName} logo`}
+                      width={40}
+                      height={40}
+                      className="object-contain"
+                      unoptimized
+                    />
+                  </div>
+                ) : (
+                  <div
+                    className={`w-full h-full flex items-center justify-center ${theme.color}`}
+                  >
+                    <Icon className="w-8 h-8 md:w-10 md:h-10" />
+                  </div>
+                )}
+              </div>
+              {/* Ambient glow behind logo */}
+              <div
+                className="absolute -inset-3 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 -z-10"
+                style={{
+                  background: `radial-gradient(circle, ${theme.accent}12, transparent 70%)`,
+                }}
+                aria-hidden="true"
+              />
+            </motion.div>
+
+            {/* NEW — Playground floating CTA */}
+            <motion.a
+              href={`/playground?model=${encodeURIComponent(model.id)}`}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.35 }}
+              whileHover={{ y: -2 }}
+              className="relative inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-mono font-bold tracking-[0.16em] uppercase cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
               style={{
-                borderColor: `${theme.accent}20`,
-                backgroundColor: `${theme.accent}06`,
-                borderWidth: 1,
-                boxShadow: `0 0 0 0px ${theme.accent}00`,
+                backgroundColor: theme.accent,
+                color: "#000",
+                // @ts-expect-error CSS custom
+                "--tw-ring-color": `${theme.accent}66`,
+                boxShadow: `0 0 24px ${theme.accent}30`,
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = `0 0 30px ${theme.accent}15`;
+                e.currentTarget.style.boxShadow = `0 0 32px ${theme.accent}50`;
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = `0 0 0 0px ${theme.accent}00`;
+                e.currentTarget.style.boxShadow = `0 0 24px ${theme.accent}30`;
               }}
+              aria-label={`Open ${displayName} in playground`}
             >
-              {logo ? (
-                <div className="w-full h-full flex items-center justify-center p-3">
-                  <Image
-                    src={logo}
-                    alt={`${providerName} logo`}
-                    width={40}
-                    height={40}
-                    className="object-contain"
-                    unoptimized
-                  />
-                </div>
-              ) : (
-                <div
-                  className={`w-full h-full flex items-center justify-center ${theme.color}`}
-                >
-                  <Icon className="w-8 h-8 md:w-10 md:h-10" />
-                </div>
-              )}
-            </div>
-            {/* Ambient glow behind logo */}
-            <div
-              className="absolute -inset-3 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 -z-10"
-              style={{
-                background: `radial-gradient(circle, ${theme.accent}12, transparent 70%)`,
-              }}
-              aria-hidden="true"
-            />
-          </motion.div>
+              <Sparkles className="w-3 h-3" />
+              Open in Playground
+              <ArrowUpRight className="w-3 h-3" />
+            </motion.a>
+          </div>
         </div>
 
         {/* Accent divider */}
@@ -192,7 +288,9 @@ export function ModelIdentity({ model, theme, onBack }: ModelIdentityProps) {
           animate={{ scaleX: 1 }}
           transition={{ duration: 0.8, ease, delay: 0.25 }}
           className="h-px origin-left mb-8"
-          style={{ backgroundColor: theme.accent, opacity: 0.2 }}
+          style={{
+            background: `linear-gradient(90deg, ${theme.accent}, ${theme.accent}00 60%)`,
+          }}
         />
 
         {/* ID pill + status + date */}
@@ -240,9 +338,10 @@ export function ModelIdentity({ model, theme, onBack }: ModelIdentityProps) {
             ACTIVE
           </span>
 
-          {model.created_date && (
-            <span className="text-[10px] font-mono text-gray-600">
-              {model.created_date}
+          {agoLabel && (
+            <span className="text-[10px] font-mono text-gray-600 inline-flex items-center gap-1.5">
+              <span className="w-1 h-1 rounded-full bg-gray-700" />
+              added {agoLabel} ago
             </span>
           )}
 
@@ -303,5 +402,40 @@ export function ModelIdentity({ model, theme, onBack }: ModelIdentityProps) {
         </div>
       </div>
     </section>
+  );
+}
+
+function TypeChip({
+  label,
+  active,
+  accent,
+}: {
+  label: string;
+  active: boolean;
+  accent: string;
+}) {
+  if (!active) {
+    return (
+      <span className="px-2 py-[3px] rounded-md text-[9px] font-mono font-medium tracking-wider uppercase border border-white/[0.04] text-gray-700 line-through decoration-gray-800">
+        {label}
+      </span>
+    );
+  }
+  return (
+    <span
+      className="inline-flex items-center gap-1 px-2 py-[3px] rounded-md text-[9px] font-mono font-semibold tracking-wider uppercase border"
+      style={{
+        backgroundColor: `${accent}0d`,
+        borderColor: `${accent}25`,
+        color: accent,
+      }}
+    >
+      <span
+        className="inline-block w-1 h-1 rounded-full"
+        style={{ backgroundColor: accent }}
+        aria-hidden="true"
+      />
+      {label}
+    </span>
   );
 }

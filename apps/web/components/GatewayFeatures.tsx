@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useInView, useMotionValue, useSpring } from "framer-motion";
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useState, useCallback, useId } from "react";
 import {
   Terminal,
   Activity,
@@ -655,69 +655,400 @@ function useCountUp(end: number, duration = 2200, decimals = 0) {
 }
 
 /* ── Stat strip ── */
+type StatVisual = "matrix" | "globe" | "gauge" | "badge";
+type StatAccent = "indigo" | "emerald" | "sky" | "violet";
+
+const STAT_ACCENTS: Record<
+  StatAccent,
+  { color: string; glow: string; bg: string; ring: string }
+> = {
+  indigo: {
+    color: "#a5b4fc",
+    glow: "rgba(129,140,248,0.5)",
+    bg: "rgba(99,102,241,0.12)",
+    ring: "rgba(99,102,241,0.35)",
+  },
+  emerald: {
+    color: "#6ee7b7",
+    glow: "rgba(110,231,183,0.5)",
+    bg: "rgba(16,185,129,0.12)",
+    ring: "rgba(16,185,129,0.35)",
+  },
+  sky: {
+    color: "#7dd3fc",
+    glow: "rgba(125,211,252,0.5)",
+    bg: "rgba(56,189,248,0.12)",
+    ring: "rgba(56,189,248,0.35)",
+  },
+  violet: {
+    color: "#c4b5fd",
+    glow: "rgba(196,181,253,0.5)",
+    bg: "rgba(139,92,246,0.12)",
+    ring: "rgba(139,92,246,0.35)",
+  },
+};
+
 const STATS = [
   {
+    id: "models",
     rawValue: 100,
     suffix: "+",
     label: "Models",
     delta: "+12 this month",
     trend: "up" as const,
     decimals: 0,
+    visual: "matrix" as StatVisual,
+    accent: "indigo" as StatAccent,
   },
   {
+    id: "regions",
     rawValue: 50,
     suffix: "+",
     label: "Regions",
     delta: "+4 this quarter",
     trend: "up" as const,
     decimals: 0,
+    visual: "globe" as StatVisual,
+    accent: "sky" as StatAccent,
   },
   {
+    id: "uptime",
     rawValue: 99.99,
     suffix: "%",
     label: "Uptime",
     delta: "30-day rolling",
     trend: "up" as const,
     decimals: 2,
+    visual: "gauge" as StatVisual,
+    accent: "emerald" as StatAccent,
   },
   {
+    id: "sdk",
     rawValue: 0,
     suffix: "",
     label: "SDK",
     delta: "OpenAI-compatible",
     trend: "neutral" as const,
     decimals: 0,
-    customValue: "compat",
+    visual: "badge" as StatVisual,
+    accent: "violet" as StatAccent,
   },
 ];
 
+/* ── Per-stat visualisations ──
+ * Each visual owns its own `useInView` observer (one per SVG) so the parent
+ * `StatCounter` never re-renders on view-entry — that would clobber the
+ * count-up's `textContent` mid-animation. */
+function ModelsMatrix() {
+  const ref = useRef<SVGSVGElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-40px" });
+  // 10×10 dot grid; the last two columns are highlighted in indigo to
+  // represent the "+12 this month" delta visually. Staggered by row for a
+  // crisp diagonal reveal that finishes in ~0.6s.
+  return (
+    <motion.svg
+      ref={ref}
+      viewBox="0 0 50 50"
+      className="w-14 h-14"
+      aria-hidden
+      initial={{ opacity: 0 }}
+      animate={inView ? { opacity: 1 } : {}}
+      transition={{ duration: 0.3 }}
+    >
+      {Array.from({ length: 100 }).map((_, i) => {
+        const col = i % 10;
+        const row = Math.floor(i / 10);
+        const isNew = col >= 8;
+        const x = 3 + col * 4.4;
+        const y = 3 + row * 4.4;
+        return (
+          <motion.rect
+            key={i}
+            x={x - 0.9}
+            y={y - 0.9}
+            width={1.8}
+            height={1.8}
+            rx={0.4}
+            fill={isNew ? "#818cf8" : "rgba(255,255,255,0.20)"}
+            initial={{ opacity: 0, scale: 0 }}
+            animate={inView ? { opacity: 1, scale: 1 } : {}}
+            transition={{
+              delay: 0.15 + row * 0.04 + col * 0.015,
+              duration: 0.35,
+              ease: [0.16, 1, 0.3, 1],
+            }}
+          />
+        );
+      })}
+    </motion.svg>
+  );
+}
+
+function RegionsGlobeMini() {
+  const ref = useRef<SVGSVGElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-40px" });
+  const regions = [
+    { x: 14, y: 22 },
+    { x: 24, y: 20 },
+    { x: 38, y: 24 },
+    { x: 42, y: 32 },
+    { x: 28, y: 32 },
+    { x: 32, y: 38 },
+  ];
+  return (
+    <motion.svg
+      ref={ref}
+      viewBox="0 0 50 50"
+      className="w-14 h-14"
+      aria-hidden
+      initial={{ opacity: 0 }}
+      animate={inView ? { opacity: 1 } : {}}
+      transition={{ duration: 0.3 }}
+    >
+      <path
+        d="M6 18 Q14 14, 22 18 L20 28 Q12 30, 6 26 Z"
+        fill="rgba(255,255,255,0.07)"
+      />
+      <path
+        d="M24 16 Q32 14, 40 18 L42 26 Q32 30, 24 26 Z"
+        fill="rgba(255,255,255,0.07)"
+      />
+      <path
+        d="M22 28 Q28 26, 36 30 L38 38 Q28 40, 22 36 Z"
+        fill="rgba(255,255,255,0.07)"
+      />
+      {regions.map((r, i) => (
+        <g key={i}>
+          <motion.circle
+            cx={r.x}
+            cy={r.y}
+            r={1.3}
+            fill="#7dd3fc"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={inView ? { scale: 1, opacity: 1 } : {}}
+            transition={{ delay: 0.2 + i * 0.05, duration: 0.3 }}
+          />
+          <motion.circle
+            cx={r.x}
+            cy={r.y}
+            r={3}
+            fill="none"
+            stroke="#7dd3fc"
+            strokeWidth={0.4}
+            initial={{ opacity: 0 }}
+            animate={
+              inView
+                ? { scale: [1, 2.2, 1], opacity: [0.5, 0, 0.5] }
+                : {}
+            }
+            transition={{
+              delay: 0.5 + i * 0.15,
+              duration: 2.2,
+              repeat: Infinity,
+              ease: "easeOut",
+            }}
+          />
+        </g>
+      ))}
+    </motion.svg>
+  );
+}
+
+function UptimeGauge({ value }: { value: number }) {
+  const ref = useRef<SVGSVGElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-40px" });
+  // useId() so the gradient id is unique per instance — prevents collisions
+  // if this component is ever rendered more than once on the same page.
+  const uid = useId();
+  const gradientId = `uptimeGrad-${uid.replace(/:/g, "")}`;
+  const r = 18;
+  const c = 2 * Math.PI * r;
+  const offset = c - (value / 100) * c;
+  return (
+    <motion.svg
+      ref={ref}
+      viewBox="0 0 50 50"
+      className="w-14 h-14"
+      aria-hidden
+      initial={{ opacity: 0 }}
+      animate={inView ? { opacity: 1 } : {}}
+      transition={{ duration: 0.3 }}
+    >
+      <defs>
+        <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#10b981" />
+          <stop offset="100%" stopColor="#6ee7b7" />
+        </linearGradient>
+      </defs>
+      <circle
+        cx="25"
+        cy="25"
+        r={r}
+        fill="none"
+        stroke="rgba(255,255,255,0.08)"
+        strokeWidth={2.5}
+      />
+      <motion.circle
+        cx="25"
+        cy="25"
+        r={r}
+        fill="none"
+        stroke={`url(#${gradientId})`}
+        strokeWidth={2.5}
+        strokeLinecap="round"
+        strokeDasharray={c}
+        initial={{ strokeDashoffset: c }}
+        animate={inView ? { strokeDashoffset: offset } : {}}
+        transition={{ duration: 1.8, ease: [0.16, 1, 0.3, 1] }}
+        transform="rotate(-90 25 25)"
+        style={{ filter: "drop-shadow(0 0 6px rgba(110,231,183,0.5))" }}
+      />
+      <motion.path
+        d="M19 25 L23 29 L31 20"
+        fill="none"
+        stroke="#6ee7b7"
+        strokeWidth={2.2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        initial={{ pathLength: 0 }}
+        animate={inView ? { pathLength: 1 } : {}}
+        transition={{ delay: 1.2, duration: 0.4 }}
+      />
+    </motion.svg>
+  );
+}
+
+function SDKBadge() {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-40px" });
+  return (
+    <motion.div
+      ref={ref}
+      className="flex items-center gap-1.5 text-[9px] font-mono"
+      aria-hidden
+      initial={{ opacity: 0 }}
+      animate={inView ? { opacity: 1 } : {}}
+      transition={{ duration: 0.3 }}
+    >
+      <motion.div
+        initial={{ opacity: 0, x: -4 }}
+        animate={inView ? { opacity: 1, x: 0 } : {}}
+        transition={{ delay: 0.3, duration: 0.4 }}
+        className="px-1.5 py-0.5 rounded border border-white/10 bg-white/[0.04] text-white/55 tracking-wider"
+      >
+        OPENAI
+      </motion.div>
+      <motion.div
+        initial={{ opacity: 0, scale: 0 }}
+        animate={inView ? { opacity: 1, scale: 1 } : {}}
+        transition={{ delay: 0.5, duration: 0.3 }}
+        className="text-violet-300/80 text-[11px] font-semibold"
+      >
+        ⇌
+      </motion.div>
+      <motion.div
+        initial={{ opacity: 0, x: 4 }}
+        animate={inView ? { opacity: 1, x: 0 } : {}}
+        transition={{ delay: 0.4, duration: 0.4 }}
+        className="px-1.5 py-0.5 rounded border border-violet-400/30 bg-violet-500/10 text-violet-200 tracking-wider"
+      >
+        YAPA
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function StatVisual({ stat }: { stat: (typeof STATS)[number] }) {
+  switch (stat.visual) {
+    case "matrix":
+      return <ModelsMatrix />;
+    case "globe":
+      return <RegionsGlobeMini />;
+    case "gauge":
+      return <UptimeGauge value={stat.rawValue} />;
+    case "badge":
+      return <SDKBadge />;
+  }
+}
+
 function StatCounter({ stat }: { stat: (typeof STATS)[number] }) {
   const ref = useCountUp(stat.rawValue, 2200, stat.decimals);
+  const accent = STAT_ACCENTS[stat.accent];
   const TrendIcon = stat.trend === "up" ? TrendingUp : null;
   return (
-    <div className="flex flex-col items-start">
-      <span
-        ref={ref}
-        className="text-4xl sm:text-5xl lg:text-6xl font-semibold text-white font-display tabular-nums tracking-tight"
-        suppressHydrationWarning
+    <div className="group/stat relative h-full p-5 sm:p-6 rounded-2xl border border-white/[0.08] bg-gradient-to-br from-white/[0.03] via-transparent to-transparent overflow-hidden transition-all duration-500 hover:border-white/20">
+      {/* Accent radial highlight */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-16 -right-16 w-44 h-44 rounded-full opacity-60 group-hover/stat:opacity-100 transition-opacity duration-500"
+        style={{
+          background: `radial-gradient(circle, ${accent.bg} 0%, transparent 70%)`,
+        }}
+      />
+      {/* Top row: label + per-stat visual */}
+      <div className="relative z-10 flex items-start justify-between gap-3 mb-5 sm:mb-6">
+        <span className="text-[9px] sm:text-[10px] font-mono tracking-[0.22em] uppercase text-white/45">
+          {stat.label}
+        </span>
+        <StatVisual stat={stat} />
+      </div>
+      {/* Big number — inner span is the count-up target; suffix is a
+          sibling text node so the unit ("+", "%") is preserved through the
+          animation (the hook writes to textContent, not innerHTML). */}
+      <div className="relative z-10 flex items-baseline">
+        <span
+          className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-white font-display tabular-nums tracking-tight"
+          style={{ textShadow: `0 0 24px ${accent.glow}` }}
+        >
+          <span ref={ref} suppressHydrationWarning>
+            0
+          </span>
+          {stat.suffix}
+        </span>
+      </div>
+      {/* Delta */}
+      <div
+        className="relative z-10 mt-2 sm:mt-3 flex items-center gap-1.5 text-[10px] font-mono"
+        style={{ color: accent.color }}
       >
-        {stat.customValue ?? `0${stat.suffix}`}
-      </span>
-      <span className="mt-1.5 text-[10px] font-mono tracking-[0.22em] uppercase text-white/30">
-        {stat.label}
-      </span>
-      {TrendIcon && (
-        <span className="mt-1.5 inline-flex items-center gap-1.5 text-[10px] font-mono text-indigo-300/65">
-          <TrendIcon className="w-3 h-3" />
-          {stat.delta}
-        </span>
-      )}
-      {!TrendIcon && (
-        <span className="mt-1.5 text-[10px] font-mono text-indigo-300/50">
-          {stat.delta}
-        </span>
-      )}
+        {TrendIcon && <TrendIcon className="w-3 h-3" />}
+        <span className="opacity-85">{stat.delta}</span>
+      </div>
+      {/* Bottom accent hairline */}
+      <div
+        aria-hidden
+        className="absolute left-5 right-5 sm:left-6 sm:right-6 bottom-0 h-px opacity-50 group-hover/stat:opacity-100 transition-opacity duration-500"
+        style={{
+          background: `linear-gradient(90deg, transparent 0%, ${accent.ring} 50%, transparent 100%)`,
+        }}
+      />
     </div>
+  );
+}
+
+function StatStripItem({
+  stat,
+  index,
+}: {
+  stat: (typeof STATS)[number];
+  index: number;
+}) {
+  // whileInView (not useInView) so the parent doesn't re-render — the
+  // count-up writes to textContent directly, and any parent re-render
+  // would have React reconcile the inner span's children back to "0".
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{
+        delay: 0.1 + index * 0.08,
+        duration: 0.6,
+        ease: [0.16, 1, 0.3, 1],
+      }}
+    >
+      <StatCounter stat={stat} />
+    </motion.div>
   );
 }
 
@@ -1016,29 +1347,30 @@ export function GatewayFeatures() {
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="mt-20 lg:mt-28"
         >
-          <div className="h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
+          <div className="h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent mb-10" />
 
-          <div className="pt-10 grid grid-cols-2 sm:grid-cols-4 gap-8 sm:gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {STATS.map((s, i) => (
-              <motion.div
-                key={s.label}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{
-                  delay: 0.1 + i * 0.08,
-                  duration: 0.6,
-                  ease: [0.16, 1, 0.3, 1],
-                }}
-              >
-                <StatCounter stat={s} />
-              </motion.div>
+              <StatStripItem key={s.id} stat={s} index={i} />
             ))}
           </div>
 
-          <div className="mt-8 flex items-center justify-between text-[10px] font-mono text-white/25">
-            <span>Updated continuously · System telemetry</span>
-            <span className="hidden sm:inline">v2.4.0 · 2026.06</span>
+          <div className="mt-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[10px] font-mono text-white/30">
+            <div className="flex items-center gap-2">
+              <span className="relative flex items-center justify-center w-3 h-3">
+                <span className="absolute inset-0 rounded-full bg-emerald-400/40 animate-ping" />
+                <span className="relative w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              </span>
+              <span>Updated continuously · System telemetry</span>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-white/[0.08] bg-white/[0.02] text-white/55">
+                <span className="w-1 h-1 rounded-full bg-indigo-400 animate-pulse" />
+                v2.4.0
+              </span>
+              <span className="text-white/30">·</span>
+              <span className="text-white/45">2026.06</span>
+            </div>
           </div>
         </motion.div>
       </div>

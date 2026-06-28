@@ -29,6 +29,31 @@
   --animate-pulse-slow: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* ── Docs sidebar custom scrollbar ── */
+.docs-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99, 102, 241, 0.18) transparent;
+}
+.docs-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.docs-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.docs-scroll::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.14);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.docs-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(129, 140, 248, 0.35);
+  background-clip: content-box;
+}
+.docs-scroll::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

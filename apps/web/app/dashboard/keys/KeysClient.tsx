@@ -16,6 +16,7 @@ import {
 import { useKeys, useCreateKey, useDeleteKey } from "@/lib/api/hooks";
 import { getErrorMessage } from "@/lib/api/errors";
 import { getSDK } from "@/lib/api/sdk";
+import { SkeletonList } from "@/components/ui/skeleton";
 
 export default function KeysClient() {
   const { data: keys, isLoading, error } = useKeys();
@@ -151,11 +152,12 @@ export default function KeysClient() {
           </div>
         </div>
 
-        {/* Loading */}
+        {/* Loading — shape-matched key cards */}
         {isLoading && (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 text-primary animate-spin" />
-          </div>
+          <SkeletonList
+            rows={3}
+            className="!space-y-4 [&>*]:!bg-[#0A0A0A] [&>*]:!border [&>*]:!border-white/10 [&>*]:!p-6 [&>*]:!rounded-xl"
+          />
         )}
 
         {/* API Keys List */}

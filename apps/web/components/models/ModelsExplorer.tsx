@@ -259,10 +259,10 @@ export function ModelsExplorer({ initialModels }: ModelsExplorerProps) {
         gradient: config.gradient,
         logo,
         popular: model.created > 1743465600,
-        speed: model.context_length > 500000 ? "Fast" : "Very Fast",
+        speed: (model.context_length ?? 0) > 500000 ? "Fast" : "Very Fast",
       };
     });
-  }, []);
+  }, [initialModels]);
 
   const filteredModels = useMemo(() => {
     return models.filter((model) => {

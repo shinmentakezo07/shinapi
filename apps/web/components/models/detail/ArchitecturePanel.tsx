@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Wrench, FileJson, Brain, Radio, Code2 } from "lucide-react";
 import type { OpenRouterModelData } from "@/types/model";
 import { getProviderTheme } from "@/lib/model-utils";
 
@@ -68,18 +68,140 @@ function ModalityPill({ mod, index }: { mod: string; index: number }) {
   );
 }
 
+interface Capability {
+  id: string;
+  label: string;
+  description: string;
+  Icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
+}
+
+function deriveCapabilities(model: OpenRouterModelData): Capability[] {
+  const caps: Capability[] = [];
+  const params = model.supported_parameters || [];
+  const arch = model.architecture;
+
+  if (params.includes("tools") || params.includes("tool_choice")) {
+    caps.push({
+      id: "tools",
+      label: "Function Calling",
+      description:
+        "Native tool / function-calling support with structured JSON args.",
+      Icon: Wrench,
+    });
+  }
+  if (params.includes("response_format")) {
+    caps.push({
+      id: "json",
+      label: "JSON Mode",
+      description: "Strict JSON output via response_format enforcement.",
+      Icon: FileJson,
+    });
+  }
+  if (
+    arch?.instruct_type === "reasoning" ||
+    model.name.match(/reasoning|thinking|r1|o1|o3|qwq/i) ||
+    params.includes("reasoning_effort")
+  ) {
+    caps.push({
+      id: "reasoning",
+      label: "Reasoning Mode",
+      description: "Chain-of-thought with optional reasoning_effort control.",
+      Icon: Brain,
+    });
+  }
+  if (params.includes("stream") || true /* streaming is universal */) {
+    caps.push({
+      id: "streaming",
+      label: "Streaming",
+      description: "Token-by-token SSE streaming out of the box.",
+      Icon: Radio,
+    });
+  }
+  // Code execution heuristic — Claude, GPT-4, DeepSeek Coder
+  if (
+    model.id.match(/claude|opus|gpt-4|deepseek.*coder|qwen.*coder|codestral/i) ||
+    params.includes("code_execution")
+  ) {
+    caps.push({
+      id: "code",
+      label: "Code Generation",
+      description:
+        "Strong code generation / reasoning across major programming languages.",
+      Icon: Code2,
+    });
+  }
+  return caps;
+}
+
+function CapabilityBadge({
+  capability,
+  accent,
+  index,
+}: {
+  capability: Capability;
+  accent: string;
+  index: number;
+}) {
+  const prefersReduced = useReducedMotion();
+  const { Icon } = capability;
+  return (
+    <motion.div
+      initial={prefersReduced ? undefined : { opacity: 0, y: 8 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.4, ease, delay: 0.15 + index * 0.05 }}
+      className="group relative rounded-lg border p-3 flex items-start gap-3 transition-colors duration-200"
+      style={{
+        backgroundColor: "rgba(255,255,255,0.012)",
+        borderColor: `rgba(255,255,255,0.04)`,
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = `${accent}30`;
+        e.currentTarget.style.backgroundColor = `${accent}06`;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = `rgba(255,255,255,0.04)`;
+        e.currentTarget.style.backgroundColor = `rgba(255,255,255,0.012)`;
+      }}
+    >
+      <div
+        className="shrink-0 w-7 h-7 rounded-md flex items-center justify-center transition-colors duration-200"
+        style={{
+          backgroundColor: `${accent}10`,
+          color: accent,
+        }}
+      >
+        <Icon className="w-3.5 h-3.5" style={{ color: accent }} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-[11px] font-mono font-bold text-white tracking-tight">
+          {capability.label}
+        </div>
+        <div className="text-[10px] text-gray-500 leading-snug mt-0.5 line-clamp-2">
+          {capability.description}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 export function ArchitecturePanel({ model }: ArchitecturePanelProps) {
   const arch = model.architecture;
   const prefersReduced = useReducedMotion();
   const theme = getProviderTheme(model.id);
   const accent = theme?.accent || "#6366f1";
 
-  if (!arch) return null;
+  const capabilities = deriveCapabilities(model);
 
-  const hasInput = arch.input_modalities && arch.input_modalities.length > 0;
-  const hasOutput = arch.output_modalities && arch.output_modalities.length > 0;
-  const hasTokenizer = !!arch.tokenizer;
-  const hasInstruct = !!arch.instruct_type;
+  const hasInput = arch?.input_modalities && arch.input_modalities.length > 0;
+  const hasOutput =
+    arch?.output_modalities && arch.output_modalities.length > 0;
+  const hasTokenizer = !!arch?.tokenizer;
+  const hasInstruct = !!arch?.instruct_type;
+
+  const hasAnyContent =
+    hasInput || hasOutput || hasTokenizer || hasInstruct || capabilities.length > 0;
+  if (!hasAnyContent) return null;
 
   return (
     <motion.section
@@ -127,7 +249,7 @@ export function ArchitecturePanel({ model }: ArchitecturePanelProps) {
                   Input
                 </span>
                 <div className="flex flex-wrap gap-1.5">
-                  {arch.input_modalities.map((mod: string, i: number) => (
+                  {arch!.input_modalities!.map((mod: string, i: number) => (
                     <ModalityPill key={`in-${mod}`} mod={mod} index={i} />
                   ))}
                 </div>
@@ -163,7 +285,7 @@ export function ArchitecturePanel({ model }: ArchitecturePanelProps) {
                   Output
                 </span>
                 <div className="flex flex-wrap gap-1.5">
-                  {arch.output_modalities.map((mod: string, i: number) => (
+                  {arch!.output_modalities!.map((mod: string, i: number) => (
                     <ModalityPill key={`out-${mod}`} mod={mod} index={i} />
                   ))}
                 </div>
@@ -172,7 +294,7 @@ export function ArchitecturePanel({ model }: ArchitecturePanelProps) {
           </div>
         )}
 
-        {/* Tokenizer + Instruct */}
+        {/* Tokenizer + Instruct row */}
         {(hasTokenizer || hasInstruct) && (
           <div
             className="grid grid-cols-2 gap-5 pt-5"
@@ -184,7 +306,7 @@ export function ArchitecturePanel({ model }: ArchitecturePanelProps) {
                   Tokenizer
                 </div>
                 <span className="font-mono text-[14px] text-gray-300 font-medium">
-                  {arch.tokenizer}
+                  {arch!.tokenizer}
                 </span>
               </div>
             )}
@@ -194,18 +316,41 @@ export function ArchitecturePanel({ model }: ArchitecturePanelProps) {
                   Instruct type
                 </div>
                 <span className="font-mono text-[14px] text-gray-300 font-medium">
-                  {arch.instruct_type}
+                  {arch!.instruct_type}
                 </span>
               </div>
             )}
           </div>
         )}
 
-        {!hasTokenizer && !hasInstruct && !hasInput && !hasOutput && (
-          <div className="text-center py-6">
-            <span className="text-gray-600 font-mono text-xs">
-              No architecture details available
-            </span>
+        {/* NEW — Capability grid */}
+        {capabilities.length > 0 && (
+          <div
+            className="pt-5 mt-5"
+            style={{
+              borderTopColor: `${accent}08`,
+              borderTopWidth: 1,
+            }}
+          >
+            <div className="flex items-center gap-2.5 mb-4">
+              <span className="text-[8px] font-mono text-gray-500 uppercase tracking-[0.18em]">
+                Capabilities
+              </span>
+              <span className="text-[9px] font-mono text-gray-700">
+                {capabilities.length} supported
+              </span>
+              <span className="flex-1 h-px bg-white/[0.03]" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {capabilities.map((cap, i) => (
+                <CapabilityBadge
+                  key={cap.id}
+                  capability={cap}
+                  accent={accent}
+                  index={i}
+                />
+              ))}
+            </div>
           </div>
         )}
       </div>

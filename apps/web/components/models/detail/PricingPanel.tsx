@@ -1,10 +1,11 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { Coins } from "lucide-react";
+import { Coins, Sparkles, Crown, ArrowUpRight } from "lucide-react";
 import type { OpenRouterModelData } from "@/types/model";
 import { formatPricePerM } from "@/lib/model-utils";
 import { getProviderTheme } from "@/lib/model-utils";
+import { CostCalculator } from "./CostCalculator";
 
 interface PricingPanelProps {
   model: OpenRouterModelData;
@@ -34,7 +35,6 @@ function PriceRow({
       viewport={{ once: true }}
       transition={{ duration: 0.4, ease, delay: delay ?? 0 }}
       className="flex items-baseline justify-between py-2.5 first:pt-0 last:pb-0"
-      style={{ borderBottomColor: `${accent}08` }}
     >
       <span className="text-[11px] font-mono text-gray-500">{label}</span>
       <div className="text-right">
@@ -55,6 +55,78 @@ function PriceRow({
   );
 }
 
+function TierBadge({ tier, accent }: { tier: Tier; accent: string }) {
+  const config = TIER_STYLES[tier];
+  const Icon = config.icon;
+  return (
+    <motion.span
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.4, delay: 0.1, ease }}
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-mono font-bold tracking-[0.18em] uppercase border"
+      style={{
+        backgroundColor: `${accent}${config.bgAlpha}`,
+        borderColor: `${accent}${config.borderAlpha}`,
+        color: accent,
+      }}
+    >
+      <Icon className="w-2.5 h-2.5" />
+      {config.label}
+    </motion.span>
+  );
+}
+
+type Tier = "free" | "standard" | "premium" | "experimental";
+
+const TIER_STYLES: Record<
+  Tier,
+  {
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    bgAlpha: string;
+    borderAlpha: string;
+  }
+> = {
+  free: {
+    label: "Free",
+    icon: Sparkles,
+    bgAlpha: "15",
+    borderAlpha: "30",
+  },
+  standard: {
+    label: "Standard",
+    icon: ArrowUpRight,
+    bgAlpha: "10",
+    borderAlpha: "20",
+  },
+  premium: {
+    label: "Premium",
+    icon: Crown,
+    bgAlpha: "15",
+    borderAlpha: "30",
+  },
+  experimental: {
+    label: "Experimental",
+    icon: Sparkles,
+    bgAlpha: "10",
+    borderAlpha: "20",
+  },
+};
+
+function classifyTier(model: OpenRouterModelData): Tier {
+  const input = parseFloat(formatPricePerM(model, "prompt"));
+  const output = parseFloat(formatPricePerM(model, "completion"));
+  const blended = (input + output) / 2;
+  if (blended === 0) return "free";
+  // Premium detection thresholds: blended ≥ $10, or known premium tier model IDs.
+  const premiumRegex = /opus|gpt-5|o1-pro|claude.*opus/i;
+  if (blended >= 10 || premiumRegex.test(model.id)) return "premium";
+  // Experimental is for newer / preview / research models in the $3+ range.
+  if (blended >= 3 || /\b(preview|exp|beta|preview-)/i.test(model.id))
+    return "experimental";
+  return "standard";
+}
+
 export function PricingPanel({ model }: PricingPanelProps) {
   const inputPrice = parseFloat(formatPricePerM(model, "prompt"));
   const outputPrice = parseFloat(formatPricePerM(model, "completion"));
@@ -65,6 +137,7 @@ export function PricingPanel({ model }: PricingPanelProps) {
   const theme = getProviderTheme(model.id);
   const accent = theme?.accent || "#6366f1";
   const prefersReduced = useReducedMotion();
+  const tier = classifyTier(model);
 
   return (
     <motion.section
@@ -85,6 +158,7 @@ export function PricingPanel({ model }: PricingPanelProps) {
         <h2 className="text-[10px] font-mono tracking-[0.25em] uppercase text-gray-500">
           Pricing
         </h2>
+        <TierBadge tier={tier} accent={accent} />
         <span
           className="flex-1 h-px"
           style={{ backgroundColor: `${accent}12` }}
@@ -103,26 +177,26 @@ export function PricingPanel({ model }: PricingPanelProps) {
           }}
         />
 
-        {isFree && (
+        {isFree ? null : (
           <div
-            className="px-5 py-3"
+            className="px-5 py-3 flex items-center gap-2 border-b"
             style={{
               backgroundColor: `${accent}0a`,
-              borderBottomColor: `${accent}10`,
-              borderBottomWidth: 1,
+              borderColor: `${accent}10`,
             }}
           >
+            <Coins className="w-3 h-3" style={{ color: accent }} />
             <span
               className="font-mono text-xs font-bold"
               style={{ color: accent }}
             >
-              Free to use
+              Yapapa unified billing
             </span>
             <span
-              className="font-mono text-[10px] ml-2"
+              className="font-mono text-[10px] ml-auto"
               style={{ color: `${accent}60` }}
             >
-              No per-token charges
+              same price as upstream
             </span>
           </div>
         )}
@@ -220,6 +294,33 @@ export function PricingPanel({ model }: PricingPanelProps) {
           </div>
         )}
       </div>
+
+      {/* NEW — Cost Calculator */}
+      <div className="mt-4">
+        <CostCalculator model={model} accent={accent} />
+      </div>
+
+      {/* NEW — Compare rail hint */}
+      {!isFree && (
+        <motion.div
+          initial={prefersReduced ? undefined : { opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="mt-3 flex items-center justify-between px-3"
+        >
+          <span className="text-[9px] font-mono text-gray-600 tracking-wider">
+            vs direct upstream
+          </span>
+          <span
+            className="inline-flex items-center gap-1 text-[9px] font-mono font-bold tracking-widest uppercase"
+            style={{ color: "#34d399" }}
+          >
+            <span className="w-1 h-1 rounded-full bg-emerald-400" />
+            zero markup
+          </span>
+        </motion.div>
+      )}
 
       {model.knowledge_cutoff && (
         <div className="mt-5">

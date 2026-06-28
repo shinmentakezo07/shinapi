@@ -237,22 +237,44 @@ function SidebarContent({
   currentSectionId: string;
   navigateTo: (id: string) => void;
 }) {
+  const totalItems = navGroups.reduce((n, g) => n + g.items.length, 0);
+
   return (
-    <>
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
-        <div className="flex items-center gap-2.5">
-          <div
-            className={`w-8 h-8 rounded-xl ${ACCENT.bg} border ${ACCENT.border} flex items-center justify-center shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]`}
-          >
-            <Book className={`w-4 h-4 ${ACCENT.text}`} />
+    <div className="flex flex-col h-full docs-sidebar">
+      {/* ── Header ── */}
+      <div className="relative flex items-center justify-between px-5 py-4 border-b border-white/[0.06] overflow-hidden">
+        {/* ambient glow */}
+        <div
+          className="absolute -top-8 -left-6 w-28 h-28 rounded-full opacity-50 pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(99,102,241,0.16), transparent 70%)",
+          }}
+        />
+        <div className="flex items-center gap-2.5 relative z-10">
+          <div className="relative">
+            <div
+              className={`w-9 h-9 rounded-xl ${ACCENT.bg} border ${ACCENT.border} flex items-center justify-center shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),0_4px_12px_-4px_rgba(99,102,241,0.35)]`}
+            >
+              <Book className={`w-[15px] h-[15px] ${ACCENT.text}`} />
+            </div>
+            {/* pulsing dot */}
+            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-indigo-400 shadow-[0_0_6px_rgba(129,140,248,0.9)] animate-pulse" />
           </div>
-          <div>
-            <span className="text-[13px] font-semibold text-white/80 block leading-tight">
+          <div className="leading-tight">
+            <span className="text-[13px] font-semibold text-white/85 block">
               Documentation
             </span>
-            <span className="text-[10px] font-mono text-white/25 tracking-[0.1em]">
-              v1.0 · indigo
+            <span className="flex items-center gap-1 mt-0.5">
+              <span className="inline-flex items-center gap-1 px-1.5 py-px rounded-[3px] bg-indigo-500/[0.08] border border-indigo-500/20">
+                <span className="w-1 h-1 rounded-full bg-indigo-300" />
+                <span className="text-[9px] font-mono font-semibold tracking-[0.08em] text-indigo-200/80">
+                  v1.0
+                </span>
+              </span>
+              <span className="text-[9px] font-mono text-white/25 tracking-[0.08em]">
+                {totalItems} pages
+              </span>
             </span>
           </div>
         </div>
@@ -260,41 +282,60 @@ function SidebarContent({
           <button
             onClick={onClose}
             aria-label="Close navigation"
-            className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center text-white/40 hover:text-white/70 hover:bg-white/[0.06] transition-all duration-200 cursor-pointer"
+            className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center text-white/40 hover:text-white/70 hover:bg-white/[0.06] hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer relative z-10"
           >
             <X className="w-4 h-4" />
           </button>
         )}
       </div>
 
-      {/* Filter */}
+      {/* ── Filter ── */}
       <div className="px-4 pt-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/20" />
+        <div className="relative group">
+          <Search
+            className={`absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/20 group-focus-within:text-indigo-200/70 transition-colors duration-200`}
+          />
           <input
             type="text"
             placeholder="Filter pages..."
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             aria-label="Filter documentation pages"
-            className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl pl-9 pr-3 py-2.5 text-xs text-white/65 placeholder:text-white/25 font-mono outline-none focus:border-indigo-500/30 focus:bg-indigo-500/[0.04] transition-all duration-200"
+            className="w-full bg-white/[0.025] border border-white/[0.07] rounded-xl pl-9 pr-8 py-2.5 text-xs text-white/65 placeholder:text-white/25 font-mono outline-none focus:border-indigo-500/35 focus:bg-indigo-500/[0.05] focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] transition-all duration-200"
           />
+          {filter && (
+            <button
+              onClick={() => setFilter("")}
+              aria-label="Clear filter"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded flex items-center justify-center text-white/30 hover:text-white/70 hover:bg-white/[0.08] transition-all duration-150 cursor-pointer"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          )}
+          {!filter && (
+            <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 hidden md:flex items-center px-1.5 py-[2px] rounded-[4px] bg-white/[0.04] border border-white/[0.05] text-[9px] font-mono text-white/20 leading-none pointer-events-none">
+              /
+            </kbd>
+          )}
         </div>
       </div>
 
-      {/* Nav groups */}
+      {/* ── Nav groups ── */}
       <nav
-        className="flex-1 overflow-y-auto py-3"
+        className="flex-1 overflow-y-auto py-3 docs-scroll"
         role="navigation"
         aria-label="Documentation navigation"
       >
         {navGroups.length > 0 ? (
-          navGroups.map((group) => {
+          navGroups.map((group, gi) => {
             return (
-              <div key={group.label} className="mb-1">
+              <div key={group.label} className={gi > 0 ? "mt-1" : ""}>
                 <div className="flex items-center gap-2 px-4 pt-4 pb-1.5">
                   <span className="text-[9px] font-mono font-semibold uppercase tracking-[0.2em] text-indigo-200/55">
                     {group.label}
+                  </span>
+                  <span className="text-[9px] font-mono text-white/20">
+                    {group.items.length}
                   </span>
                   <div className="h-px flex-1 bg-gradient-to-r from-indigo-500/15 to-transparent" />
                 </div>
@@ -308,14 +349,14 @@ function SidebarContent({
                         aria-current={isActive ? "page" : undefined}
                         className={`relative flex items-center gap-3 px-3 py-[10px] rounded-xl text-sm w-full text-left transition-all duration-200 cursor-pointer group ${
                           isActive
-                            ? `text-white bg-indigo-500/[0.08] border border-indigo-500/20 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]`
-                            : "text-white/40 hover:text-white/70 hover:bg-white/[0.04] border border-transparent"
+                            ? `text-white bg-indigo-500/[0.09] border border-indigo-500/25 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05),0_4px_16px_-6px_rgba(99,102,241,0.45)]`
+                            : "text-white/40 hover:text-white/75 hover:bg-white/[0.045] hover:border-white/[0.06] border border-transparent"
                         }`}
                       >
                         {isActive && (
                           <motion.div
                             layoutId="sidebar-active"
-                            className="absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-full bg-indigo-300 shadow-[0_0_8px_rgba(165,180,252,0.7)]"
+                            className="absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-full bg-gradient-to-b from-indigo-300 to-indigo-400 shadow-[0_0_10px_rgba(165,180,252,0.8)]"
                             transition={{
                               type: "spring",
                               stiffness: 350,
@@ -324,10 +365,10 @@ function SidebarContent({
                           />
                         )}
                         <item.icon
-                          className={`w-[14px] h-[14px] flex-shrink-0 transition-colors duration-200 ${
+                          className={`w-[14px] h-[14px] flex-shrink-0 transition-all duration-200 ${
                             isActive
-                              ? "text-indigo-200"
-                              : "text-white/25 group-hover:text-white/45"
+                              ? "text-indigo-200 drop-shadow-[0_0_4px_rgba(165,180,252,0.5)]"
+                              : "text-white/25 group-hover:text-white/50 group-hover:scale-110"
                           }`}
                         />
                         <span className="truncate text-[13px] font-medium">
@@ -344,24 +385,58 @@ function SidebarContent({
             );
           })
         ) : (
-          <div className="text-xs text-white/20 text-center py-10 font-mono">
-            No matching pages
+          <div className="flex flex-col items-center gap-2 py-12 px-4">
+            <Search className="w-5 h-5 text-white/15" />
+            <span className="text-xs text-white/25 font-mono text-center">
+              No pages match
+              <br />
+              <span className="text-white/40">&ldquo;{filter}&rdquo;</span>
+            </span>
           </div>
         )}
       </nav>
 
-      {/* Footer */}
-      <div className="px-4 py-4 border-t border-white/[0.06]">
-        <a
-          href="https://github.com/shinmentakezo07/owsiwa"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-[11px] font-mono text-white/35 hover:text-white/55 hover:bg-white/[0.04] transition-all duration-200 cursor-pointer"
-        >
-          <ArrowUpRight className="w-3 h-3" />
-          <span>Report an issue</span>
-        </a>
+      {/* ── Footer ── */}
+      <div className="px-3 py-3 border-t border-white/[0.06] bg-white/[0.01]">
+        <div className="flex items-center gap-1.5">
+          <a
+            href="https://github.com/shinmentakezo07/owsiwa"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] font-mono text-white/35 hover:text-white/70 hover:bg-white/[0.04] transition-all duration-200 cursor-pointer group"
+          >
+            <svg
+              className="w-3.5 h-3.5 group-hover:text-indigo-200/70 transition-colors"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.009-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 1.753.986A6.028 6.028 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404.912-1.255 1.753-.986 1.753-.986.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z" />
+            </svg>
+            <span>Source</span>
+            <ArrowUpRight className="w-2.5 h-2.5 ml-auto opacity-0 group-hover:opacity-60 transition-opacity" />
+          </a>
+          <a
+            href="https://github.com/shinmentakezo07/owsiwa/issues"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-[11px] font-mono text-white/35 hover:text-white/70 hover:bg-white/[0.04] transition-all duration-200 cursor-pointer group"
+            aria-label="Report an issue"
+          >
+            <AlertTriangle className="w-3 h-3 group-hover:text-amber-200/70 transition-colors" />
+          </a>
+        </div>
+        {/* status line */}
+        <div className="flex items-center justify-center gap-1.5 mt-2 px-1">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400/60 animate-ping opacity-75" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
+          </span>
+          <span className="text-[9px] font-mono uppercase tracking-[0.15em] text-white/25">
+            All systems operational
+          </span>
+        </div>
       </div>
-    </>
+    </div>
   );
 }
