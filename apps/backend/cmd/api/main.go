@@ -13,8 +13,8 @@ import (
 	"dra-platform/backend/internal/config"
 	"dra-platform/backend/internal/db"
 	"dra-platform/backend/internal/pkg/logger"
-	"dra-platform/backend/internal/repository"
 	appredis "dra-platform/backend/internal/redis"
+	"dra-platform/backend/internal/repository"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
@@ -64,12 +64,16 @@ func main() {
 	}
 
 	// Wire services and handler
-	h, _, _, _ := initServices(ctx, cfg, database, redisClient)
+	h, _, _, _, setupH := initServices(ctx, cfg, database, redisClient)
+	if setupH == nil {
+		logger.Error("setup_handler_not_initialized")
+		os.Exit(1)
+	}
 
 	// Router
 	r := chi.NewRouter()
 	adminUserRepo := repository.NewAdminUserRepo(database)
-	registerRoutes(r, h, cfg, database, redisClient, h.UserService(), adminUserRepo)
+	registerRoutes(r, h, cfg, database, redisClient, h.UserService(), adminUserRepo, setupH)
 
 	// Metrics server
 	if cfg.EnableMetrics {

@@ -147,3 +147,43 @@ go test  ./internal/testutil/... (regression on existing SQLite tests) → ok 2.
 4. **Frontend Drizzle rewrite** — `apps/web/db/schema.ts` uses `drizzle-orm/pg-core` (bigserial, jsonb, pgTable); needs to move to `drizzle-orm/sqlite-core`. `drizzle.config.ts` `dialect` and `apps/web/db/index.ts` driver (neon-http / node-postgres → better-sqlite3 / libsql) need to switch too. Large separate turn.
 
 **Notes:** the SQLite path in `dev.sh` (option 2) was promoted with this fix. The yapapa.db fixture workflow landed in the same earlier session (499f7d4) and is unaffected.
+
+---
+
+## 2026-06-28T15:55Z — admin-bootstrap-setup-page-2026-06-28 — feat(admin): /admin/setup first-time-bootstrap flow
+
+**Session**: admin-bootstrap-setup-page-2026-06-28 (sibling of sqlite-runtime-tx-fix-2026-06-28 in commit 1fde2f6).
+
+**Why**: Prior to this commit there was no UI path for creating the first admin account. A fresh Postgres DB had  only via the seed; if a deployment ran without the seed (custom compose, prod cold start with a wiped DB) the operator was locked out. This adds a self-service  page that auto-redirects every visitor (except itself) to it while no admin row exists, lets a fresh visitor create the first admin in-place, auto-logs them in, and self-disables once an admin exists.
+
+**Files changed:**
+
+| Path | Type |
+|---|---|
+| apps/backend/internal/repository/setup_repo.go | NEW |
+| apps/backend/internal/service/setup.go | NEW |
+| apps/backend/internal/handler/setup.go | NEW |
+| apps/backend/cmd/api/services.go | MODIFIED |
+| apps/backend/cmd/api/main.go | MODIFIED |
+| apps/backend/cmd/api/routes.go | MODIFIED |
+| apps/web/app/admin/setup/layout.tsx | NEW |
+| apps/web/app/admin/setup/page.tsx | NEW |
+| apps/web/app/lib/actions.ts | MODIFIED |
+| apps/web/proxy.ts | MODIFIED (rewritten) |
+| UPDATE.md | MODIFIED |
+
+**Before/after (key wiring)**:
+
+ (new public /api/setup/* routes mounted outside any auth-required group):
+
+
+
+ (replaced to add /admin/setup funnel with 10s in-memory cache, fail-open on backend-down):
+
+/api/setup/status
+
+**Notes for follow-ups:**
+-  uses  which is Postgres-only. DB_TYPE=sqlite and DB_TYPE=mongodb will return generic 500 on bootstrap. Add a friendly 503 + clear message when those runtimes are wired.
+- Pre-existing TS errors in  and  are NOT touched here.
+- Pre-existing  has an unrelated CreatePrompt arg-count drift. Full  triggers it; scoped  is green.
+- Concurrent bootstrap requests serialize at the DB level via transaction-scoped advisory lock + recheck. Second one hits ErrFirstAdminAlreadyExists -> 403, mapped to redirect("/admin/login"). UX-acceptable.

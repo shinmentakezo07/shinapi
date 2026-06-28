@@ -8,6 +8,100 @@ import { revalidatePath } from "next/cache";
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8080";
 
+/* ─────────────────────── /admin/setup bootstrap ─────────────────────── */
+// NOTE: redirect() throws a NEXT_REDIRECT sentinel that the runtime uses
+// to switch control into the redirect handler. If we let a try/catch
+// swallow it, Next.js silently drops the redirect — so we re-throw it
+// explicitly inside every catch block below.
+
+const BootstrapSchema = z
+  .object({
+    name: z.string().min(2, { message: "Name must be at least 2 characters long." }),
+    email: z.string().email({ message: "Please enter a valid email." }),
+    password: z.string().min(6, { message: "Password must be at least 6 characters long." }),
+    confirmPassword: z.string().min(6, { message: "Please confirm your password." }),
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
+export type SetupState = {
+  errors?: {
+    name?: string[];
+    email?: string[];
+    password?: string[];
+    confirmPassword?: string[];
+  };
+  message?: string | null;
+};
+
+export async function bootstrapAdmin(
+  _prev: SetupState | undefined,
+  formData: FormData,
+): Promise<SetupState> {
+  const parsed = BootstrapSchema.safeParse({
+    name: formData.get("name"),
+    email: formData.get("email"),
+    password: formData.get("password"),
+    confirmPassword: formData.get("confirmPassword"),
+  });
+
+  if (!parsed.success) {
+    return {
+      errors: parsed.error.flatten().fieldErrors,
+      message: "Please fix the highlighted fields.",
+    };
+  }
+
+  const { name, email, password } = parsed.data;
+
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/setup/bootstrap`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+      body: JSON.stringify({ name, email, password }),
+    });
+    const json = (await res.json().catch(() => ({}))) as {
+      success?: boolean;
+      error?: string;
+    };
+
+    if (!res.ok || !json.success) {
+      // 403 → admin already exists (race or stale cache). Send user to login.
+      if (res.status === 403) {
+        redirect("/admin/login");
+      }
+      return {
+        message: json.error || `Bootstrap failed (HTTP ${res.status}).`,
+      };
+    }
+  } catch (e) {
+    // NEXT_REDIRECT must be re-thrown so Next.js can complete the redirect.
+    if (e instanceof Error && e.message === "NEXT_REDIRECT") throw e;
+    return { message: "Backend unreachable. Failed to create admin." };
+  }
+
+  // Auto-sign-in the freshly-created admin and land them on the dashboard.
+  // signIn("credentials", redirect:false) lets us control the destination.
+  try {
+    await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    });
+  } catch (e) {
+    if (e instanceof Error && e.message === "NEXT_REDIRECT") throw e;
+    // If sign-in oddly fails, still send them to /admin/login so they can retry.
+    redirect("/admin/login");
+  }
+
+  // Force-reload the layout so the proxy's needsSetup cache sees fresh state.
+  revalidatePath("/", "layout");
+  redirect("/admin/dashboard");
+}
+
 const SignupSchema = z.object({
   name: z
     .string()

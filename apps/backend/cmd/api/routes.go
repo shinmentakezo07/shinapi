@@ -30,6 +30,7 @@ func registerRoutes(
 	redisClient redis.Cmdable,
 	userSvc *service.UserService,
 	adminUserRepo *repository.AdminUserRepo,
+	setupH *handler.SetupHandler,
 ) {
 	// Global middleware
 	r.Use(chiMiddleware.Recoverer)
@@ -138,6 +139,12 @@ func registerRoutes(
 	// Public
 	r.Get("/health", h.Health)
 	r.Get("/health/providers", h.ProviderHealth)
+
+	// First-time bootstrap endpoints (always public; gated by needsSetup
+	// flag inside service.SetupService so a second admin can never be
+	// created through this surface).
+	r.Get("/api/setup/status", setupH.Status)
+	r.Post("/api/setup/bootstrap", setupH.Bootstrap)
 
 	// Auth (stricter rate limit)
 	var authRateLimitMW func(http.Handler) http.Handler

@@ -10,14 +10,15 @@ import (
 	"dra-platform/backend/internal/pkg/logger"
 	"dra-platform/backend/internal/repository"
 	"dra-platform/backend/internal/service"
+	"dra-platform/backend/pkg/email"
 	"dra-platform/backend/pkg/llm"
 	"dra-platform/backend/pkg/llm/audit"
 	"dra-platform/backend/pkg/llm/budget"
 	"dra-platform/backend/pkg/llm/cache"
 	"dra-platform/backend/pkg/llm/circuitbreaker"
 	"dra-platform/backend/pkg/llm/credentials"
-	"dra-platform/backend/pkg/llm/guardrails"
 	"dra-platform/backend/pkg/llm/embeddings"
+	"dra-platform/backend/pkg/llm/guardrails"
 	"dra-platform/backend/pkg/llm/loadbalancer"
 	"dra-platform/backend/pkg/llm/otel"
 	llmprovider "dra-platform/backend/pkg/llm/provider"
@@ -28,13 +29,14 @@ import (
 	"dra-platform/backend/pkg/llm/virtualkeys"
 	"dra-platform/backend/pkg/llm/watcher"
 	"dra-platform/backend/pkg/llm/ws"
-	"dra-platform/backend/pkg/email"
 
 	"github.com/redis/go-redis/v9"
 )
 
 // initServices wires all repositories, services, and the handler.
-func initServices(ctx context.Context, cfg *config.Config, database *db.DB, redisClient redis.Cmdable) (*handler.Handler, *llmprovider.Registry, cache.Cache, *watcher.Watcher) {
+// The latest return value (setupH) is the public first-time-bootstrap
+// handler — see /api/setup/status and /api/setup/bootstrap in routes.go.
+func initServices(ctx context.Context, cfg *config.Config, database *db.DB, redisClient redis.Cmdable) (*handler.Handler, *llmprovider.Registry, cache.Cache, *watcher.Watcher, *handler.SetupHandler) {
 	// Repositories
 	userRepo := repository.NewUserRepo(database)
 	keyRepo := repository.NewAPIKeyRepoWithPepper(database, cfg.AuthSecret)
@@ -220,6 +222,15 @@ func initServices(ctx context.Context, cfg *config.Config, database *db.DB, redi
 	h.SetLLMCache(llmCache)
 	h.SetAdminService(adminSvc)
 	h.SetAdminSessionRepo(adminSessionRepo)
+
+	// First-time setup handler. Initialized after admin services so
+	// Init(ctx) reflects the post-seed admin count.
+	setupRepo := repository.NewSetupRepo(database)
+	setupSvc := service.NewSetupService(setupRepo)
+	if err := setupSvc.Init(ctx); err != nil {
+		logger.Warn("setup_service_init_failed", "error", err.Error())
+	}
+	setupH := handler.NewSetupHandler(setupSvc)
 	h.SetEmbeddingRegistry(embeddingRegistry)
 	h.SetPricingService(pricingSvc)
 	// Enterprise features
@@ -241,7 +252,7 @@ func initServices(ctx context.Context, cfg *config.Config, database *db.DB, redi
 	batchSvc := service.NewBatchService(repository.NewBatchJobRepo(database), h.ChatFnForBatch())
 	h.SetBatchService(batchSvc)
 
-	return h, llmRegistry, llmCache, llmWatcher
+	return h, llmRegistry, llmCache, llmWatcher, setupH
 }
 
 func initLLMCache(cfg *config.Config, redisClient redis.Cmdable) cache.Cache {
