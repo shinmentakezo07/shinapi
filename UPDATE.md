@@ -187,3 +187,92 @@ go test  ./internal/testutil/... (regression on existing SQLite tests) → ok 2.
 - Pre-existing TS errors in  and  are NOT touched here.
 - Pre-existing  has an unrelated CreatePrompt arg-count drift. Full  triggers it; scoped  is green.
 - Concurrent bootstrap requests serialize at the DB level via transaction-scoped advisory lock + recheck. Second one hits ErrFirstAdminAlreadyExists -> 403, mapped to redirect("/admin/login"). UX-acceptable.
+
+---
+
+## 2026-06-28T16:24Z \u2014 admin-setup-ui-enhancement-2026-06-28 \u2014 feat(admin/setup-ui): V2 visual upgrade (3D tilt, password meter, step indicator, success celebration)
+
+**Session**: admin-setup-ui-enhancement-2026-06-28 (visuals-only follow-up to admin-bootstrap-setup-page-2026-06-28 in commit a258f9b).
+
+**Why**: User asked to enhance the UI/visuals of /admin/setup. V1 commit landed a polished terminal-aesthetic base. V2 layers four high-impact enhancements on top of the existing atmosphere + branding panel + setup card structure \u2014 no new server-side contracts.
+
+**Files changed:**
+
+| Path | Type |
+|---|---|
+| apps/web/app/admin/setup/page.tsx | MODIFIED (rewrite), 1100 \u2192 1379 lines |
+| UPDATE.md | MODIFIED |
+
+**Enhancements (V1 \u2192 V2 delta):**
+
+1. **3D parallax tilt** \u2014 `useTilt()` hook reads mousemove on the card wrapper, rAF-throttled X/Y rotation (\u00b14\u00b0). Honors `useReducedMotion`.
+
+2. **Animated 4-step indicator** \u2014 `[IDENTITY, CREDENTIALS, VERIFY, PROVISION]` past steps green-ticked, active pulses, derived from local form state + `useFormStatus.pending`.
+
+3. **Password strength meter** \u2014 `PasswordStrengthMeter(pw)` 0\u20134 score from 5 entropy rules \u2192 4-bar segmented meter with red/amber/emerald ramp + live copy. New `InputField.bottomSlot` prop.
+
+4. **Success celebration state** \u2014 `<AnimatePresence mode=\"wait\">` swaps the form for `SuccessPanel` when pending transitions true\u2192false without errors. Includes `ConfettiBurst` (64 deterministic particles, 3 shapes \u00d7 7 colors) + `SuccessRing` (3 staggered radial pulses + gradient check icon).
+
+**Other polish:** background scanline beam +14 particles, BrandingPanel feature list 3\u21924 items (Database/Network/Cpu/Sparkles), header third pill \"PG.ADVISORY\", success footer \"ADMIN SESSION ESTABLISHED\".
+
+**Notes:** no new deps. Backend Go files (`setup_repo.go`, `setup.go`, `handler/setup.go`), `bootstrapAdmin` server action, `proxy.ts` middleware unchanged from a258f9b.
+MSG
+echo "UPDATE.md appended; line count: $(wc -l < UPDATE.md)" ; \
+echo ; echo "===== stage V2 changes only =====" ; \
+git add apps/web/app/admin/setup/page.tsx UPDATE.md ; \
+echo "===== diff --cached --stat =====" ; \
+git diff --cached --stat ; \
+echo ; echo "===== commit =====" ; \
+git commit -m "feat(admin/setup-ui): V2 visual upgrade (3D tilt, password meter, step indicator, success celebration)
+
+- setup/page.tsx rewritten (1100 -> 1379 lines) layering four enhancements:
+  * 3D parallax tilt: useTilt() mousemove, rAF-throttled, +/-4deg rotation
+  * 4-step indicator: IDENTITY -> CREDENTIALS -> VERIFY -> PROVISION
+  * Password strength meter (4 bars, red/amber/emerald ramp + copy)
+  * Success celebration: AnimatePresence swaps form for SuccessPanel
+    on pending true->false + no errors; includes ConfettiBurst (64
+    particles, 3 shapes x 7 colors) + SuccessRing (3 staggered pulses)
+
+- Atmosphere: scanline beam +14 particles, brighter halos
+- BrandingPanel: 4 feature items (Database/Network/Cpu/Sparkles)
+- Header pill row: third PG.ADVISORY pill
+- Success footer: ADMIN SESSION ESTABLISHED text
+
+Notes: no new deps. Backend Go files + bootstrapAdmin + proxy.ts
+unchanged from commit a258f9b. Pre-existing tsc errors in
+lib/api/proxy.ts:86 and app/lib/auth-actions.ts:9 remain unfixed
+and unrelated." 2>&1 ; echo "commit_exit=$?" ; \
+echo ; echo "===== push =====" ; \
+git push origin master 2>&1 ; echo "push_exit=$?" ; \
+echo ; echo "===== HEAD =====" ; \
+git log -1 --oneline
+
+
+---
+
+## 2026-06-28T16:24Z — admin-setup-ui-enhancement-2026-06-28 — feat(admin/setup-ui): V2 visual upgrade (3D tilt, password meter, step indicator, success celebration)
+
+**Session**: admin-setup-ui-enhancement-2026-06-28 (visuals-only follow-up to admin-bootstrap-setup-page-2026-06-28 in commit a258f9b).
+
+**Why**: User asked to enhance the UI/visuals of /admin/setup. V1 commit landed a polished terminal-aesthetic base. V2 layers four high-impact enhancements on top of the existing atmosphere + branding panel + setup card structure — no new server-side contracts.
+
+**Files changed:**
+
+| Path | Type |
+|---|---|
+| apps/web/app/admin/setup/page.tsx | MODIFIED (rewrite), 1100 → 1379 lines |
+| UPDATE.md | MODIFIED |
+
+**Enhancements (V1 → V2 delta):**
+
+1. **3D parallax tilt** — `useTilt()` hook reads mousemove on the card wrapper, rAF-throttled X/Y rotation (±4°). Honors `useReducedMotion`.
+
+2. **Animated 4-step indicator** — `[IDENTITY, CREDENTIALS, VERIFY, PROVISION]` past steps green-ticked, active pulses, derived from local form state + `useFormStatus.pending`.
+
+3. **Password strength meter** — `PasswordStrengthMeter(pw)` 0-4 score from 5 entropy rules → 4-bar segmented meter with red/amber/emerald ramp + live copy. New `InputField.bottomSlot` prop.
+
+4. **Success celebration state** — `<AnimatePresence mode="wait">` swaps the form for `SuccessPanel` when pending transitions true→false without errors. Includes `ConfettiBurst` (64 deterministic particles, 3 shapes × 7 colors) + `SuccessRing` (3 staggered radial pulses + gradient check icon).
+
+**Other polish:** background scanline beam +14 particles, BrandingPanel feature list 3→4 items (Database/Network/Cpu/Sparkles), header third pill "PG.ADVISORY", success footer "ADMIN SESSION ESTABLISHED".
+
+**Notes:** no new deps. Backend Go files (`setup_repo.go`, `setup.go`, `handler/setup.go`), `bootstrapAdmin` server action, `proxy.ts` middleware unchanged from a258f9b.
