@@ -17,6 +17,10 @@ import (
 
 // AutoSeed seeds the database with demo data if it is empty.
 func AutoSeed(ctx context.Context, database *DB) error {
+	if database.Type == DBTypeSQLite {
+		return autoSeedSQLite(ctx, database)
+	}
+
 	isEmpty, err := isDBEmpty(ctx, database)
 	if err != nil {
 		return fmt.Errorf("check if db empty: %w", err)
@@ -57,6 +61,11 @@ func isDBEmpty(ctx context.Context, database *DB) (bool, error) {
 			return false, err
 		}
 		return count == 0, nil
+	case DBTypeSQLite:
+		// SQLite seeds through autoSeedSQLite, which does its own emptiness
+		// check via SqlDB. Don't route through here: Pool is nil in SQLite
+		// mode and the default branch would return a misleading error.
+		return false, fmt.Errorf("isDBEmpty is not supported for DBTypeSQLite; autoSeedSQLite handles emptiness")
 	default:
 		if database.Pool == nil {
 			return false, fmt.Errorf("postgres pool not connected")
@@ -315,3 +324,29 @@ func toAnySlice[T any](s []T) []any {
 // ErrNoRows is the unified "not found" error used by the db package.
 // Repositories should compare against this instead of pgx.ErrNoRows directly.
 var ErrNoRows = pgx.ErrNoRows
+
+// autoSeedSQLite applies the canonical lite fixtures ONLY when the SQLite DB
+// is empty. Behavior mirrors seedPostgres (conditional-on-empty) so a
+// developer who manually adds rows does not get them silently wiped on
+// every backend restart.
+func autoSeedSQLite(ctx context.Context, database *DB) error {
+	if database.SqlDB == nil {
+		return fmt.Errorf("sqlite db is nil")
+	}
+	var n int64
+	if err := database.SqlDB.QueryRowContext(ctx, "SELECT COUNT(*) FROM users").Scan(&n); err != nil {
+		// users table missing — first-boot path. Apply via seedDefaultsCore
+		// path which depends on the schema being present; in that case
+		// autoMigrateSQLite should have run first.
+		return fmt.Errorf("count users (run AutoMigrate before AutoSeed): %w", err)
+	}
+	if n > 0 {
+		logger.Info("auto_seed_skipped", "reason", "users table non-empty", "users_count", n)
+		return nil
+	}
+	if err := LiteSeedDefaults(ctx, database.SqlDB); err != nil {
+		return fmt.Errorf("seed lite fixtures: %w", err)
+	}
+	logger.Info("auto_seed_complete", "db_type", "sqlite")
+	return nil
+}

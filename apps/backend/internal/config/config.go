@@ -138,8 +138,8 @@ func Load() (*Config, error) {
 	if cfg.AuthSecret == "" {
 		return nil, fmt.Errorf("AUTH_SECRET is required")
 	}
-	if cfg.DBType != "postgres" && cfg.DBType != "neon" && cfg.DBType != "mongodb" {
-		return nil, fmt.Errorf("DB_TYPE must be one of: postgres, neon, mongodb")
+	if cfg.DBType != "postgres" && cfg.DBType != "neon" && cfg.DBType != "mongodb" && cfg.DBType != "sqlite" {
+		return nil, fmt.Errorf("DB_TYPE must be one of: postgres, neon, mongodb, sqlite")
 	}
 	if cfg.DBType == "mongodb" {
 		if cfg.MongoDBURI == "" {

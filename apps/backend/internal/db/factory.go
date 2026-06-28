@@ -15,6 +15,8 @@ import (
 // NewFromConfig creates the appropriate database connection based on config.
 func NewFromConfig(cfg *config.Config) (*DB, error) {
 	switch cfg.DBType {
+	case "sqlite":
+		return NewSQLite(cfg.DatabaseURL)
 	case "neon":
 		// Neon is wire-compatible PostgreSQL
 		db, err := NewPostgres(cfg.DatabaseURL)

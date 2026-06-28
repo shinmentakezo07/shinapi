@@ -11,9 +11,13 @@ import (
 	"dra-platform/backend/internal/pkg/logger"
 )
 
-// AutoMigrate runs pending migrations for PostgreSQL/Neon databases.
-// It creates a schema_migrations table to track applied migrations.
+// AutoMigrate runs pending migrations for PostgreSQL/Neon/SQLite databases.
+// It creates a schema_migrations table for PG, or applies the lite DDL
+// directly for SQLite (no file-based migration tracking today).
 func AutoMigrate(ctx context.Context, database *DB) error {
+	if database.Type == DBTypeSQLite {
+		return autoMigrateSQLite(ctx, database)
+	}
 	if database.Type == DBTypeMongoDB {
 		logger.Info("auto_migrate_skipped", "reason", "mongodb does not use sql migrations")
 		return nil
@@ -90,5 +94,21 @@ func AutoMigrate(ctx context.Context, database *DB) error {
 	}
 
 	logger.Info("auto_migrate_complete", "count", len(files))
+	return nil
+}
+
+// autoMigrateSQLite applies the canonical lite DDL (users, api_keys,
+// user_credits, credit_transactions + indexes) directly via database.SqlDB.
+// Idempotent: every statement uses IF NOT EXISTS so re-runs are safe.
+func autoMigrateSQLite(ctx context.Context, database *DB) error {
+	if database.SqlDB == nil {
+		return fmt.Errorf("sqlite db is nil")
+	}
+	for _, ddl := range LiteDDL {
+		if _, err := database.SqlDB.ExecContext(ctx, ddl); err != nil {
+			return fmt.Errorf("apply lite ddl: %w\nDDL: %s", err, ddl)
+		}
+	}
+	logger.Info("auto_migrate_complete", "type", "sqlite", "tables", len(LiteDDL))
 	return nil
 }

@@ -59,6 +59,21 @@ func SeedDefaults(t testing.TB, s *SQLiteTestDB) error {
 	return nil
 }
 
+// SeedCore is the non-testing entry point for materialising the canonical
+// fixtures into an already-open SQLiteTestDB. Wipes the four lite tables
+// (users, api_keys, user_credits, credit_transactions) and inserts the
+// deterministic admin/john/jane fixtures. Returns errors instead of
+// failing the test (unlike SeedDefaults).
+func SeedCore(ctx context.Context, s *SQLiteTestDB) error {
+	if s == nil || s.DB == nil {
+		return fmt.Errorf("nil SQLiteTestDB")
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return seedDefaultsCore(ctx, s)
+}
+
 // seedDefaultsCore is the context-based, test-free implementation shared by
 // SeedDefaults (test path) and MaterializeYapapaDB (cmd path). It wipes the
 // four lite tables and inserts the canonical fixtures; on any error, partial

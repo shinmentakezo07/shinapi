@@ -105,6 +105,12 @@ var sqliteTablesInDropOrder = []string{
 	"users",
 }
 
+// SQLiteDDL is the exported name for sqliteDDL so other packages (db
+// migrate/seed, cmd/* tooling) can drive the canonical lite-schema DDL
+// without re-parsing testutil internals. Keep this in sync if sqliteDDL
+// changes.
+var SQLiteDDL = sqliteDDL
+
 // sqliteDDL is the SQLite-dialect translation of the 5 Drizzle core tables
 // plus credit_transactions (the join target used by user_credits tests).
 // Type translation rules:

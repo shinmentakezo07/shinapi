@@ -529,11 +529,14 @@ apply_db_mode() {
 # ============================================================
 start_sqlite_mode() {
   log_info "SQLite mode active — Docker PostgreSQL will be skipped."
-  log_info "Note: the backend binary expects PostgreSQL/MongoDB at runtime;"
-  log_info "  any endpoint that queries the DB will return 500 until SQLite is"
-  log_info "  plumbed through internal/db/db.go."
-  log_info "To populate yapapa.db with seed fixtures:"
-  log_info "  cd apps/backend && go test -run TestSeedDefaults ./internal/testutil/..."
+  log_warn "SQLite runtime is a PARTIAL preview: the Go backend now compiles"
+  log_warn "  against DB_TYPE=sqlite and auto-migrate/auto-seed work, but ~6"
+  log_warn "  internal/stores.NewPostgres* constructors still take *pgxpool.Pool"
+  log_warn "  directly. Endpoints hitting those stores (credentials, virtual"
+  log_warn "  keys, budgets, usage, pricing, audit) will nil-deref — frontend-"
+  log_warn "  only preview."
+  log_info "To populate yapapa.db with canonical fixtures:"
+  log_info "  cd apps/backend && go run ./cmd/yapapa-demo"
 }
 
 # ============================================================
