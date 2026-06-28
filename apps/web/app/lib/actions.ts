@@ -34,6 +34,16 @@ export type SetupState = {
     confirmPassword?: string[];
   };
   message?: string | null;
+  /**
+   * Set to `true` after a successful bootstrap so the client can render
+   * a celebration state (confetti, success ring) BEFORE navigating to
+   * `/admin/dashboard`. If the action redirected server-side we would
+   * never get a chance to render the celebration — the browser would
+   * navigate the moment the response arrived. By surfacing success and
+   * letting the page decide when to push, we let the celebration play
+   * for ~1.6 seconds.
+   */
+  success?: boolean;
 };
 
 export async function bootstrapAdmin(
@@ -83,8 +93,9 @@ export async function bootstrapAdmin(
     return { message: "Backend unreachable. Failed to create admin." };
   }
 
-  // Auto-sign-in the freshly-created admin and land them on the dashboard.
-  // signIn("credentials", redirect:false) lets us control the destination.
+  // Auto-sign-in the freshly-created admin. signIn("credentials",
+  // redirect:false) lets us control the destination: the client component
+  // will celebrate for ~1.6s then router.push("/admin/dashboard").
   try {
     await signIn("credentials", {
       email,
@@ -99,7 +110,12 @@ export async function bootstrapAdmin(
 
   // Force-reload the layout so the proxy's needsSetup cache sees fresh state.
   revalidatePath("/", "layout");
-  redirect("/admin/dashboard");
+
+  // Signal success to the client so it can render the celebration state.
+  // The client (apps/web/app/admin/setup/page.tsx) uses `state.success` in
+  // a useEffect to flip phase='success' and schedule a 1.6s timer before
+  // navigating to /admin/dashboard.
+  return { success: true };
 }
 
 const SignupSchema = z.object({

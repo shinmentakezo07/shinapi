@@ -276,3 +276,34 @@ git log -1 --oneline
 **Other polish:** background scanline beam +14 particles, BrandingPanel feature list 3→4 items (Database/Network/Cpu/Sparkles), header third pill "PG.ADVISORY", success footer "ADMIN SESSION ESTABLISHED".
 
 **Notes:** no new deps. Backend Go files (`setup_repo.go`, `setup.go`, `handler/setup.go`), `bootstrapAdmin` server action, `proxy.ts` middleware unchanged from a258f9b.
+
+---
+
+## 2026-06-28T16:48Z — admin-setup-ui-v21-fixes-2026-06-28 — fix(admin/setup-v2): patch 3 reviewer-flagged issues + cache-TTL UX nit
+
+**Session**: admin-setup-ui-v21-fixes-2026-06-28 (post-review follower of admin-setup-ui-enhancement-2026-06-28 in commit 3c61947).
+
+**Why**: V2 visuals commit landed 4 enhancements but the reviewer flagged 5 concerns (3 FIX FIRST). This commit ships those 3 plus the only user-visible UX polish from V2.1 review.
+
+**Fixes:**
+
+* **Fix #1 (CRITICAL)**: bootstrapAdmin no longer server-side redirects on success; returns `SetupState { success: true }`. SetupCard now drives navigation via `useRouter` after a 1.6s celebration so the `SuccessPanel` actually renders. (Prior `prevPendingRef` + `useFormStatus.pending`-flip heuristic lost the race against the redirect; celebration was effectively invisible.)
+
+* **Fix #2 (visual bug)**: `OrbitLogo` orbital dot replaced 5-keyframe `cos/sin` linear interpolation (which produced a square path) with a true rotating pivot. Animates `rotate 0→360` over 5s linear; dot positioned at radius `(size/2 + 8)` inside the 0×0 pivot wrapper.
+
+* **Fix #3 (correctness)**: `useTilt()` now cancels pending RAFs on unmount via a `useEffect` cleanup hook; inner RAF callback also guards `if (rafRef.current !== null)` before `setState`.
+
+* **Bonus (V2.1 review #1 UX nit)**: `apps/web/proxy.ts` `SETUP_CACHE_TTL_MS` dropped `10_000 → 2_000` so the cache virtually always expires during the bootstrap + celebration + `router.push` window. The 10s TTL could previously cause proxy.ts to serve stale `needsSetup=true` on the `/admin/dashboard` request and bounce the user back to `/admin/setup`.
+
+**Files changed:**
+
+| Path | Type |
+|---|---|
+| apps/web/app/admin/setup/page.tsx | MODIFIED (V2.1 deltas) |
+| apps/web/app/lib/actions.ts | MODIFIED (SetupState.success? + return { success: true }) |
+| apps/web/proxy.ts | MODIFIED (10s → 2s TTL) |
+| UPDATE.md | MODIFIED |
+
+**Deferred (V2.1 review #2-5, polish tail):** `useFormStatus` during AnimatePresenceExit edge case, NEXT_REDIRECT string-match fragility (use `isRedirectError` from `next/dist/client/components/redirect`), mobile `OrbitLogo` orbit overflow, React-19 strict-mode dev double-mount cleanup.
+
+**Untouched:** backend Go files (`setup_repo.go`, `setup.go`, `handler/setup.go`), success UI components (`SuccessPanel` / `ConfettiBurst` / `SuccessRing` shipped in 3c61947), 403-admin-already-exists redirect path, signIn-failure → `/admin/login` fallback.

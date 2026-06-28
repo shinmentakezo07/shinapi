@@ -6,11 +6,16 @@ const { auth } = NextAuth(authConfig);
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8080";
 
-// Cache the backend's needsSetup response in middleware memory. 10s lets
-// post-bootstrap reloads resolve quickly without blowing the backend up
-// on every page hit. The cache key is process-global so hot reloads in
-// dev don't strand stale values.
-const SETUP_CACHE_TTL_MS = 10_000;
+// Cache the backend's needsSetup response in middleware memory. 2s TTL
+// is short enough that after the bootstrap flow's ~1.6s celebration +
+// router.push("/admin/dashboard"), proxy.ts is virtually guaranteed to
+// re-fetch the fresh `false` value from setupSvc.NeedsSetup() — avoiding
+// the bounce-back-to-/admin/setup UX bug where the 10s TTL would have
+// served a stale `true` to the new /admin/dashboard request and
+// redirected the user back into the (now-deactivated) bootstrap page.
+// The cache key is process-global so hot reloads in dev don't strand
+// stale values.
+const SETUP_CACHE_TTL_MS = 2_000;
 const setupCacheSlot = globalThis as unknown as {
   __draSetupCache?: { value: boolean; ts: number };
 };

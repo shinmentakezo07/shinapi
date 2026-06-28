@@ -13,6 +13,7 @@ import {
 import { useFormStatus } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Mail,
   Lock,
@@ -172,14 +173,27 @@ function useTilt() {
       const nx = (cx / rect.width - 0.5) * 8; // ±4deg
       const ny = (cy / rect.height - 0.5) * -8; // ±4deg
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(() => setRotation({ x: ny, y: nx }));
+      rafRef.current = requestAnimationFrame(() => {
+        // Guard against firing after unmount in case RAF was already scheduled.
+        if (rafRef.current !== null) setRotation({ x: ny, y: nx });
+      });
     },
     [reduce],
   );
 
   const handleMouseLeave = useCallback(() => {
     if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-    rafRef.current = requestAnimationFrame(() => setRotation({ x: 0, y: 0 }));
+    rafRef.current = requestAnimationFrame(() => {
+      if (rafRef.current !== null) setRotation({ x: 0, y: 0 });
+    });
+  }, []);
+
+  // Cancel pending RAF on unmount so it doesn't fire setRotation on an
+  // unmounted component (avoids the React-19 unmounted-update warning).
+  useEffect(() => {
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
   }, []);
 
   return { ref, rotation, handleMouseMove, handleMouseLeave };
@@ -227,47 +241,40 @@ function OrbitLogo({ size = 44 }: { size?: number }) {
         transition={{ duration: 2.4, repeat: Infinity, ease: "easeOut" }}
       />
 
-      {/* Orbiting dot */}
+      {/* Orbiting dot — wraps a 0x0 pivot that rotates around the logo
+          center; the inner offset positions the dot at the orbit radius
+          so the rotation traces a TRUE CIRCLE (the prior 5-keyframe cos/sin
+          approach interpolated linearly between corners, producing a
+          square path). */}
       <motion.div
         className="absolute pointer-events-none"
         style={{
-          width: 6,
-          height: 6,
           top: "50%",
           left: "50%",
-          marginLeft: -3,
-          marginTop: -3,
+          width: 0,
+          height: 0,
         }}
-        animate={
+        animate={reduce ? {} : { rotate: 360 }}
+        transition={
           reduce
-            ? {}
-            : {
-                x: [
-                  Math.cos(0) * (size / 2 + 8),
-                  Math.cos(Math.PI / 2) * (size / 2 + 8),
-                  Math.cos(Math.PI) * (size / 2 + 8),
-                  Math.cos((3 * Math.PI) / 2) * (size / 2 + 8),
-                  Math.cos(2 * Math.PI) * (size / 2 + 8),
-                ],
-                y: [
-                  Math.sin(0) * (size / 2 + 8),
-                  Math.sin(Math.PI / 2) * (size / 2 + 8),
-                  Math.sin(Math.PI) * (size / 2 + 8),
-                  Math.sin((3 * Math.PI) / 2) * (size / 2 + 8),
-                  Math.sin(2 * Math.PI) * (size / 2 + 8),
-                ],
-              }
+            ? { duration: 0 }
+            : { duration: 5, repeat: Infinity, ease: "linear" }
         }
-        transition={{
-          duration: 5,
-          repeat: Infinity,
-          ease: "linear",
-        }}
       >
         <div
-          className="w-1.5 h-1.5 rounded-full bg-emerald-400"
-          style={{ boxShadow: "0 0 10px rgba(16,185,129,0.95)" }}
-        />
+          style={{
+            position: "absolute",
+            top: -(size / 2 + 8),
+            left: -3,
+            width: 6,
+            height: 6,
+          }}
+        >
+          <div
+            className="w-1.5 h-1.5 rounded-full bg-emerald-400"
+            style={{ boxShadow: "0 0 10px rgba(16,185,129,0.95)" }}
+          />
+        </div>
       </motion.div>
     </div>
   );
@@ -1007,6 +1014,7 @@ function SuccessPanel({ name, email }: { name: string; email: string }) {
 /* ─────────────────────── SETUP CARD ─────────────────────── */
 
 function SetupCard() {
+  const router = useRouter();
   const [state, dispatch] = useActionState<SetupState | undefined, FormData>(
     bootstrapAdmin,
     undefined,
@@ -1021,32 +1029,37 @@ function SetupCard() {
   const reduce = useReducedMotion();
   const tilt = useTilt();
 
-  // Detect success: the bootstrapAdmin action redirects on success via
-  // signIn(redirect:false)+redirect(). We use a local "phase" that:
-  //   - flips to 'success' when a submission finishes with no error
-  //     (heuristic — pending just transitioned true→false, no message, no errors)
-  //   - flips back to 'idle' if the user edits any field
+  // Phase machine: 'idle' renders the form, 'success' renders the
+  // celebration panel while the redirect timer counts down.
   const [phase, setPhase] = useState<"idle" | "success">("idle");
 
-  // When useFormStatus.pending transitions true → false WITHOUT producing
-  // a new error message, we treat it as success. This relies on the
-  // server action calling redirect() (which throws NEXT_REDIRECT inside
-  // the action), keeping the page mounted while the redirect happens.
-  const prevPendingRef = useRef(false);
+  // bootstrapAdmin returns { success: true } on the happy path (instead of
+  // server-side redirecting, so the celebration panel actually has time to
+  // render before navigation). When we see that flag, flip to 'success'
+  // and schedule router.push("/admin/dashboard") after ~1.6s so the
+  // confetti / success-ring animations finish mid-flight.
   useEffect(() => {
-    if (prevPendingRef.current === true && pending === false && !state?.message && !state?.errors) {
+    if (state?.success && phase !== "success") {
       setPhase("success");
+      const timer = window.setTimeout(() => {
+        router.push("/admin/dashboard");
+      }, 1600);
+      return () => window.clearTimeout(timer);
     }
-    prevPendingRef.current = pending;
-  }, [pending, state]);
+    return undefined;
+  }, [state, phase, router]);
 
-  // If a new state comes back with errors, fall back to idle so the form
-  // re-opens for retry.
+  // If a new state comes back with errors after celebrating, fall back to
+  // the form so the user can retry.
   useEffect(() => {
-    if (state?.message || (state?.errors && Object.keys(state.errors).length > 0)) {
+    if (
+      phase === "success" &&
+      (state?.message ||
+        (state?.errors && Object.keys(state.errors).length > 0))
+    ) {
       setPhase("idle");
     }
-  }, [state]);
+  }, [state, phase]);
 
   // Step indicator derivation: 0 identity (name+email), 1 credentials (any len),
   // 2 verify (focus or any char in confirm), 3 provision (when submit fires).
