@@ -443,6 +443,100 @@ ensure_go_installed() {
 }
 
 # ============================================================
+# Interactive Database Mode Selection
+# ============================================================
+# Sets the global DEV_DB_MODE to either "postgres" or "sqlite".
+# Falls back to "postgres" if no interactive TTY is available.
+prompt_db_choice() {
+  echo ""
+  echo -e "${BOLD}╔════════════════════════════════════════════════════════════════╗${NC}"
+  echo -e "${BOLD}║                  Choose your development database                ║${NC}"
+  echo -e "${BOLD}╚════════════════════════════════════════════════════════════════╝${NC}"
+  echo ""
+  echo -e "  ${CYAN}1)${NC} PostgreSQL ${DIM}(default — full runtime, requires Docker)${NC}"
+  echo -e "       ${DIM}→ runs migrations, seeds demo data, boots the full backend${NC}"
+  echo ""
+  echo -e "  ${CYAN}2)${NC} SQLite ${DIM}(file-backed — no Docker, no PG server)${NC}"
+  echo -e "       ${DIM}→ DB file at apps/backend/internal/testutil/yapapa.db${NC}"
+  echo -e "       ${DIM}→ backend hit-the-DB endpoints will error (frontend-only preview)${NC}"
+  echo -e "       ${DIM}→ populate test fixtures: cd apps/backend && go test -run TestSeedDefaults ./internal/testutil/...${NC}"
+  echo ""
+
+  local choice=""
+  while true; do
+    if ! read -rp "$(echo -e "${BOLD}Select [1-2] (Ctrl+C to abort):${NC} ")" choice </dev/tty 2>/dev/null; then
+      log_warn "No interactive TTY available — defaulting to PostgreSQL. Use --db=sqlite to override in non-interactive scripts."
+      choice="1"
+      break
+    fi
+    case "$choice" in
+      1|2) break ;;
+      *) log_warn "Invalid choice (must be 1 or 2)";;
+    esac
+  done
+
+  case "$choice" in
+    1) DEV_DB_MODE="postgres" ;;
+    2) DEV_DB_MODE="sqlite" ;;
+  esac
+
+  echo ""
+  log_ok "Database mode: ${BOLD}$DEV_DB_MODE${NC}"
+  echo ""
+}
+
+# ============================================================
+# Update .env.local (used by apply_db_mode)
+# ============================================================
+update_env_var() {
+  local key="$1"
+  local value="$2"
+  local env_file="$WEB_DIR/.env.local"
+  if grep -q "^${key}=" "$env_file" 2>/dev/null; then
+    sed -i "s|^${key}=.*|${key}=${value}|" "$env_file"
+  else
+    echo "${key}=${value}" >> "$env_file"
+  fi
+}
+
+# ============================================================
+# Apply interactive selection to .env.local
+# ============================================================
+apply_db_mode() {
+  case "$DEV_DB_MODE" in
+    sqlite)
+      update_env_var "DB_TYPE" "sqlite"
+      update_env_var "DATABASE_URL" "file:$BACKEND_DIR/internal/testutil/yapapa.db"
+      log_ok ".env.local updated for SQLite (DB_TYPE=sqlite, DATABASE_URL=file:...)"
+      ;;
+    postgres)
+      # Only set DB_TYPE if not already present — preserve user-configured
+      # mongodb/neon/etc. The original dev.sh respected pre-existing config;
+      # --db=postgres should not silently overwrite a Mongo/Neon setup.
+      if ! grep -q "^DB_TYPE=" "$WEB_DIR/.env.local" 2>/dev/null; then
+        update_env_var "DB_TYPE" "postgres"
+      fi
+      if ! grep -q "^DATABASE_URL=" "$WEB_DIR/.env.local" 2>/dev/null; then
+        update_env_var "DATABASE_URL" "postgresql://dra:localdev@localhost:5432/dra_platform"
+      fi
+      log_ok ".env.local checked (DB_TYPE preserved if pre-configured)"
+      ;;
+  esac
+}
+
+# ============================================================
+# SQLite-mode startup (replaces Docker Postgres bootstrap)
+# ============================================================
+start_sqlite_mode() {
+  log_info "SQLite mode active — Docker PostgreSQL will be skipped."
+  log_info "Note: the backend binary expects PostgreSQL/MongoDB at runtime;"
+  log_info "  any endpoint that queries the DB will return 500 until SQLite is"
+  log_info "  plumbed through internal/db/db.go."
+  log_info "To populate yapapa.db with seed fixtures:"
+  log_info "  cd apps/backend && go test -run TestSeedDefaults ./internal/testutil/..."
+}
+
+# ============================================================
 # Install Dependencies
 # ============================================================
 install_root_deps() {
@@ -763,8 +857,10 @@ main() {
     case "$arg" in
       --check) CHECK_MODE=true ;;
       --logs)  LOGS_MODE=true  ;;
+      --db=*)  DEV_DB_MODE="${arg#*=}" ;;
     esac
   done
+  DEV_DB_MODE="${DEV_DB_MODE:-}"   # empty = interactive prompt
 
   echo -e "${BOLD}╔══════════════════════════════════════════════════════════════╗${NC}"
   echo -e "${BOLD}║         DRA Platform — Full Stack Dev Launcher               ║${NC}"
@@ -778,6 +874,23 @@ main() {
 
   # ── Dependency check (always runs) ──
   check_deps
+
+  # ── Interactive database mode prompt (unless --check or --db=... was passed) ──
+  # Always validate --db early so a bad value fails fast even under --check.
+  if [ -n "$DEV_DB_MODE" ]; then
+    case "$DEV_DB_MODE" in
+      postgres|sqlite) ;;
+      *) log_error "Invalid --db value: $DEV_DB_MODE (must be 'postgres' or 'sqlite')"; exit 1 ;;
+    esac
+  fi
+  if [ "$CHECK_MODE" = true ]; then
+    log_info "Skipping DB prompt — --check mode"
+  elif [ -z "$DEV_DB_MODE" ]; then
+    prompt_db_choice
+  else
+    log_ok "Database mode from --db flag: ${BOLD}$DEV_DB_MODE${NC}"
+    echo ""
+  fi
 
   # ── Auto-install Go if missing ──
   ensure_go_installed
@@ -798,56 +911,62 @@ main() {
   build_backend_binary
   echo ""
 
-  # Detect DB_TYPE from env
-  local db_type="postgres"
-  if [ -f "$WEB_DIR/.env.local" ]; then
-    local env_db_type
-    env_db_type="$(grep '^DB_TYPE=' "$WEB_DIR/.env.local" | cut -d= -f2- | tr -d '[:space:]' || true)"
-    if [ -n "$env_db_type" ]; then
-      db_type="$env_db_type"
-    fi
-    local db_url
-    db_url="$(grep '^DATABASE_URL=' "$WEB_DIR/.env.local" | cut -d= -f2- || true)"
-    if [ "$db_type" = "postgres" ] && echo "$db_url" | grep -q "neon.tech"; then
-      db_type="neon"
-    fi
-  fi
-
-  echo -e "${BOLD}═══ Database Setup ═══${NC}"
-  echo ""
-  ensure_env_file
-  fix_placeholder_secrets
-
-  if [ "$db_type" = "mongodb" ]; then
-    log_info "MongoDB mode detected — skipping local PostgreSQL"
-    log_info "Backend will auto-setup MongoDB on startup"
-  elif [ "$db_type" = "neon" ]; then
-    log_info "Neon DB mode detected — skipping local PostgreSQL"
-    push_schema
+  # Skip DB detection entirely for SQLite mode — apply_db_mode already set env.
+  if [ "$DEV_DB_MODE" = "sqlite" ]; then
+    apply_db_mode
+    start_sqlite_mode
   else
-    start_postgres
-    push_schema
-  fi
-  echo ""
+    # Postgres mode (explicit or default): honor any prior --db override, then
+    # fall back to existing DB_TYPE/DATABASE_URL detection.
+    if [ "$DEV_DB_MODE" = "postgres" ]; then
+      apply_db_mode
+    fi
 
-  echo -e "${BOLD}═══ Seeding ═══${NC}"
-  echo ""
-  if [ "$db_type" = "mongodb" ]; then
-    log_info "MongoDB seeding handled by backend auto-seed"
-  elif [ "$db_type" = "neon" ]; then
-    if is_db_seeded; then
-      log_ok "Database already seeded — skipping"
-    else
-      seed_database
+    # Detect DB_TYPE from env
+    local db_type="postgres"
+    if [ -f "$WEB_DIR/.env.local" ]; then
+      local env_db_type
+      env_db_type="$(grep '^DB_TYPE=' "$WEB_DIR/.env.local" | cut -d= -f2- | tr -d '[:space:]' || true)"
+      if [ -n "$env_db_type" ]; then
+        db_type="$env_db_type"
+      fi
+      local db_url
+      db_url="$(grep '^DATABASE_URL=' "$WEB_DIR/.env.local" | cut -d= -f2- || true)"
+      if [ "$db_type" = "postgres" ] && echo "$db_url" | grep -q "neon.tech"; then
+        db_type="neon"
+      fi
     fi
-  else
-    if is_db_seeded; then
-      log_ok "Database already seeded — skipping"
+
+    echo -e "${BOLD}═══ Database Setup ═══${NC}"
+    echo ""
+    ensure_env_file
+    fix_placeholder_secrets
+
+    if [ "$db_type" = "mongodb" ]; then
+      log_info "MongoDB mode detected — skipping local PostgreSQL"
+      log_info "Backend will auto-setup MongoDB on startup"
+    elif [ "$db_type" = "neon" ]; then
+      log_info "Neon DB mode detected — skipping local PostgreSQL"
+      push_schema
     else
-      seed_database
+      start_postgres
+      push_schema
     fi
+    echo ""
+
+    echo -e "${BOLD}═══ Seeding ═══${NC}"
+    echo ""
+    if [ "$db_type" = "mongodb" ]; then
+      log_info "MongoDB seeding handled by backend auto-seed"
+    else
+      if is_db_seeded; then
+        log_ok "Database already seeded — skipping"
+      else
+        seed_database
+      fi
+    fi
+    echo ""
   fi
-  echo ""
 
   echo -e "${BOLD}═══ Starting Services ═══${NC}"
   echo ""

@@ -11,8 +11,22 @@ build
 dist
 
 # Compiled binaries
+apps/backend/api
 apps/backend/cmd/api/api
 apps/backend/bin/
+
+# SQLite test database (opt-in via USE_SQLITE / YAPAPA_DB env vars)
+apps/backend/internal/testutil/yapapa.db
+apps/backend/internal/testutil/yapapa.db-journal
+apps/backend/internal/testutil/yapapa.db-wal
+apps/backend/internal/testutil/yapapa.db-shm
+apps/backend/internal/testutil/*.db
+apps/backend/internal/testutil/*.db-journal
+apps/backend/internal/testutil/*.db-wal
+apps/backend/internal/testutil/*.db-shm
+
+# embedded-postgres binary cache (auto-downloaded to $TMPDIR/dra-embedded-postgres)
+dra-embedded-postgres/
 
 # TypeScript build cache
 *.tsbuildinfo
