@@ -96,9 +96,16 @@ func registerRoutes(
 		},
 	)
 
-	// Token blacklist
-	tokenBlacklistSvc := service.NewTokenBlacklistService(repository.NewTokenBlacklistRepo(database))
-	tokenBlacklistMW := appmiddleware.TokenBlacklist(tokenBlacklistSvc)
+	// Token blacklist — skip in SQLite mode (token_blacklist table doesn't
+	// exist in LiteDDL; middleware would log errors on every request).
+	var tokenBlacklistMW func(http.Handler) http.Handler
+	if database.Type != db.DBTypeSQLite {
+		tokenBlacklistSvc := service.NewTokenBlacklistService(repository.NewTokenBlacklistRepo(database))
+		tokenBlacklistMW = appmiddleware.TokenBlacklist(tokenBlacklistSvc)
+	} else {
+		tokenBlacklistMW = func(next http.Handler) http.Handler { return next }
+		logger.Info("token_blacklist_skipped", "reason", "sqlite_lite_mode")
+	}
 
 	// Quota tracker
 	var quotaTracker appmiddleware.QuotaTrackerInterface

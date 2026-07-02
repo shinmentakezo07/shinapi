@@ -14,6 +14,10 @@ export interface ApiKeyAuthResult {
 export async function authenticateApiKey(
   request: Request,
 ): Promise<ApiKeyAuthResult | null> {
+  // In SQLite (lite) mode the frontend Drizzle DB is unavailable —
+  // API key auth is handled by the backend; return null here.
+  if (!db) return null;
+
   const apiKey = request.headers.get("x-api-key");
   if (!apiKey) return null;
 

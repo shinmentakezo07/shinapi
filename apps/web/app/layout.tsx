@@ -37,7 +37,7 @@ export default async function RootLayout({
   const session = await auth();
   let user = session?.user;
 
-  if (user?.email) {
+  if (user?.email && db) {
     try {
       const dbUser = await db.query.users.findFirst({
         where: eq(users.email, user.email),

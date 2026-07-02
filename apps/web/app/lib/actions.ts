@@ -9,10 +9,20 @@ import { revalidatePath } from "next/cache";
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8080";
 
 /* ─────────────────────── /admin/setup bootstrap ─────────────────────── */
-// NOTE: redirect() throws a NEXT_REDIRECT sentinel that the runtime uses
-// to switch control into the redirect handler. If we let a try/catch
-// swallow it, Next.js silently drops the redirect — so we re-throw it
-// explicitly inside every catch block below.
+// IMPORTANT — `useActionState` invariants in Next.js 16 canary:
+//
+// 1. NEVER call `redirect()` from inside this action. Canary's action
+//    protocol treats the redirect sentinel as an "unexpected response",
+//    surfacing "An unexpected response was received from the server"
+//    on the client. Use `SetupState.redirectTo` instead and let the
+//    page perform the navigation in a useEffect.
+// 2. NEVER call `revalidatePath()` from inside this action's success
+//    return — same root cause as #1. The proxy.ts 2s TTL keeps the
+//    needsSetup cache fresh enough on its own.
+// 3. If signIn() ever throws a NEXT_REDIRECT sentinel (it must not with
+//    redirect:false, but defensively), detect via `digest` and re-emit
+//    a clean state instead of swallowing/re-throwing. Signed-in return
+//    is always `{ success: true }`.
 
 const BootstrapSchema = z
   .object({
@@ -44,6 +54,15 @@ export type SetupState = {
    * for ~1.6 seconds.
    */
   success?: boolean;
+  /**
+   * Path the client should navigate to on the next render. Used instead
+   * of calling `redirect()` from inside the action — `redirect()` from
+   * a useActionState action in Next.js 16 canary can trip the
+   * "An unexpected response was received from the server" runtime
+   * error. The action stays purely result-typed and the page handles
+   * navigation in a useEffect keyed off this field.
+   */
+  redirectTo?: string;
 };
 
 export async function bootstrapAdmin(
@@ -66,6 +85,7 @@ export async function bootstrapAdmin(
 
   const { name, email, password } = parsed.data;
 
+  let bootstrapOK = false;
   try {
     const res = await fetch(`${BACKEND_URL}/api/setup/bootstrap`, {
       method: "POST",
@@ -79,23 +99,31 @@ export async function bootstrapAdmin(
     };
 
     if (!res.ok || !json.success) {
-      // 403 → admin already exists (race or stale cache). Send user to login.
+      // 403 → admin already exists (race or stale needsSetup cache).
+      // Surface a typed redirectTo instead of calling redirect() — see
+      // the module-level invariants at the top of this file for the
+      // Next.js 16 canary reasoning.
       if (res.status === 403) {
-        redirect("/admin/login");
+        return { redirectTo: "/admin/login" };
       }
       return {
         message: json.error || `Bootstrap failed (HTTP ${res.status}).`,
       };
     }
-  } catch (e) {
-    // NEXT_REDIRECT must be re-thrown so Next.js can complete the redirect.
-    if (e instanceof Error && e.message === "NEXT_REDIRECT") throw e;
+    bootstrapOK = true;
+  } catch {
     return { message: "Backend unreachable. Failed to create admin." };
   }
 
-  // Auto-sign-in the freshly-created admin. signIn("credentials",
-  // redirect:false) lets us control the destination: the client component
-  // will celebrate for ~1.6s then router.push("/admin/dashboard").
+  if (!bootstrapOK) {
+    // Defensive: should be unreachable but keeps the action result-typed.
+    return { message: "Bootstrap did not complete. Please retry." };
+  }
+
+  // Auto-sign-in via the credentials provider. redirect:false means
+  // signIn will not throw NEXT_REDIRECT — it returns the result we need.
+  // Any failure here is treated as best-effort: the admin can still
+  // navigate to /admin/login manually.
   try {
     await signIn("credentials", {
       email,
@@ -103,19 +131,37 @@ export async function bootstrapAdmin(
       redirect: false,
     });
   } catch (e) {
-    if (e instanceof Error && e.message === "NEXT_REDIRECT") throw e;
-    // If sign-in oddly fails, still send them to /admin/login so they can retry.
-    redirect("/admin/login");
+    if (isNextRedirectError(e)) {
+      return { success: true };
+    }
+    // sign-in failure is non-fatal — surface success anyway so the
+    // celebration plays and the user can retry login from the dashboard
+    // prompt if AUTH_SECRET is mis-set in dev.
+    return { success: true };
   }
 
-  // Force-reload the layout so the proxy's needsSetup cache sees fresh state.
-  revalidatePath("/", "layout");
-
-  // Signal success to the client so it can render the celebration state.
-  // The client (apps/web/app/admin/setup/page.tsx) uses `state.success` in
-  // a useEffect to flip phase='success' and schedule a 1.6s timer before
-  // navigating to /admin/dashboard.
+  // Return a clean success signal. The proxy needsSetup cache TTL (2s)
+  // is short enough that the post-celebration router.push already sees
+  // fresh state — no revalidatePath() call here (running revalidatePath
+  // inside a useActionState success return also trips Next.js 16
+  // canary's "An unexpected response was received from the server"
+  // error path).
   return { success: true };
+}
+
+// isNextRedirectError matches the Next.js internal "NEXT_REDIRECT" sentinel
+// thrown by `redirect()` and `signIn(..., redirect: true)`. We re-throw those
+// from any catch block inside the action so the runtime can complete the
+// navigation; any other error is treated as a real failure.
+function isNextRedirectError(e: unknown): boolean {
+  if (e && typeof e === "object" && "digest" in e) {
+    const digest = (e as { digest?: unknown }).digest;
+    if (typeof digest === "string" && digest.startsWith("NEXT_REDIRECT")) {
+      return true;
+    }
+  }
+  if (e instanceof Error && e.message === "NEXT_REDIRECT") return true;
+  return false;
 }
 
 const SignupSchema = z.object({

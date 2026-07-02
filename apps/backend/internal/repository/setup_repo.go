@@ -35,6 +35,11 @@ func (r *SetupRepo) CountAdmins(ctx context.Context) (int, error) {
 // CreateFirstAdmin inserts a fresh user (role=superadmin) and the matching
 // admin_users row atomically with pg_advisory_xact_lock(54321) so two
 // bootstrap requests racing in the same instant cannot both succeed.
+//
+// In SQLite (lite) mode the advisory lock is skipped (SQLite has no
+// equivalent; the BEGIN IMMEDIATE tx provides serialization) and the
+// permissions value is stored as a JSON string instead of a Postgres
+// TEXT[] literal.
 func (r *SetupRepo) CreateFirstAdmin(ctx context.Context, name, email, hashedPassword string) (userID string, err error) {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
@@ -47,9 +52,13 @@ func (r *SetupRepo) CreateFirstAdmin(ctx context.Context, name, email, hashedPas
 	}()
 
 	// Take a transaction-scoped advisory lock so concurrent bootstrap
-	// requests serialize through this point.
-	if _, err = tx.Exec(ctx, `SELECT pg_advisory_xact_lock(54321)`); err != nil {
-		return "", err
+	// requests serialize through this point. SQLite has no advisory lock
+	// API; its transactional BEGIN (deferred) plus the re-check below is
+	// sufficient for the single-writer bootstrap path.
+	if r.db.Type != db.DBTypeSQLite {
+		if _, err = tx.Exec(ctx, `SELECT pg_advisory_xact_lock(54321)`); err != nil {
+			return "", err
+		}
 	}
 
 	// Re-check inside the lock: if any admin already exists, abort with
@@ -74,10 +83,16 @@ func (r *SetupRepo) CreateFirstAdmin(ctx context.Context, name, email, hashedPas
 	}
 
 	// admin_users row — first admin creates themselves (self-reference on
-	// created_by) and gets the wildcard permissions array.
+	// created_by) and gets the wildcard permissions array. Postgres uses
+	// TEXT[] literal ARRAY['*']; SQLite stores permissions as a JSON text
+	// string '["*"]'.
+	permissionsValue := "ARRAY['*']"
+	if r.db.Type == db.DBTypeSQLite {
+		permissionsValue = `'["*"]'`
+	}
 	if _, err = tx.Exec(ctx,
 		`INSERT INTO admin_users (user_id, role, permissions, is_active, created_by)
-		 VALUES ($1, 'superadmin', ARRAY['*'], true, $1)`,
+		 VALUES ($1, 'superadmin', `+permissionsValue+`, true, $1)`,
 		userID,
 	); err != nil {
 		return "", err

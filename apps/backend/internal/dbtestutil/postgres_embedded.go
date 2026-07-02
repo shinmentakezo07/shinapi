@@ -58,7 +58,7 @@ func startEmbeddedPostgres(t testing.TB) (*db.DB, func()) {
 			DataPath(filepath.Join(cacheDir, "data")).
 			BinariesPath(filepath.Join(cacheDir, "binaries")).
 			Locale("C").
-			StartTimeout(60*time.Second),
+			StartTimeout(60 * time.Second),
 	)
 	if err := pg.Start(); err != nil {
 		t.Skipf("embedded-postgres failed to start (likely no network for binary download): %v. Set TEST_DATABASE_URL or USE_SQLITE=1 to run this test.", err)
@@ -86,6 +86,13 @@ func startEmbeddedPostgres(t testing.TB) (*db.DB, func()) {
 		t.Logf("embedded-postgres stopped (uptime: %s)", time.Since(startTime))
 	}
 	return d, cleanup
+}
+
+// HasTestDB returns true when an explicit TEST_DATABASE_URL is set in the
+// environment — tests that prefer an existing PG instance can short-circuit
+// embedded-postgres bootstrap by checking this first.
+func HasTestDB() bool {
+	return os.Getenv("TEST_DATABASE_URL") != ""
 }
 
 // NewTestDBOrSkip is the recommended entry point for tests that need a real

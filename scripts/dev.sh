@@ -99,6 +99,89 @@ wait_for_process_exit() {
 }
 
 # ============================================================
+# Kill Stale Processes
+# ============================================================
+# Kills any leftover backend/frontend processes from a previous
+# crashed or orphaned session so the new session starts clean.
+kill_stale_processes() {
+  local killed=0
+
+  # ── Kill anything on port 8080 (backend) ──
+  local port8080_pids
+  port8080_pids="$(ss -tlnp 2>/dev/null | grep ':8080 ' | sed -n 's/.*pid=\([0-9]\+\).*/\1/p' | sort -u || true)"
+  if [ -n "$port8080_pids" ]; then
+    while IFS= read -r pid; do
+      [ -z "$pid" ] && continue
+      log_warn "Killing stale process on :8080 (PID $pid)..."
+      kill_process_tree "$pid"
+      wait_for_process_exit "$pid" 10 || kill -9 "$pid" 2>/dev/null || true
+      killed=1
+    done <<< "$port8080_pids"
+  else
+    # Fallback: some systems don't show pid= in ss output
+    if command -v fuser >/dev/null 2>&1; then
+      fuser -k 8080/tcp 2>/dev/null && killed=1 || true
+    fi
+  fi
+
+  # ── Kill anything on port 3000 (frontend) ──
+  local port3000_pids
+  port3000_pids="$(ss -tlnp 2>/dev/null | grep ':3000 ' | sed -n 's/.*pid=\([0-9]\+\).*/\1/p' | sort -u || true)"
+  if [ -n "$port3000_pids" ]; then
+    while IFS= read -r pid; do
+      [ -z "$pid" ] && continue
+      log_warn "Killing stale process on :3000 (PID $pid)..."
+      kill_process_tree "$pid"
+      wait_for_process_exit "$pid" 10 || kill -9 "$pid" 2>/dev/null || true
+      killed=1
+    done <<< "$port3000_pids"
+  else
+    if command -v fuser >/dev/null 2>&1; then
+      fuser -k 3000/tcp 2>/dev/null && killed=1 || true
+    fi
+  fi
+
+  # ── Kill any orphaned ./api binaries (leftover from manual runs) ──
+  # Match the backend binary specifically: ends in /api with nothing after.
+  local api_pids
+  api_pids="$(pgrep -f '(^|/)api$' 2>/dev/null || true)"
+  if [ -n "$api_pids" ]; then
+    while IFS= read -r pid; do
+      [ -z "$pid" ] && continue
+      # Don't kill ourselves or our parent
+      if [ "$pid" = "$$" ] || [ "$pid" = "$PPID" ]; then
+        continue
+      fi
+      log_warn "Killing orphaned api process (PID $pid)..."
+      kill_process_tree "$pid"
+      wait_for_process_exit "$pid" 10 || kill -9 "$pid" 2>/dev/null || true
+      killed=1
+    done <<< "$api_pids"
+  fi
+
+  # ── Kill any next dev processes from old sessions ──
+  local next_pids
+  next_pids="$(pgrep -f 'next dev|next-server' 2>/dev/null || true)"
+  if [ -n "$next_pids" ]; then
+    while IFS= read -r pid; do
+      [ -z "$pid" ] && continue
+      if [ "$pid" = "$$" ] || [ "$pid" = "$PPID" ]; then
+        continue
+      fi
+      log_warn "Killing orphaned next dev process (PID $pid)..."
+      kill_process_tree "$pid"
+      wait_for_process_exit "$pid" 10 || kill -9 "$pid" 2>/dev/null || true
+      killed=1
+    done <<< "$next_pids"
+  fi
+
+  if [ "$killed" -eq 1 ]; then
+    sleep 1  # Let sockets release
+    log_ok "Stale processes cleaned up."
+  fi
+}
+
+# ============================================================
 # Dependency Checks (find ALL missing deps, not just first)
 # ============================================================
 check_deps() {
@@ -312,10 +395,6 @@ cleanup() {
   fi
   RUNNING_CLEANUP=1
 
-  if [ "$SERVICES_STARTED" -eq 0 ]; then
-    return
-  fi
-
   echo ""
   log_info "Shutting down services..."
 
@@ -337,6 +416,12 @@ cleanup() {
       fi
     fi
   done
+
+  # ── Force-free ports as last resort ──
+  if command -v fuser >/dev/null 2>&1; then
+    fuser -k 8080/tcp 2>/dev/null || true
+    fuser -k 3000/tcp 2>/dev/null || true
+  fi
 
   wait 2>/dev/null || true
   log_ok "All services stopped. Goodbye!"
@@ -904,6 +989,9 @@ main() {
     echo ""
     exit 0
   fi
+
+  # ── Kill stale processes from previous sessions (only when starting) ──
+  kill_stale_processes
 
   echo ""
   echo -e "${BOLD}═══ Installing Dependencies ═══${NC}"

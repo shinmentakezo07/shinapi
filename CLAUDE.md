@@ -101,6 +101,7 @@ docker-compose --profile mongo up -d  # Start Postgres + Mongo profile
 - **Dashboard is SDK-driven.** Components use `getSDK()` / `DraSDK` from `lib/api/sdk.ts`. `tests/wiring-verification.test.ts` enforces no mock data.
 - **Data fetching**: `lib/api/hooks.ts` wraps the SDK with React Query. Prefer the SDK and hooks layer over direct `fetch()` from UI components.
 - **Drizzle** schema in `db/schema.ts`. Uses `@neondatabase/serverless` against both cloud Neon and local Postgres.
+- **`next.config.ts` has `typescript: { ignoreBuildErrors: true }`** — `next build` will NOT catch type errors. Use `tsc --noEmit` or the LSP for type checking.
 - **Styling**: Tailwind CSS v4 — CSS-first config (`globals.css @theme`), NOT `tailwind.config.ts`. Uses `cva` + `tailwind-merge` for variants.
 - **Charts**: Recharts. **Animations**: Framer Motion (components) + GSAP (scroll-triggered).
 - **Frontend API layer** (`lib/api/`): `sdk.ts` (~1700 lines, typed client), `admin-sdk.ts` (admin endpoints), `hooks.ts` (~800 lines, React Query wrappers), `errors.ts`, `proxy.ts`, `types.ts`, `key-auth.ts`, `rate-limit.ts`, `require-auth.ts`.
@@ -109,14 +110,15 @@ docker-compose --profile mongo up -d  # Start Postgres + Mongo profile
 ### Backend architecture
 
 - **Layered**: `cmd/api/main.go` → `internal/handler/` → `internal/service/` → `internal/repository/` → `internal/domain/`. Handlers own HTTP only; services own business logic (never import `net/http`); repositories own raw SQL (all parameterized via pgx).
-- **Route registration**: `cmd/api/main.go` (server setup, metrics), `cmd/api/routes.go` (~410 lines, all route definitions with middleware), `cmd/api/services.go` (~370 lines, dependency injection via `initServices()`).
+- **Route registration**: `cmd/api/main.go` (server setup, metrics), `cmd/api/routes.go` (~455 lines, all route definitions with middleware), `cmd/api/services.go` (~492 lines, dependency injection via `initServices()`).
 - **Standard API responses** via `internal/pkg/response` — consistent envelope: `success`, `data`, `error`, optional `meta`.
 - **Errors** flow through `domain.AppError`, not ad-hoc HTTP errors. Admin handlers use `adminError()` / `adminErrorWithStatus()` from `admin_errors.go` — logs full error, returns generic message to client (never leak `err.Error()` directly).
 - **Middleware** (14 files): JWT/API-key auth, CORS, rate limiting, quota, request logging, tracing, metrics, body limits, validation, token blacklist.
 - **Three auth modes**: `Authorization: Bearer <jwt>`, `authjs.session-token` cookie, `x-api-key`.
 - **Go module path**: `dra-platform/backend`.
-- **Raw SQL migrations** in `migrations/`, numbered `001_*.sql`–`020_*.sql`. Hand-applied, no auto-migrator.
-- **Key internal packages**: `config/`, `db/` (pgx pool + auto-migrate/seed), `middleware/`, `pkg/logger/` (slog), `pkg/response/`, `pkg/token/` (JWT), `testutil/` (integration test harness with `NewTestServer()`).
+- **Raw SQL migrations** in `migrations/`, numbered `001_*.sql`–`022_*.sql` (e.g. `022_enterprise_features.sql.disabled`). Hand-applied, no auto-migrator.
+- **First-time admin bootstrap** via `internal/handler/setup.go` (`SetupHandler`). Exposes unauthenticated `GET /api/setup/status` and `POST /api/setup/bootstrap` when no admin exists. Gated by `service.SetupService` / `repository.ErrFirstAdminAlreadyExists`.
+- **Key internal packages**: `config/` (env-based config loader), `db/` (pgx pool + auto-migrate/seed + SQLite lite schema), `middleware/`, `pkg/logger/` (slog), `pkg/response/`, `pkg/token/` (JWT), `testutil/` (integration test harness with `NewTestServer()`).
 
 ### LLM gateway architecture
 
@@ -240,7 +242,7 @@ bash scripts/smoke-test.sh  # Wiring verification after significant changes
 - `.npmrc` sets `legacy-peer-deps=true` — do not remove.
 - **Frontend `@/` path alias** maps to `apps/web/` root. Example: `@/lib/api/sdk` → `apps/web/lib/api/sdk.ts`.
 - **Backend `ENV=development`** enables `slog.LevelDebug` logging. `ENV=production` in Docker.
-- **`DB_TYPE` modes**: `postgres` (default), `neon` (cloud, skips local container), `mongodb` (backend auto-setup).
+- **`DB_TYPE` modes**: `postgres` (default), `neon` (cloud, skips local container), `mongodb` (backend auto-setup), `sqlite` (lite runtime with embedded schema + seed in `internal/db/lite_schema.go`).
 - **MongoDB** in `docker-compose.yml` is behind a `mongo` profile — NOT started by default.
 - **`opencode.json`** configures the project to use its own Yapapa instance as the LLM provider.
 - **Package overrides** in root `package.json`: dompurify, esbuild, postcss, uuid — pinned across all workspaces.
@@ -261,6 +263,8 @@ bash scripts/smoke-test.sh  # Wiring verification after significant changes
 - `apps/backend/cmd/api/routes.go` — all route definitions (100+ endpoints)
 - `apps/backend/cmd/api/services.go` — dependency injection factory
 - `apps/backend/internal/handler/admin_errors.go` — safe error handling for admin handlers
+- `apps/backend/internal/handler/setup.go` — first-time admin bootstrap handler
+- `apps/backend/internal/db/lite_schema.go` — SQLite runtime schema and seed
 - `apps/web/lib/api/sdk.ts` — TypeScript SDK
 - `apps/web/lib/api/hooks.ts` — React Query hooks
 - `apps/web/lib/api/proxy.ts` — server-side proxy middleware

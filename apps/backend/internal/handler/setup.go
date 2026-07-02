@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"dra-platform/backend/internal/pkg/logger"
 	"dra-platform/backend/internal/pkg/response"
 	"dra-platform/backend/internal/repository"
 	"dra-platform/backend/internal/service"
@@ -63,13 +64,36 @@ func (h *SetupHandler) Bootstrap(w http.ResponseWriter, r *http.Request) {
 			response.Error(w, http.StatusForbidden, "An admin account already exists. Please sign in instead.")
 			return
 		}
-		// Most likely the email collides with an existing user row.
+		// Log the full error server-side so on-call can diagnose.
+		logger.Error("first_admin_bootstrap_failed", "error", err.Error(), "name", name, "email", email)
+
+		// Map common, expose-friendly cases to specific HTTP codes + copy.
 		msg := err.Error()
-		if strings.Contains(msg, "duplicate") || strings.Contains(msg, "unique") {
+		switch {
+		case strings.Contains(msg, "duplicate") || strings.Contains(msg, "unique") || strings.Contains(msg, "UNIQUE constraint failed"):
 			response.Error(w, http.StatusConflict, "That email is already in use")
 			return
+		case strings.Contains(msg, "no such table") || strings.Contains(msg, "relation") && strings.Contains(msg, "does not exist") || strings.Contains(msg, "undefined_table"):
+			// Most likely SQLite lite DDL is missing admin_* tables, OR the PG migration
+			// that creates them (007_admin_schema.sql) wasn't applied.
+			response.Error(w, http.StatusInternalServerError, "Database schema is out of date — the admin_users table is missing. Run migrations 001-007.")
+			return
+		case strings.Contains(msg, "foreign key") || strings.Contains(msg, "FOREIGN KEY constraint failed"):
+			response.Error(w, http.StatusInternalServerError, "Database foreign-key mismatch during bootstrap. Check migrations and try again.")
+			return
+		case strings.Contains(msg, "password") && strings.Contains(msg, "hash"):
+			response.Error(w, http.StatusInternalServerError, "Password hashing failed on the server. Check the password module and try again.")
+			return
 		}
-		response.Error(w, http.StatusInternalServerError, "Could not create the first admin")
+
+		// Unknown error — surface a sanitized snippet to the caller so the
+		// UX banner is not generic. Cap at 240 chars to keep the JSON envelope small
+		// and prevent log noise from very long driver errors.
+		snippet := msg
+		if len(snippet) > 240 {
+			snippet = snippet[:240] + "…"
+		}
+		response.Error(w, http.StatusInternalServerError, "Could not create the first admin: "+snippet)
 		return
 	}
 

@@ -99,6 +99,7 @@ func (s *SQLiteTestDB) Reset(t testing.TB) {
 // sqliteTablesInDropOrder lists tables in safe dependency order so Reset()
 // clears child rows before parents.
 var sqliteTablesInDropOrder = []string{
+	"admin_users",
 	"credit_transactions",
 	"user_credits",
 	"api_keys",
@@ -127,9 +128,24 @@ var sqliteDDL = []string{
 		email TEXT NOT NULL UNIQUE,
 		password TEXT,
 		role TEXT NOT NULL DEFAULT 'user',
+		status TEXT NOT NULL DEFAULT 'active',
+		last_login_ip TEXT DEFAULT '',
+		last_login_at TEXT,
+		notes TEXT DEFAULT '',
+		tags TEXT DEFAULT '[]',
+		suspended_by TEXT REFERENCES users(id),
+		suspension_reason TEXT DEFAULT '',
+		suspended_at TEXT,
+		deleted_at TEXT,
 		created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 	)`,
 	`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`,
+	// See note in apps/backend/internal/db/lite_schema.go — the
+	// `idx_users_status` / `idx_users_last_login` indexes are NOT
+	// added here either, for the same CREATE-TABLE-IF-EXISTS no-op
+	// reason. They can be wired via EnsureSQLiteColumns in a future
+	// turn when an SQLite-mode query actually filters by those
+	// columns (none of the current repos do — dev-only preview).
 
 	`CREATE TABLE IF NOT EXISTS api_keys (
 		id TEXT PRIMARY KEY,
@@ -163,4 +179,18 @@ var sqliteDDL = []string{
 		created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 	)`,
 	`CREATE INDEX IF NOT EXISTS idx_credit_tx_user ON credit_transactions(user_id)`,
+
+	// admin_users — mirrors migrations/007_admin_schema.sql. permissions is
+	// TEXT (JSON array string) since SQLite has no native array type.
+	`CREATE TABLE IF NOT EXISTS admin_users (
+		user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+		role TEXT NOT NULL DEFAULT 'admin',
+		permissions TEXT NOT NULL DEFAULT '[]',
+		is_active INTEGER NOT NULL DEFAULT 1,
+		created_by TEXT NOT NULL REFERENCES users(id),
+		created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+		updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+	)`,
+	`CREATE INDEX IF NOT EXISTS idx_admin_users_role ON admin_users(role)`,
+	`CREATE INDEX IF NOT EXISTS idx_admin_users_active ON admin_users(is_active)`,
 }

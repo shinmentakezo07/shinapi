@@ -29,7 +29,7 @@ func hashToken(token string) string {
 // Blacklist adds a token to the blacklist.
 func (r *TokenBlacklistRepo) Blacklist(ctx context.Context, token string, userID string, expiresAt time.Time) error {
 	tokenHash := hashToken(token)
-	_, err := r.db.Pool.Exec(ctx,
+	_, err := r.db.Exec(ctx,
 		`INSERT INTO token_blacklist (token_hash, user_id, expires_at) VALUES ($1, $2, $3) ON CONFLICT (token_hash) DO NOTHING`,
 		tokenHash, userID, expiresAt)
 	if err != nil {
@@ -42,7 +42,7 @@ func (r *TokenBlacklistRepo) Blacklist(ctx context.Context, token string, userID
 func (r *TokenBlacklistRepo) IsBlacklisted(ctx context.Context, token string) (bool, error) {
 	tokenHash := hashToken(token)
 	var exists bool
-	err := r.db.Pool.QueryRow(ctx,
+	err := r.db.QueryRow(ctx,
 		`SELECT EXISTS(SELECT 1 FROM token_blacklist WHERE token_hash = $1 AND expires_at > NOW())`,
 		tokenHash).Scan(&exists)
 	if err != nil {
@@ -53,7 +53,7 @@ func (r *TokenBlacklistRepo) IsBlacklisted(ctx context.Context, token string) (b
 
 // Cleanup removes expired tokens from the blacklist.
 func (r *TokenBlacklistRepo) Cleanup(ctx context.Context) (int64, error) {
-	tag, err := r.db.Pool.Exec(ctx,
+	tag, err := r.db.Exec(ctx,
 		`DELETE FROM token_blacklist WHERE expires_at < NOW()`)
 	if err != nil {
 		return 0, fmt.Errorf("cleanup blacklist: %w", err)

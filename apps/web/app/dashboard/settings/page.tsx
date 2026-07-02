@@ -12,6 +12,12 @@ export default async function SettingsPage() {
     redirect("/login");
   }
 
+  // In SQLite (lite) mode the frontend Drizzle DB is unavailable —
+  // redirect to dashboard since this page depends on the Postgres DB.
+  if (!db) {
+    redirect("/dashboard");
+  }
+
   const user = await db.query.users.findFirst({
     where: eq(users.email, session.user.email),
   });

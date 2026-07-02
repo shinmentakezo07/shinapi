@@ -16,7 +16,9 @@ package db
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -141,8 +143,8 @@ func (r *sqliteRow) Scan(dest ...any) error {
 				r.err = err
 				return err
 			}
-			r.err = sql.ErrNoRows
-			return sql.ErrNoRows
+		r.err = pgx.ErrNoRows
+		return pgx.ErrNoRows
 		}
 		vals, err := scanColumns(rows)
 		if err != nil {
@@ -171,7 +173,7 @@ func scanValues(rows *sql.Rows) ([]any, error) {
 		if err := rows.Err(); err != nil {
 			return nil, err
 		}
-		return nil, sql.ErrNoRows
+		return nil, pgx.ErrNoRows
 	}
 	return scanColumns(rows)
 }
@@ -182,7 +184,7 @@ func scanRawValues(rows *sql.Rows) ([][]byte, error) {
 		if err := rows.Err(); err != nil {
 			return nil, err
 		}
-		return nil, sql.ErrNoRows
+		return nil, pgx.ErrNoRows
 	}
 	cols, err := rows.Columns()
 	if err != nil {
@@ -224,7 +226,28 @@ func scanColumns(rows *sql.Rows) ([]any, error) {
 // assign copies a row value v into dest, dispatching on destination type.
 // Hand-rolled rather than reflect-based: faster, no silent mis-casts for
 // unknown destinations (Scans into unrecognised types return an error).
+//
+// Pointer indirection: when dest is **T (e.g. **string from Scan(&user.Password)
+// where Password is *string), we unwrap one level — allocate a new inner T,
+// recurse, and store the pointer. PGX does this with reflect; we do it
+// explicitly so repos scan into *T fields without source changes.
 func assign(dest any, v any) error {
+	// Unwrap **T → *T so repos that Scan into *string / *time.Time/etc. work.
+	if rv := reflect.ValueOf(dest); rv.Kind() == reflect.Ptr && !rv.IsNil() {
+		if inner := rv.Elem(); inner.Kind() == reflect.Ptr {
+			if v == nil {
+				inner.Set(reflect.Zero(inner.Type()))
+				return nil
+			}
+			newInner := reflect.New(inner.Type().Elem())
+			if err := assign(newInner.Interface(), v); err != nil {
+				return err
+			}
+			inner.Set(newInner)
+			return nil
+		}
+	}
+
 	if v == nil {
 		switch d := dest.(type) {
 		case *string:
@@ -238,6 +261,8 @@ func assign(dest any, v any) error {
 		case *float64:
 			*d = 0
 		case *[]byte:
+			*d = nil
+		case *[]string:
 			*d = nil
 		case *any:
 			*d = nil
@@ -304,6 +329,31 @@ func assign(dest any, v any) error {
 			return fmt.Errorf("scan: cannot assign %T to *[]byte", v)
 		}
 		*d = b
+	case *[]string:
+		// SQLite has no native array type; repositories store string lists
+		// as JSON-encoded TEXT (e.g. "[\"a\",\"b\"]") with the COALESCE
+		// fallback SQL string "{}" / "[]" used for the empty case. Parse
+		// here so repos can Scan directly into Go slices. Mirrors the
+		// pgx TEXT[] path on Postgres without changing repo source.
+		var s string
+		switch x := v.(type) {
+		case string:
+			s = x
+		case []byte:
+			s = string(x)
+		default:
+			return fmt.Errorf("scan: cannot assign %T(%v) to *[]string", v, v)
+		}
+		s = strings.TrimSpace(s)
+		if s == "" || s == "[]" || s == "{}" || s == "null" {
+			*d = nil
+			return nil
+		}
+		var out []string
+		if err := json.Unmarshal([]byte(s), &out); err != nil {
+			return fmt.Errorf("scan: cannot parse %q as JSON []string: %w", s, err)
+		}
+		*d = out
 	case *any:
 		*d = v
 	case *time.Time:

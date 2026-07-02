@@ -153,14 +153,14 @@ func (r *SQLiteCreditsRepo) Deduct(ctx context.Context, userID string, amount in
 
 // SQLiteTx mirrors the credit_transactions row shape.
 type SQLiteTx struct {
-	ID             string
-	UserID         string
-	Amount         int64
-	Type           string
-	Description    string
-	RelatedLogID   string
+	ID              string
+	UserID          string
+	Amount          int64
+	Type            string
+	Description     string
+	RelatedLogID    string
 	StripePaymentID string
-	CreatedAt      time.Time
+	CreatedAt       time.Time
 }
 
 type SQLiteTxRepo struct {

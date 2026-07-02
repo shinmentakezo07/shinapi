@@ -9,27 +9,27 @@ import (
 )
 
 type Config struct {
-	Port            string
-	DBType          string
-	DatabaseURL     string
-	MongoDBURI      string
-	MongoDBName     string
-	AuthSecret      string
-	NvidiaAPIKey           string
-	NvidiaSecondaryAPIKeys []string
-	OpenAIAPIKey           string
-	OpenAISecondaryAPIKeys []string
-	AnthropicAPIKey        string
+	Port                      string
+	DBType                    string
+	DatabaseURL               string
+	MongoDBURI                string
+	MongoDBName               string
+	AuthSecret                string
+	NvidiaAPIKey              string
+	NvidiaSecondaryAPIKeys    []string
+	OpenAIAPIKey              string
+	OpenAISecondaryAPIKeys    []string
+	AnthropicAPIKey           string
 	AnthropicSecondaryAPIKeys []string
-	GroqAPIKey             string
-	GroqSecondaryAPIKeys   []string
-	GeminiAPIKey           string
-	GeminiSecondaryAPIKeys []string
-	YapaAPIKey             string
-	ShinwayAPIKey          string
-	Env             string
-	RedisURL        string
-	AllowedOrigins  []string
+	GroqAPIKey                string
+	GroqSecondaryAPIKeys      []string
+	GeminiAPIKey              string
+	GeminiSecondaryAPIKeys    []string
+	YapaAPIKey                string
+	ShinwayAPIKey             string
+	Env                       string
+	RedisURL                  string
+	AllowedOrigins            []string
 
 	RateLimitRPM    int
 	RateLimitWindow time.Duration
@@ -56,11 +56,11 @@ type Config struct {
 	ModelAliases map[string]string
 
 	// Email
-	SMTPHost     string
-	SMTPPort     string
-	SMTPUser     string
-	SMTPPass     string
-	SMTPFrom     string
+	SMTPHost string
+	SMTPPort string
+	SMTPUser string
+	SMTPPass string
+	SMTPFrom string
 
 	// Stripe
 	StripeSecretKey     string
@@ -86,12 +86,12 @@ func Load() (*Config, error) {
 	}
 
 	cfg := &Config{
-		Port:            getEnv("PORT", "8080"),
-		DBType:          dbType,
-		DatabaseURL:     getEnv("DATABASE_URL", ""),
-		MongoDBURI:      getEnv("MONGODB_URI", ""),
-		MongoDBName:     getEnv("MONGODB_NAME", "dra_platform"),
-		AuthSecret:      authSecret,
+		Port:                      getEnv("PORT", "8080"),
+		DBType:                    dbType,
+		DatabaseURL:               getEnv("DATABASE_URL", ""),
+		MongoDBURI:                getEnv("MONGODB_URI", ""),
+		MongoDBName:               getEnv("MONGODB_NAME", "dra_platform"),
+		AuthSecret:                authSecret,
 		NvidiaAPIKey:              getEnv("NVIDIA_API_KEY", ""),
 		NvidiaSecondaryAPIKeys:    getEnvSlice("NVIDIA_API_KEY_2"),
 		OpenAIAPIKey:              getEnv("OPENAI_API_KEY", ""),
@@ -104,35 +104,35 @@ func Load() (*Config, error) {
 		GeminiSecondaryAPIKeys:    getEnvSlice("GEMINI_API_KEY_2"),
 		YapaAPIKey:                getEnv("YAPA_API_KEY", ""),
 		ShinwayAPIKey:             getEnv("SHINWAY_API_KEY", ""),
-		Env:             getEnv("ENV", "development"),
-		AllowedOrigins:  getEnvSlice("ALLOWED_ORIGINS"),
-		RateLimitRPM:    getEnvInt("RATE_LIMIT_RPM", 60),
-		RateLimitWindow: time.Minute,
-		RequestTimeout:  getEnvDuration("REQUEST_TIMEOUT", 30*time.Second),
-		ShutdownTimeout: getEnvDuration("SHUTDOWN_TIMEOUT", 10*time.Second),
-		EnableMetrics:   getEnvBool("ENABLE_METRICS", true),
-		MetricsPort:     getEnv("METRICS_PORT", "9090"),
-		RedisURL:        getEnv("REDIS_URL", ""),
-		EnableCache:            getEnvBool("ENABLE_CACHE", true),
-		CacheMaxSize:           getEnvInt("CACHE_MAX_SIZE", 10000),
-		CacheDefaultTTL:        getEnvDuration("CACHE_DEFAULT_TTL", 5*time.Minute),
-		RouterStrategy:         getEnv("ROUTER_STRATEGY", "cost"),
-		EnableSemanticCache:    getEnvBool("ENABLE_SEMANTIC_CACHE", false),
-		SemanticCacheThreshold: getEnvFloat("SEMANTIC_CACHE_THRESHOLD", 0.92),
-		ABTestVariantA:         getEnv("AB_TEST_VARIANT_A", ""),
-		ABTestVariantB:         getEnv("AB_TEST_VARIANT_B", ""),
-		ABTestTrafficA:         getEnvFloat("AB_TEST_TRAFFIC_A", 0.5),
-		ABTestTrafficB:         getEnvFloat("AB_TEST_TRAFFIC_B", 0.5),
-		ModelAliases:           parseAliases(getEnv("MODEL_ALIASES", "")),
-		SMTPHost:               getEnv("SMTP_HOST", ""),
-		SMTPPort:               getEnv("SMTP_PORT", ""),
-		SMTPUser:               getEnv("SMTP_USER", ""),
-		SMTPPass:               getEnv("SMTP_PASS", ""),
-		SMTPFrom:               getEnv("SMTP_FROM", ""),
-		StripeSecretKey:        getEnv("STRIPE_SECRET_KEY", ""),
-		StripeWebhookSecret:    getEnv("STRIPE_WEBHOOK_SECRET", ""),
-		StripePriceID:          getEnv("STRIPE_PRICE_ID", ""),
-		FrontendURL:            getEnv("FRONTEND_URL", getEnv("NEXTAUTH_URL", "")),
+		Env:                       getEnv("ENV", "development"),
+		AllowedOrigins:            getEnvSlice("ALLOWED_ORIGINS"),
+		RateLimitRPM:              getEnvInt("RATE_LIMIT_RPM", 60),
+		RateLimitWindow:           time.Minute,
+		RequestTimeout:            getEnvDuration("REQUEST_TIMEOUT", 30*time.Second),
+		ShutdownTimeout:           getEnvDuration("SHUTDOWN_TIMEOUT", 10*time.Second),
+		EnableMetrics:             getEnvBool("ENABLE_METRICS", true),
+		MetricsPort:               getEnv("METRICS_PORT", "9090"),
+		RedisURL:                  getEnv("REDIS_URL", ""),
+		EnableCache:               getEnvBool("ENABLE_CACHE", true),
+		CacheMaxSize:              getEnvInt("CACHE_MAX_SIZE", 10000),
+		CacheDefaultTTL:           getEnvDuration("CACHE_DEFAULT_TTL", 5*time.Minute),
+		RouterStrategy:            getEnv("ROUTER_STRATEGY", "cost"),
+		EnableSemanticCache:       getEnvBool("ENABLE_SEMANTIC_CACHE", false),
+		SemanticCacheThreshold:    getEnvFloat("SEMANTIC_CACHE_THRESHOLD", 0.92),
+		ABTestVariantA:            getEnv("AB_TEST_VARIANT_A", ""),
+		ABTestVariantB:            getEnv("AB_TEST_VARIANT_B", ""),
+		ABTestTrafficA:            getEnvFloat("AB_TEST_TRAFFIC_A", 0.5),
+		ABTestTrafficB:            getEnvFloat("AB_TEST_TRAFFIC_B", 0.5),
+		ModelAliases:              parseAliases(getEnv("MODEL_ALIASES", "")),
+		SMTPHost:                  getEnv("SMTP_HOST", ""),
+		SMTPPort:                  getEnv("SMTP_PORT", ""),
+		SMTPUser:                  getEnv("SMTP_USER", ""),
+		SMTPPass:                  getEnv("SMTP_PASS", ""),
+		SMTPFrom:                  getEnv("SMTP_FROM", ""),
+		StripeSecretKey:           getEnv("STRIPE_SECRET_KEY", ""),
+		StripeWebhookSecret:       getEnv("STRIPE_WEBHOOK_SECRET", ""),
+		StripePriceID:             getEnv("STRIPE_PRICE_ID", ""),
+		FrontendURL:               getEnv("FRONTEND_URL", getEnv("NEXTAUTH_URL", "")),
 	}
 
 	if cfg.AuthSecret == "" {

@@ -100,6 +100,12 @@ func AutoMigrate(ctx context.Context, database *DB) error {
 // autoMigrateSQLite applies the canonical lite DDL (users, api_keys,
 // user_credits, credit_transactions + indexes) directly via database.SqlDB.
 // Idempotent: every statement uses IF NOT EXISTS so re-runs are safe.
+//
+// After CREATE statements run, we call EnsureSQLiteColumns to add admin-
+// panel extension columns to the `users` table for any existing on-disk
+// SQLite DB whose schema pre-dates the lite DDL update — `CREATE TABLE
+// IF NOT EXISTS` is a no-op on existing tables, so this is the only way
+// to grow an in-place schema without a manual DROP + recreate.
 func autoMigrateSQLite(ctx context.Context, database *DB) error {
 	if database.SqlDB == nil {
 		return fmt.Errorf("sqlite db is nil")
@@ -108,6 +114,9 @@ func autoMigrateSQLite(ctx context.Context, database *DB) error {
 		if _, err := database.SqlDB.ExecContext(ctx, ddl); err != nil {
 			return fmt.Errorf("apply lite ddl: %w\nDDL: %s", err, ddl)
 		}
+	}
+	if err := EnsureSQLiteColumns(ctx, database.SqlDB, "users", usersLiteColumnAdditions); err != nil {
+		return fmt.Errorf("ensure users columns: %w", err)
 	}
 	logger.Info("auto_migrate_complete", "type", "sqlite", "tables", len(LiteDDL))
 	return nil

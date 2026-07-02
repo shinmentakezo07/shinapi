@@ -40,6 +40,16 @@ func (rr *responseRecorder) Write(b []byte) (int, error) {
 	return n, err
 }
 
+// Flush forwards to the underlying writer so SSE endpoints (which call
+// w.(http.Flusher)) still work after wrapping. Without this the embedded
+// http.ResponseWriter interface doesn't expose Flush() and the type
+// assertion in NotificationsStream fails → 500 "Streaming unsupported".
+func (rr *responseRecorder) Flush() {
+	if f, ok := rr.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
+}
+
 func Metrics(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
