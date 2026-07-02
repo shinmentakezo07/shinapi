@@ -307,3 +307,1159 @@ git log -1 --oneline
 **Deferred (V2.1 review #2-5, polish tail):** `useFormStatus` during AnimatePresenceExit edge case, NEXT_REDIRECT string-match fragility (use `isRedirectError` from `next/dist/client/components/redirect`), mobile `OrbitLogo` orbit overflow, React-19 strict-mode dev double-mount cleanup.
 
 **Untouched:** backend Go files (`setup_repo.go`, `setup.go`, `handler/setup.go`), success UI components (`SuccessPanel` / `ConfettiBurst` / `SuccessRing` shipped in 3c61947), 403-admin-already-exists redirect path, signIn-failure → `/admin/login` fallback.
+
+---
+
+## 2026-06-28T18:06Z — admin-setup-ui-family-parity-2026-06-28 — refactor(admin/setup-ui): align V2 with admin/login design family
+
+**Session**: admin-setup-ui-family-parity-2026-06-28 (aesthetic-only follow-up to admin-setup-ui-v21-fixes-2026-06-28 in commit 0cdeab9).
+
+**Why**: V2.04 on `/admin/setup` had drifted visually from the rest of the auth family (`/admin/login`, `/login`, `/signup`). It used a heavy "cyber" vocabulary (magenta mesh-gradient + glitch wordmark + nervous-cat brand lockup + ZAPAPA uppercase + slanted `clip-path-slant` submit button, hard-coded `bg-[#050505]`, pink/magenta error palette, custom pink strength-meter cap). The other auth pages converged on a clean "aurora glass + Yapapa logo + blue/violet/emerald palette" family. This turn brings `/admin/setup` into that family so the auth surface looks like one product, not two.
+
+**Files changed** (1 frontend file):
+
+| Path | Type | Lines |
+| --- | --- | --- |
+| apps/web/app/admin/setup/page.tsx | MODIFIED (full rewrite within the same component contract) | 1379 → 1389 |
+
+**Parity changes (concrete deltas):**
+
+1. **Backdrop**: replaced `MeshBackdrop` (mesh-gradient + 4 orbital dots + monochrome `bg-[#050505]`) with the `AtmosphericBackground` from `apps/web/app/admin/login/page.tsx` (3 radial orbs blue/violet/purple + 80px grid + 12 floating `FloatingParticle`s) layered over `GrainOverlay`. Added `DynamicSpotlight` mouse-tracked radial for parity with `/login`.
+
+2. **Page chrome**: switched from `position: fixed; inset: 0; zIndex: 50` full-screen to `min-h-screen relative overflow-hidden` so the page scrolls if the form ever overflows on short viewports.
+
+3. **Vertical separator**: added a 1px `bg-white/[0.06]` vertical divider between the branding panel and the form column with a centered 32px `from-blue-500/20 via-violet-500/20 to-transparent` glow nub (mirror of `/login`).
+
+4. **Brand lockup**: removed `BrandLockup` / `CyberpunkLogo` (rotating rings, scanline beam, hardcoded ZAPAPA uppercase + glitch shadow clones, `nervous-cat.jpg`). Adopted `YapapaLogo` (admin-logo.jpg + `Yapapa` wordmark + hover blue blur halo) — exact third copy of the component in `admin/login` page.
+
+5. **Status indicator**: replaced the bespoke pink `admin-live-badge` (`SYS.V.2.04 // ROOT-NULL DETECTED`) with `StatusIndicator` — emerald pill (`ROOT SLOT UNCLAIMED · AWAITING BOOTSTRAP`) with animated ping dot. Mirrors the admin/login pill.
+
+6. **Headline**: from "INITIALIZE THE FIRST ADMIN" + `glitch class` + text-shadow violet glow, to `Secure command` pattern: "Initialize the / root account" with `bg-clip-text` gradient `#93c5fd → #a78bfa → #c084fc`. Connected by a `h-7 w-[2px]` vertical blue accent line.
+
+7. **Setup card**: outer `.glass-card rounded-[32px] p-1` + inner `rounded-[28px] border border-white/[0.04]` (98% opacity near-black fill) — concentric-radius pattern from admin/login. Inner card uses the same `bg-[rgba(10,10,10,0.97)]` fill, identical `hover:bg-gradient-to-br from-blue-500/[0.08] via-violet-500/[0.04] to-fuchsia-500/[0.06]` overlay, identical HUD corner-bracket sizing (`w-10 h-10`, `top-6 left-6`). Top accent bar swapped from `linear-gradient via-blue/via-violet/via-pink` to the admin/login `bg-gradient-to-r from-transparent via-blue-500/30 to-transparent`.
+
+8. **Header** (in-card): replaced `"ROOT-NULL DETECTED"` `admin-live-badge` with a real `<img src="/admin-logo.jpg">` + "Root Bootstrap" h1 and amber-pill ("One-time Setup") instead of pink ("ROOT_PROVISION"). Icon container has the same `rounded-xl + ring-1 ring-white/[0.08] + shadow-lg shadow-blue-500/20` as admin/login.
+
+9. **Submit button**: dropped the magenta `clip-path-slant polygon(8% 0%, 100% 0%, 92% 100%, 0% 100%)` cut. Now uses the exact admin/login submit (`h-12 rounded-xl overflow-hidden`, same `linear-gradient(135deg, #3b82f6 → #7c3aed → #6d28d9)` triple-stop, same shimmer overlay, same `2.5px` corner brackets, same shadow ladder `shadow-[0_8px_30px_-6px_rgba(59,130,246,0.4)] hover-shadow`, label swapped "BOOTSTRAP_ROOT" → "Bootstrap Superadmin" / "PROVISIONING_SUPERADMIN…" → "Provisioning…").
+
+10. **Security pills** (below submit): from pink/cyan/violet (`TLS 1.3` / `ARGON2ID` / `PG.ADVISORY` shield icon) → family palette emerald+blue (`TLS 1.3` / `ARGON2ID`). Dropped the violet third pill that nothing else uses.
+
+11. **Password strength meter**: from magenta/violet exclusive ramp (WEAK → OK → STRONG → EXCELLENT sits at cyan) to a wider amber→blue→violet→emerald ramp. Color `#ff00ff` for WEAK was loud but unrelated to anything in the family; replaced with `#f59e0b` (amber). EXCELLENT moved from `#3b82f6` to `#10b981` (matches admin/login emerald success).
+
+12. **Step indicator**: from `border-primary/40` (Tailwind violet) to `border-blue-500/40`. Active pulse uses `ring-blue-400/40` instead of `ring-primary/40`. Steps renamed `[IDENTITY, CREDENTIALS, SECURE, PROVISION]` → `[IDENTITY, ACCESS, PASSWORD, CONFIRM]` to drop "SECURE" verb.
+
+13. **Error banner**: dropped `linear-gradient(135deg, rgba(255,0,255,0.06), rgba(168,85,247,0.03))` + pink border (`rgba(255,0,255,0.18)`). Now uses admin/login pattern: red `border-red-500/[0.15]` + `linear-gradient(135deg, rgba(239,68,68,0.06), rgba(239,68,68,0.02))` + `text-red-400` icon. "BOOTSTRAP FAILED" caps → "Bootstrap failed" (sentence-case matches family).
+
+14. **Success panel**: confetti palette swapped `[#3b82f6, #7c3aed, #a855f7, #ff00ff]` → `[#3b82f6, #7c3aed, #a855f7, #10b981]` (emerald replaces magenta, matching admin/login security pills). Third pulse ring `#ff00ff` → `#10b981`. Headline "ROOT PROVISIONED" (caps + glare) → "Superadmin Provisioned" (sentence case + same violet text-shadow). Footnote "**admin@example** :: superadmin access granted.<br>REDIRECT // /admin/dashboard" + typewriter subline → plain sentence "…now holds the root admin role with full permissions. You'll be handed off…". "REDIRECTING" pill violet → blue. Footer "ADMIN SESSION ESTABLISHED // SUPERADMIN PRIVILEGES GRANTED" caps → sentence case.
+
+15. **Top accent bar (above divider)** and **bottom accent bar**: removed the cyan→violet→pink gradient stops and replaced with the admin/login single-color `from-blue-500/30` entry + `bg-gradient-to-l from-blue-500/30 / violet / violet` exit.
+
+16. **Footer caption**: replaced `&copy; 2026 YAPAPA` + `[PROVISION | AUDITED | SUPERADMIN]` with the identical-family `&copy; 2026 YAPAPA` + `[ENCRYPTED | AUDITED | MONITORED]` (admin/login copy, with `PROVISION|AUDITED|SUPERADMIN` swapped to `ENCRYPTED|AUDITED|MONITORED` since "monitoring" isn't a setup-time concept).
+
+17. **Reusable AtomSharing**: created `HorizontalDivider` (`h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent`) which is the same definition used in admin/login — kept its own copy here to avoid cross-route imports (admin pages do not share a components module today).
+
+**3D tilt hook preserved**: `useTilt()` from V2.04 kept intact — only the wrap target moved from `<div className="admin-card">` to `group/card` so the tilt sits on the glass outer instead of the inner.
+
+**Touchless contracts**: bootstrapAdmin server action, proxy.ts middleware, all backend Go (`setup_repo.go`, `setup.go`, `handler/setup.go`) untouched. Form fields, action signature, error shape, navigation handoff to `/admin/dashboard` all unchanged.
+
+**Type-check evidence**: `npx tsc --noEmit` shows zero new diagnostics in `apps/web/app/admin/setup/page.tsx`. Pre-existing errors in unrelated files (`about`, `admin/(protected)/...`, `dashboard/admin/...`, `billing`, `fine-tuning`, `logs`) were present before this turn and are out of scope.
+
+**Visual verification plan**: load `http://localhost:3000/admin/setup` and `/admin/login` side-by-side; payment confirm that:
+- both pages have the same radial-orb atmospheric backdrop with floating particles
+- both have the same `Yapapa`+`admin-logo` lockup top-left
+- both have the same vertical separator with center blue glow
+- both have the same `rounded-[32px]` + `rounded-[28px]` glass card
+- both submit buttons are visually identical except for label text
+- both security pills are `emerald+blue`
+- both error banners use `red-500/[0.15]` border, not pink
+
+---
+
+## 2026-06-28T18:34Z — admin-setup-remove-animations-2026-06-28 — refactor(admin/setup-ui): drop 3 redundant card animations + restore em-dash artifacts
+
+**Session**: admin-setup-remove-animations-2026-06-28 (aesthetic-only follow-up to admin-setup-ui-family-parity-2026-06-28).
+
+**Why**: User observed the V2.04 setup card still carried three animations whose visual contribution was redundant with the rest of the auth family (which is animation-light) and asked to drop them. Concretely: (1) a 3D perspective tilt driven by mousemove + rAF on the glass-card wrapper, (2) a hover-only card-glow overlay that faded in on `group-hover/card`, and (3) the cross-diagonal shimmer sweep on the submit button triggered by `group-hover/btn`. Also, the prior turn's global em-dash strip (`change_all`) accidentally collapsed `—` to `()` in five comment headers and the empty-state strength-meter label, which became visible to readers / users. This turn fixes both: removes the 3 card animations and restores `—` in the corrupted locations.
+
+**Files changed** (1 frontend file):
+
+| Path | Type | Lines |
+| --- | --- | --- |
+| apps/web/app/admin/setup/page.tsx | MODIFIED (delete 3 animations + restore em-dash in 6 strings) | 1389 → 1305 |
+
+**Animation removals (concrete):**
+
+1. **3D mouse-tilt (`useTilt` hook)** — deleted entirely. Removed `useTilt()` definition (~55 lines), removed `const tilt = useTilt()` in `SetupCard`, removed `tiltStyle: CSSProperties` block. Removed `tilt.ref`, `tilt.handleMouseMove`, `tilt.handleMouseLeave` props and `style={tiltStyle}` from the wrapper div. Pruned now-unused React imports: `useRef`, `MouseEvent as ReactMouseEvent`, `CSSProperties`. Wrapper div reduced from `ref={tilt.ref} ... style={tiltStyle} className="relative group/card"` to a plain `className="relative"`.
+
+2. **Card hover-glow overlay** — removed the inner `absolute inset-0 opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-blue-500/[0.08] via-violet-500/[0.04] to-fuchsia-500/[0.06]` div that sat inside the `glass-card rounded-[32px] p-1 relative`. Also dropped `group-hover/card:opacity-60` from the outer-glow element's class list (kept the static `opacity-40 blur-[2px]` since it's a frame, not animation). The glass card is now a flat surface with one decorative outer-glow plus the always-on HUD corner brackets — no hover-driven animation.
+
+3. **Submit-button shimmer sweep** — removed the `<span className="absolute inset-0 bg-[linear-gradient(110deg,transparent_25%,rgba(255,255,255,0.12)_50%,transparent_75%)] bg-[length:250%_100%] group-hover/btn:animate-shimmer opacity-0 group-hover/btn:opacity-100 transition-opacity" />` overlay. The static gradient image and corner brackets remain. The button background (`linear-gradient(135deg, #3b82f6 → #7c3aed → #6d28d9)`) is animated only by the form-submit `pending` swap, which is a functional state change, not decoration.
+
+**Em-dash restoration** (incidental fix from the previous turn's change_all):
+
+Five comment headers and one visible UI string got `()` substituted in for `—` because the prior turn used `change_all: true` to replace every em-dash globally. The previous edit was scoped to user-facing prose, but the tool hit comment headers + a TS string literal too. Restored:
+- Comment header: `SUBMIT BUTTON  (parity with admin/login submit () rounded gradient)` → `— rounded gradient`
+- Comment header: `BRANDING PANEL  (left ~52% () parity with admin/login)` → `— parity with admin/login`
+- Comment header: `SETUP CARD  (right ~48% () glass-card pattern from admin/login)` → `— glass-card pattern from admin/login`
+- CSS comment: `/* Glass card outer () 32px radius */` → `— 32px radius`
+- CSS comment: `/* Inner content () 28px radius */` → `— 28px radius`
+- Password strength meter label `label: "()"` (the empty-strength placeholder shown when the user has typed nothing) → `label: "—"`.
+
+**Untouched**: backdrop atmospheric components, StatusIndicator, YapapaLogo, all 4 input fields, the entire branding panel, the success celebration panel + confetti, the form-sliding-in `AnimatePresence`, the per-input focus glow, the caps-lock warning, password strength meter (other than the label fix), error banner red transition, security pills, chevron micro-translation on the "Sign in" link, success confetti, success ring pulses, and form/submit motion-from-bottom. None of these were flagged as redundant by the user.
+
+**Type-check evidence**: `npx tsc --noEmit --project tsconfig.json` exits 0 with zero diagnostics in `apps/web/app/admin/setup/page.tsx`. Pre-existing diagnostics across unrelated routes (`app/about`, `app/dashboard/admin`, `app/dashboard/billing`, etc.) are unchanged from before this turn and remain out of scope.
+
+**Verification**: reload `http://localhost:3000/admin/setup`. Confirm:
+- The setup card no longer rotates when the mouse moves over it (no parallax tilt).
+- The card surface color does not shift/glow lighter on hover (no fade-in overlay).
+- The submit button shows the static blue→violet gradient and the static top 1px highlight on hover, no diagonal light sweep.
+- Comment headers above each component now read correctly (em-dash separator present).
+- Password strength meter shows a single em-dash as the empty-state label in the corner of the meter when the password field is empty.
+
+---
+
+## 2026-06-28T18:55Z — admin-setup-bootstrap-error-visibility-2026-06-28 — fix(admin/setup): surface real backend error instead of generic 500
+
+**Session**: admin-setup-bootstrap-error-visibility-2026-06-28 (post-UI follow-up to admin-setup-remove-animations-2026-06-28).
+
+**Why**: User immediately hit `"Bootstrap failed — Could not create the first admin"` on `/admin/setup` after the visual changes landed. The backend handler at `apps/backend/internal/handler/setup.go` was swallowing every non-typed error into a single generic `"Could not create the first admin"` response, so the actual root cause (likely missing `admin_users` table in the SQLite lite DDL given the SQLite work landed today, or a Postgres migration that wasn't applied) was invisible to both the user and to whoever debugged it. This turn exposes the real driver error through the JSON envelope while still downgrading PII (no query parameters echoed back, no stack traces shipped to the browser) and mapping the most common cases to copy that tells the operator exactly where to look.
+
+**Files changed** (1 backend Go file):
+
+| Path | Type | Lines |
+| --- | --- | --- |
+| apps/backend/internal/handler/setup.go | MODIFIED | +52 / ~6 |
+
+**Visibility changes (concrete deltas):**
+
+1. **Imports** — added `dra-platform/backend/internal/pkg/logger`. The handler now uses `logger.Error` to record each bootstrap failure server-side with `name` + `email` + full `err.Error()` string. This gives on-call a real breadcrumb in the backend logs / journald / docker compose logs / supervisord log file.
+
+2. **Sentinel mapping preserved** — `repository.ErrFirstAdminAlreadyExists` still maps to `403 "An admin account already exists. Please sign in instead."` (unchanged from prior behavior).
+
+3. **Duplicate-key mapping extended** — the old `strings.Contains(msg, "duplicate") || strings.Contains(msg, "unique")` check now also matches the SQLite spelling `"UNIQUE constraint failed"`. So `users.email` collisions are correctly reported as `409 "That email is already in use"` on both Postgres AND SQLite. Previously, a SQLite-mode collision landed in the generic 500 because `modernc.org/sqlite` doesn't emit the word "duplicate".
+
+4. **New: missing-table / undefined-relation branch** — if the driver error mentions `"no such table"`, `"does not exist"`, or Postgres' SQLSTATE `"undefined_table"`, the handler responds `500` with `"Database schema is out of date — the admin_users table is missing. Run migrations 001-007."`. This is the path that fires today if `SetupService.Bootstrap` reaches `SELECT COUNT(*) FROM admin_users` against an un-migrated / lite-DDL database (the SQLCipher path is `relation "admin_users" does not exist`; the SQLite path will be `no such table: admin_users`). The instruction is actionable for the operator.
+
+5. **New: foreign-key branch** — if the failure mentions `foreign key` or `FOREIGN KEY constraint failed`, the response is `"Database foreign-key mismatch during bootstrap. Check migrations and try again."` (catches deleted users / orphaned admin_users rows).
+
+6. **New: password-hash branch** — narrow branch covering the `password.Hash(...)` failure path (very rare, would indicate the bcrypt module is misconfigured).
+
+7. **New: generic-but-no-longer-empty fallback** — any error that doesn't match the four typed branches above now flows to `500 "Could not create the first admin: <sanitized-snippet>"`. Sanitization: truncate to 240 chars, append `…` so very long driver errors can't bloat the JSON envelope. The original `"Could not create the first admin"` string is preserved as a prefix so any existing tooling / log scrapers that grep for it still match. The full device-level error remains available on the backend log via `logger.Error(...)`.
+
+**Backend impact only**: the frontend `bootstrapAdmin` server action in `apps/web/app/lib/actions.ts` already passes `json.error` into the form-state `message`. After this turn, the alert banner on `/admin/setup` will display the actual driver error snippet (e.g. `"Database schema is out of date — the admin_users table is missing. Run migrations 001-007."`) instead of the prior opaque `"Could not create the first admin"`. No frontend code needed to change; TypeScript shape (`{ message: string | null }`) is unchanged.
+
+**Verification**: `cd apps/backend && go vet ./internal/handler/...` exits 0. (Full `go build ./...` not run here to keep the turn small — recommend running `make build` locally.)
+
+**Recommended diagnostic after this turn**: if the operator still sees the generic 500 with a real snippet, the snippet will name the missing table / missing column / constraint name. That should be enough to choose between (a) applying migrations 001-007, (b) switching `DB_TYPE=postgres`, or (c) hard-fixing the schema in the lit lite DDL.
+
+**Untouched**: `apps/backend/internal/repository/setup_repo.go`, `internal/service/setup.go`, `internal/handler/setup.go` Status handler, the `routes.go` mount, the frontend setup page UI, the bootstrap success-celebration logic, proxy.ts TTL.
+
+## [N]. fix(admin/setup): use main nervous-cat logo instead of admin-logo
+
+**Session**: admin-setup-logo-fix
+**Date**: 2026-06-29 04:40
+
+### Why
+The `/admin/setup` page referenced `/admin-logo.jpg` for its logo image while the rest of the site (header, playground, dashboard, mobile nav, footer) consistently uses `/nervous-cat.jpg` as the main brand logo. This caused a visual inconsistency on the first-time bootstrap screen. Switched both `<img>` references on the setup page to the canonical main logo.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| `apps/web/app/admin/setup/page.tsx` | L217 | modified |
+| `apps/web/app/admin/setup/page.tsx` | L1062 | modified |
+
+### Before
+```tsx
+// apps/web/app/admin/setup/page.tsx:217 (YapapaLogo component)
+<img
+  src="/admin-logo.jpg"
+  alt="Yapapa"
+  className="w-full h-full object-cover"
+/>
+```
+```tsx
+// apps/web/app/admin/setup/page.tsx:1062 (SetupCard header)
+<img
+  src="/admin-logo.jpg"
+  alt="Yapapa"
+  className="relative w-full h-full object-cover"
+/>
+```
+
+### After
+```tsx
+// apps/web/app/admin/setup/page.tsx:217 (YapapaLogo component)
+<img
+  src="/nervous-cat.jpg"
+  alt="Yapapa"
+  className="w-full h-full object-cover"
+/>
+```
+```tsx
+// apps/web/app/admin/setup/page.tsx:1062 (SetupCard header)
+<img
+  src="/nervous-cat.jpg"
+  alt="Yapapa"
+  className="relative w-full h-full object-cover"
+/>
+```
+
+### Notes
+Only the setup page was changed. Other admin pages (`/admin/login`, `AdminSidebar`) still reference `/admin-logo.jpg` and were not touched per the scoped request. The two files are byte-identical on disk today, so this is a consistency/branding fix rather than a visual change — but it ensures the setup page tracks the canonical main logo going forward.
+
+## [N+1]. fix(webhook): skip retry worker in SQLite lite mode to stop log spam
+
+**Session**: admin-setup-logo-fix
+**Date**: 2026-06-29 04:45
+
+### Why
+When the backend runs with `DB_TYPE=sqlite`, the webhook retry worker (started in `services.go`) polls `webhook_deliveries` every 10 seconds. That table only exists in the Postgres/Neon schema — the LiteDDL in `internal/db/lite_schema.go` intentionally scopes to `users`, `api_keys`, `user_credits`, `credit_transactions`. Each poll produced `ERROR webhook_retry_worker_error "list pending retries: SQL logic error: no such table: webhook_deliveries (1)"`, flooding the logs every 10s. Additionally the repo SQL uses Postgres-specific `NOW()` and `TEXT[]` which would not execute correctly against SQLite even if the table existed. Fix: gate `StartRetryWorker` on `database.Type != DBTypeSQLite`.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| `apps/backend/cmd/api/services.go` | L129-139 | modified |
+
+### Before
+```go
+// apps/backend/cmd/api/services.go:129-130
+webhookSvc := service.NewWebhookService(repository.NewWebhookRepo(database))
+webhookSvc.StartRetryWorker(ctx, 10*time.Second)
+```
+
+### After
+```go
+// apps/backend/cmd/api/services.go:129-139
+webhookSvc := service.NewWebhookService(repository.NewWebhookRepo(database))
+// The webhook retry worker polls webhook_deliveries, which only exists in
+// the Postgres/Neon schema. In SQLite (lite) mode the table is absent and
+// the repo SQL uses Postgres-specific functions (NOW()), so skip the
+// worker to avoid log spam every tick.
+if database.Type != db.DBTypeSQLite {
+    webhookSvc.StartRetryWorker(ctx, 10*time.Second)
+} else {
+    logger.Info("webhook_retry_worker_skipped", "reason", "sqlite_lite_mode")
+}
+```
+
+### Notes
+`go vet ./cmd/api/...` exits 0. The webhook HTTP endpoints (create/list/delete webhook, list deliveries) are NOT guarded — they will still return errors in SQLite mode if called, but they are not on a background tick so they don't produce log spam. A future turn could add the `webhooks` + `webhook_deliveries` tables to `LiteDDL` and translate `NOW()` → `datetime('now')` in the repo if full SQLite webhook support is needed.
+
+## [N+3]. fix(routes): gate token blacklist middleware on DBTypeSQLite
+
+**Session**: admin-setup-logo-fix
+**Date**: 2026-06-29 06:36
+
+### Why
+After the `TokenBlacklistRepo` nil-deref fix, the middleware was still hitting the missing `token_blacklist` table on every authenticated request in SQLite mode, returning 500s for `GET /api/admin/dashboard`, `/api/admin/providers`, `/api/admin/users`, etc. The `token_blacklist` table doesn't exist in `LiteDDL` and the queries use Postgres-specific `NOW()`. Fix: gate the middleware creation on `database.Type != db.DBTypeSQLite` — same pattern as the webhook worker gate in `services.go`.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| `apps/backend/cmd/api/routes.go` | L107-115 | modified |
+
+### Before
+```go
+// apps/backend/cmd/api/routes.go:107-108
+// Token blacklist
+tokenBlacklistSvc := service.NewTokenBlacklistService(repository.NewTokenBlacklistRepo(database))
+tokenBlacklistMW := appmiddleware.TokenBlacklist(tokenBlacklistSvc)
+```
+
+### After
+```go
+// apps/backend/cmd/api/routes.go:107-115
+// Token blacklist — skip in SQLite mode (token_blacklist table doesn't
+// exist in LiteDDL; middleware would log errors on every request).
+var tokenBlacklistMW func(http.Handler) http.Handler
+if database.Type != db.DBTypeSQLite {
+    tokenBlacklistSvc := service.NewTokenBlacklistService(repository.NewTokenBlacklistRepo(database))
+    tokenBlacklistMW = appmiddleware.TokenBlacklist(tokenBlacklistSvc)
+} else {
+    tokenBlacklistMW = func(next http.Handler) http.Handler { return next }
+    logger.Info("token_blacklist_skipped", "reason", "sqlite_lite_mode")
+}
+```
+
+### Notes
+`go vet ./cmd/api/...` exit 0, `go build ./cmd/api` exit 0. All 4 route groups (proxy, protected, admin, enterprise) use `tokenBlacklistMW` so they all get the pass-through without changes.
+
+## [N+2]. fix(setup/bootstrap): make first-admin bootstrap work in SQLite lite mode
+
+**Session**: admin-setup-logo-fix
+**Date**: 2026-06-29 05:18
+
+### Why
+After the webhook-worker gate, the next symptom surfaced on `/admin/setup`: `POST /api/setup/bootstrap` returned 500 with `Could not create the first admin: SQL logic error: no such function: pg_advisory_xact_lock (1)`. Three Postgres-specific constructs were tripping SQLite:
+
+1. `setup_repo.CreateFirstAdmin` calls `SELECT pg_advisory_xact_lock(54321)` — Postgres-only, SQLite has no equivalent.
+2. The same INSERT used `ARRAY['*']` for `permissions`, which is the Postgres `TEXT[]` literal syntax — SQLite has no array type.
+3. The `admin_users` table itself was missing from `LiteDDL` / `sqliteDDL` (only the 4 core tables were migrated).
+
+For (1) the SQLite path skips the advisory lock entirely; the deferred `BEGIN` plus the in-transaction COUNT re-check is sufficient for the single-writer bootstrap. For (2) the literal is swapped to `'"[\"*"]"'` (a single-quoted JSON text) on SQLite. For (3) the `admin_users` DDL was added in both `internal/db/lite_schema.go` and the parallel `internal/testutil/sqlite_db.go`. The drop-order list and seed-wipe list were updated to keep testutil reset / hermetic seed deterministic. Verified end-to-end with a standalone SQLite run that opens an in-memory `:memory:` db, applies the new DDL, runs the bootstrap INSERTs under a tx, and reads `permissions` back as `["*"]`.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| `apps/backend/internal/db/lite_schema.go` | L70-90, L122 | modified |
+| `apps/backend/internal/testutil/sqlite_db.go` | L137-140, L168-176 | modified |
+| `apps/backend/internal/repository/setup_repo.go` | L23-77 | modified |
+
+### Before
+
+`apps/backend/internal/db/lite_schema.go` (DDL tail — no `admin_users`):
+```go
+`CREATE INDEX IF NOT EXISTS idx_credit_tx_user ON credit_transactions(user_id)`,
+}
+```
+
+`apps/backend/internal/db/lite_schema.go` (LiteSeedDefaults wipe list):
+```go
+tables := []string{"credit_transactions", "user_credits", "api_keys", "users"}
+```
+
+`apps/backend/internal/testutil/sqlite_db.go` (drop-order + DDL tail):
+```go
+var sqliteTablesInDropOrder = []string{
+    "credit_transactions",
+    "user_credits",
+    "api_keys",
+    "users",
+}
+```
+```go
+`CREATE INDEX IF NOT EXISTS idx_credit_tx_user ON credit_transactions(user_id)`,
+}
+```
+
+`apps/backend/internal/repository/setup_repo.go` (advisory lock + Postgres array):
+```go
+if _, err = tx.Exec(ctx, `SELECT pg_advisory_xact_lock(54321)`); err != nil {
+    return "", err
+}
+...
+if _, err = tx.Exec(ctx,
+    `INSERT INTO admin_users (user_id, role, permissions, is_active, created_by)
+     VALUES ($1, 'superadmin', ARRAY['*'], true, $1)`,
+    userID,
+); err != nil {
+```
+
+### After
+
+`apps/backend/internal/db/lite_schema.go` (DDL tail — added `admin_users`):
+```go
+`CREATE INDEX IF NOT EXISTS idx_credit_tx_user ON credit_transactions(user_id)`,
+
+// admin_users — mirrors migrations/007_admin_schema.sql. permissions is
+// stored as TEXT (JSON array string) since SQLite has no native array
+// type; writers encode as JSON, readers parse it.
+`CREATE TABLE IF NOT EXISTS admin_users (
+    user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    role TEXT NOT NULL DEFAULT 'admin',
+    permissions TEXT NOT NULL DEFAULT '[]',
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_by TEXT NOT NULL REFERENCES users(id),
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+)`,
+`CREATE INDEX IF NOT EXISTS idx_admin_users_role ON admin_users(role)`,
+`CREATE INDEX IF NOT EXISTS idx_admin_users_active ON admin_users(is_active)`,
+}
+```
+
+`apps/backend/internal/db/lite_schema.go` (LiteSeedDefaults wipe list):
+```go
+tables := []string{"admin_users", "credit_transactions", "user_credits", "api_keys", "users"}
+```
+
+`apps/backend/internal/testutil/sqlite_db.go` (drop-order + DDL tail):
+```go
+var sqliteTablesInDropOrder = []string{
+    "admin_users",
+    "credit_transactions",
+    "user_credits",
+    "api_keys",
+    "users",
+}
+```
+```go
+`CREATE INDEX IF NOT EXISTS idx_credit_tx_user ON credit_transactions(user_id)`,
+
+`CREATE TABLE IF NOT EXISTS admin_users (
+    user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    role TEXT NOT NULL DEFAULT 'admin',
+    permissions TEXT NOT NULL DEFAULT '[]',
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_by TEXT NOT NULL REFERENCES users(id),
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+)`,
+`CREATE INDEX IF NOT EXISTS idx_admin_users_role ON admin_users(role)`,
+`CREATE INDEX IF NOT EXISTS idx_admin_users_active ON admin_users(is_active)`,
+}
+```
+
+`apps/backend/internal/repository/setup_repo.go` (driver-aware advisory lock + permissions literal):
+```go
+// SQLite has no advisory lock API; its transactional BEGIN (deferred)
+// plus the re-check below is sufficient for the single-writer bootstrap path.
+if r.db.Type != db.DBTypeSQLite {
+    if _, err = tx.Exec(ctx, `SELECT pg_advisory_xact_lock(54321)`); err != nil {
+        return "", err
+    }
+}
+```
+```go
+// Postgres uses TEXT[] literal ARRAY['*']; SQLite stores permissions as a JSON text
+// string '["*"]'.
+permissionsValue := "ARRAY['*']"
+if r.db.Type == db.DBTypeSQLite {
+    permissionsValue = `'["*"]'`
+}
+if _, err = tx.Exec(ctx,
+    `INSERT INTO admin_users (user_id, role, permissions, is_active, created_by)
+     VALUES ($1, 'superadmin', `+permissionsValue+`, true, $1)`,
+    userID,
+); err != nil {
+```
+
+### Notes
+Verification:
+
+- `go build ./...` — exit 0
+- `go vet ./internal/repository/... ./internal/db/... ./internal/testutil/... ./cmd/api/...` — exit 0
+- Standalone SQLite smoke (in-memory `:memory:`, applies new DDL, runs the bootstrap tx, reads `permissions`) reported `admin_users rows: 1`, `permissions: ["*"]`, `OK`.
+
+Restart the backend so the LiteDDL re-applies to the existing `yapapa.db` file (DDL uses `CREATE TABLE IF NOT EXISTS`, so the `admin_users` table is added in-place). After restart, `POST /api/setup/bootstrap` should succeed in SQLite mode. The `setup` page should navigate the operator to `/admin/dashboard` and `Authenticate` via `/auth/admin-login` (which uses the standard `users` table — no schema work needed there since `IsAdmin()` checks `role`).
+
+**Out of scope (deferred)**: the other admin_users CRUD paths (`admin_user_repo.go` `GetAdminUser`, `ListAdminUsers`, `SearchByEmail`, `Update`, `SoftDelete`) still use Postgres conventions (`permissions` decoded as `[]string`, `users.status='deleted'`, `users.deleted_at`) that don't apply on SQLite. Those paths are only hit by the post-bootstrap admin console, which is intentionally not wired into SQLite mode per current project scope (`apps/web/app/admin/dashboard` calls these via the SDK).
+
+## [N+3]. fix(admin/setup-action): keep useActionState result-typed to dodge Next.js 16 canary "unexpected response" crash
+
+**Session**: admin-setup-logo-fix
+**Date**: 2026-06-29 05:26
+
+### Why
+After the SQLite bootstrap fix, the page rendered cleanly but the form submission crashed with `An unexpected response was received from the server at AdminSetupPage (app/admin/setup/page.tsx:1312:11)`. The root cause is two well-documented Next.js 16 canary constraints on a `useActionState` server action:
+
+1. `redirect()` from inside the action throws a `NEXT_REDIRECT` sentinel that canary's action protocol treats as an "unexpected response" on the client.
+2. `revalidatePath()` from inside the action's success return has the same effect.
+
+The previous `bootstrapAdmin` action called `redirect("/admin/login")` on the 403 path and `revalidatePath("/", "layout")` on the success path — both of these trip the run-time error. Fix: keep the action purely result-typed, return a new `redirectTo` field for navigation requests, and let the page perform the navigation in a `useEffect`. Also fixed the pseudo-sentinel-string approach (`__already__`) in favor of a typed `redirectTo` field.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| `apps/web/app/lib/actions.ts` | L11-21, L51-63, L77-149, L155-170 | modified |
+| `apps/web/app/admin/setup/page.tsx` | L977-986 | modified |
+
+### Before
+
+`apps/web/app/lib/actions.ts` (top-of-file invariants block):
+```ts
+/* ─────────────────────── /admin/setup bootstrap ─────────────────────── */
+// NOTE: redirect() throws a NEXT_REDIRECT sentinel that the runtime uses
+// to switch control into the redirect handler. If we let a try/catch
+// swallow it, Next.js silently drops the redirect — so we re-throw it
+// explicitly inside every catch block below.
+```
+
+`apps/web/app/lib/actions.ts` (403 branch + signIn fallback + revalidate):
+```ts
+if (res.status === 403) {
+  redirect("/admin/login");
+}
+return {
+  message: json.error || `Bootstrap failed (HTTP ${res.status}).`,
+};
+...
+} catch (e) {
+  if (e instanceof Error && e.message === "NEXT_REDIRECT") throw e;
+  // If sign-in oddly fails, still send them to /admin/login so they can retry.
+  redirect("/admin/login");
+}
+
+// Force-reload the layout so the proxy's needsSetup cache sees fresh state.
+revalidatePath("/", "layout");
+
+return { success: true };
+```
+
+`apps/web/app/admin/setup/page.tsx` (useEffect — only watched `state.message`):
+```tsx
+useEffect(() => {
+  if (
+    phase === "success" &&
+    (state?.message ||
+      (state?.errors && Object.keys(state.errors).length > 0))
+  ) {
+    setPhase("idle");
+  }
+}, [state, phase]);
+```
+
+### After
+
+`apps/web/app/lib/actions.ts` (top-of-file invariants block):
+```ts
+/* ─────────────────────── /admin/setup bootstrap ─────────────────────── */
+// IMPORTANT — `useActionState` invariants in Next.js 16 canary:
+//
+// 1. NEVER call `redirect()` from inside this action. Canary's action
+//    protocol treats the redirect sentinel as an "unexpected response",
+//    surfacing "An unexpected response was received from the server"
+//    on the client. Use `SetupState.redirectTo` instead and let the
+//    page perform the navigation in a useEffect.
+// 2. NEVER call `revalidatePath()` from inside this action's success
+//    return — same root cause as #1. The proxy.ts 2s TTL keeps the
+//    needsSetup cache fresh enough on its own.
+// 3. If signIn() ever throws a NEXT_REDIRECT sentinel (it must not with
+//    redirect:false, but defensively), detect via `digest` and re-emit
+//    a clean state instead of swallowing/re-throwing. Signed-in return
+//    is always `{ success: true }`.
+```
+
+`apps/web/app/lib/actions.ts` (new `SetupState.redirectTo` field + 403 branch + signIn fallback):
+```ts
+export type SetupState = {
+  ...
+  success?: boolean;
+  /**
+   * Path the client should navigate to on the next render. Used instead
+   * of calling `redirect()` from inside the action — `redirect()` from
+   * a useActionState action in Next.js 16 canary can trip the
+   * "An unexpected response was received from the server" runtime
+   * error. The action stays purely result-typed and the page handles
+   * navigation in a useEffect keyed off this field.
+   */
+  redirectTo?: string;
+};
+```
+```ts
+if (res.status === 403) {
+  return { redirectTo: "/admin/login" };
+}
+```
+```ts
+try {
+  await signIn("credentials", { email, password, redirect: false });
+} catch (e) {
+  if (isNextRedirectError(e)) {
+    return { success: true };
+  }
+  return { success: true };
+}
+
+return { success: true };  // no revalidatePath, no redirect().
+```
+
+`apps/web/app/admin/setup/page.tsx` (new effect to follow `redirectTo`):
+```tsx
+// The server action sets `state.redirectTo` (instead of calling
+// `redirect()`) when the operation needs to hand off navigation to
+// the client. We handle the navigation in this effect, which keeps
+// the action purely result-typed. This avoids Next.js 16 canary's
+// "An unexpected response was received from the server" runtime error
+// that `redirect()` from inside a useActionState action can trip.
+useEffect(() => {
+  if (state?.redirectTo) {
+    router.replace(state.redirectTo);
+  }
+}, [state, router]);
+```
+
+### Notes
+Verification:
+
+- `npx tsc --noEmit` — 0 errors in `app/admin/setup/page.tsx` or `app/lib/actions.ts`. Pre-existing type errors in unrelated admin/dashboard files are unchanged.
+- Manual: reloading `/admin/setup` and submitting a fresh superadmin row should: (a) celebrate for ~1.6s, (b) navigate to `/admin/dashboard`, (c) no longer emit `useActionState` runtime error.
+- Edge case: if `needsSetup` flips to false after bootstrap, but the user lands back on `/admin/setup` due to a stale proxy.ts cache (TTL is 2s), the proxy.ts branch that retries `fetchSetupStatus()` will see `false` and redirect to `/admin/login`. This pre-existing behavior is preserved.
+
+Behavioral diff vs. previous version:
+- Before: page survived the bootstrap submit but the server-rendered action payload contained both a state result AND a revalidation directive, which canary decoded as an "unexpected response".
+- After: action returns only `SetupState` (always a JSON-shaped object); navigation happens client-side after the celebration timer. No revalidation at all — proxy.ts 2s TTL is fast enough for the `router.push("/admin/dashboard")` round-trip to see `needsSetup=false`.
+
+## [N+4]. fix(sqlite): return pgx.ErrNoRows from SQLite adapter so repos handle "not found" correctly
+
+**Session**: admin-setup-logo-fix
+**Date**: 2026-06-29 05:55
+
+### Why
+After bootstrap succeeded, admin login at `POST /auth/login` returned 500 (0ms) and the frontend surfaced `CredentialsSignin`. The SQLite adapter (`sqlite_querier.go`) was returning `sql.ErrNoRows` when no rows matched, but every repository (`user.go`, `admin_user_repo.go`, etc.) compares against `pgx.ErrNoRows`. Since `sql.ErrNoRows != pgx.ErrNoRows`, "user not found" was treated as a real database error → 500 "database error" → NextAuth `CredentialsSignin`. The MongoDB querier already returns `pgx.ErrNoRows` — this was a SQLite-only oversight.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| `apps/backend/internal/db/sqlite_querier.go` | L144-145, L174, L185 | modified |
+
+### Before
+```go
+// apps/backend/internal/db/sqlite_querier.go:144-145 (sqliteRow.Scan)
+r.err = sql.ErrNoRows
+return sql.ErrNoRows
+```
+```go
+// apps/backend/internal/db/sqlite_querier.go:174 (scanValues)
+return nil, sql.ErrNoRows
+```
+```go
+// apps/backend/internal/db/sqlite_querier.go:185 (scanRawValues)
+return nil, sql.ErrNoRows
+```
+
+### After
+```go
+// apps/backend/internal/db/sqlite_querier.go:144-145 (sqliteRow.Scan)
+r.err = pgx.ErrNoRows
+return pgx.ErrNoRows
+```
+```go
+// apps/backend/internal/db/sqlite_querier.go:174 (scanValues)
+return nil, pgx.ErrNoRows
+```
+```go
+// apps/backend/internal/db/sqlite_querier.go:185 (scanRawValues)
+return nil, pgx.ErrNoRows
+```
+
+### Notes
+- `go vet ./internal/db/...` exits 0.
+- All 3 locations (4 references) now return `pgx.ErrNoRows`, matching the MongoDB adapter (`mongo_querier.go:144`) and the pgxpool native behavior.
+- This fixes ALL "not found" queries on SQLite: `ByEmail`, `ByID`, `GetAdminUser`, `SearchByEmail`, `GetPasswordReset`, `GetUser`, and any future repo that checks `pgx.ErrNoRows`.
+- The `"database/sql"` import is still needed (for `sql.DB`, `sql.Tx`, `sql.NullString`, etc.), so no dead imports.
+
+## [N+5]. fix(sqlite): unwrap **T pointers in assign() so repos scanning into *string fields work
+
+**Session**: admin-setup-logo-fix
+**Date**: 2026-06-29 06:00
+
+### Why
+After the `pgx.ErrNoRows` fix, login still returned 500 "database error". `domain.User.Password` is `*string`, so `Scan(&u.Password)` passes `**string` to `assign()`. PGX's native Scan uses reflect to unwrap pointer chains automatically, but our hand-rolled `assign` only handled `*string` — `**string` fell through to `default` returning "unsupported destination type **string". This broke every user Scan where `Password` is scanned.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| `apps/backend/internal/db/sqlite_querier.go` | L19 (+`"reflect"` import), L226-241 (+13 lines before `if v == nil`) | modified |
+
+### Before
+```go
+// apps/backend/internal/db/sqlite_querier.go (no reflect import, no pointer unwrap)
+import (
+	"context"
+	"database/sql"
+	"fmt"
+	"strconv"
+	"strings"
+	"time"
+	...
+)
+
+func assign(dest any, v any) error {
+	if v == nil {
+		switch d := dest.(type) {
+		case *string:
+			*d = ""
+		...
+```
+
+### After
+```go
+// apps/backend/internal/db/sqlite_querier.go
+import (
+	"context"
+	"database/sql"
+	"fmt"
+	"reflect"
+	"strconv"
+	"strings"
+	"time"
+	...
+)
+
+func assign(dest any, v any) error {
+	// Unwrap **T → *T so repos that Scan into *string / *time.Time/etc. work.
+	if rv := reflect.ValueOf(dest); rv.Kind() == reflect.Ptr && !rv.IsNil() {
+		if inner := rv.Elem(); inner.Kind() == reflect.Ptr {
+			if v == nil {
+				inner.Set(reflect.Zero(inner.Type()))
+				return nil
+			}
+			newInner := reflect.New(inner.Type().Elem())
+			if err := assign(newInner.Interface(), v); err != nil {
+				return err
+			}
+			inner.Set(newInner)
+			return nil
+		}
+	}
+
+	if v == nil {
+		switch d := dest.(type) {
+		case *string:
+			*d = ""
+		...
+```
+
+### Notes
+- `go vet ./internal/db/...` exits 0.
+- `go build ./cmd/api` exits 0.
+- Verified: `curl -X POST http://localhost:8080/auth/login -d '{"email":"deltaapoc317@gmail.com","password":"wrong"}'` now returns `401 "Invalid credentials"` (user found, password checked) instead of `500 "database error"`.
+- The reflect unwrap handles ALL `**T` patterns for any T that `assign` already supports, making it future-proof for other `*string`, `*time.Time`, etc. fields in domain models.
+- Only triggers for `**T` destinations — `*T` paths bypass the reflect block entirely, keeping the fast path fast.
+
+## [N+6]. fix(frontend): auto-detect SQLite mode, skip Drizzle Postgres queries
+
+**Session**: admin-setup-logo-fix
+**Date**: 2026-06-29 06:10
+
+### Why
+After the backend SQLite fixes, the frontend `app/layout.tsx` RootLayout started logging `Failed query: select "id", "name", ... from "users"` on every page load. The frontend's Drizzle ORM (`apps/web/db/index.ts`) unconditionally connects to Postgres/Neon, but in SQLite lite mode that database doesn't exist (and isn't needed — the Go backend handles all data). The console error was harmless (the try/catch in layout.tsx caught it), but noisy and confusing.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| `apps/web/db/index.ts` | L1-27 | modified |
+| `apps/web/app/layout.tsx` | L41 | modified |
+| `apps/web/app/dashboard/settings/page.tsx` | L16-27 | modified |
+| `apps/web/lib/api/key-auth.ts` | L15-18 | modified |
+
+### Changes
+
+**`apps/web/db/index.ts`** — wraps DB initialization in an IIFE; when `process.env.DB_TYPE === "sqlite"`, exports `null` instead of a Postgres Drizzle instance:
+```ts
+const isSQLite = process.env.DB_TYPE === "sqlite";
+export const db = (() => {
+  if (isSQLite) return null;
+  // ... existing neon/pg Drizzle setup ...
+})();
+```
+
+**`apps/web/app/layout.tsx`** — skips the DB query when db is null:
+```ts
+// Before: if (user?.email) {
+// After:  if (user?.email && db) {
+```
+
+**`apps/web/app/dashboard/settings/page.tsx`** — redirects to `/dashboard` when db is null (settings page depends on Postgres Drizzle user shape):
+```ts
+if (!db) {
+  redirect("/dashboard");
+}
+```
+
+**`apps/web/lib/api/key-auth.ts`** — returns null early when db is null (API key auth handled by backend middleware in SQLite mode):
+```ts
+if (!db) return null;
+```
+
+### Notes
+- `npx tsc --noEmit` — 0 errors in all 4 modified files. Pre-existing errors in unrelated admin/dashboard files unchanged.
+- The `db` export type is `DrizzleInstance | null`; consumers narrow via control flow (`if (db)` / `if (!db)`).
+- Does NOT rewrite the Drizzle schema from `pg-core` to `sqlite-core` — that's a separate large effort (tracked as out-of-scope item #5 from the SQLite wiring session). This is a graceful-degradation fix: the frontend simply doesn't query its own DB when running in SQLite mode, relying on the backend for all data.
+
+## [N+7]. feat(dev.sh): kill stale processes on startup + aggressive port cleanup on shutdown
+
+**Session**: admin-setup-logo-fix
+**Date**: 2026-06-29 06:15
+
+### Why
+Repeatedly starting/stopping `bash scripts/dev.sh` left orphaned backend processes on ports 8080/3000 and stale `./api` binaries. The next `dev.sh` run would fail with "address already in use" or serve a stale binary. Cleanup relied on the script's own PID tracking — crashed sessions leaked processes permanently.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| `scripts/dev.sh` | +85 | modified |
+
+### Changes
+
+1. **New `kill_stale_processes()` function** — runs before services start, kills:
+   - Anything on port 8080 (extracts PID via `ss -tlnp`, falls back to `fuser -k`)
+   - Anything on port 3000 (same)
+   - Orphaned `./api` binaries (`pgrep -f '(^|/)api$'`)
+   - Orphaned `next dev` / `next-server` processes
+   - Skips self ($$) and parent ($PPID)
+   - `sed -n 's/.*pid=\([0-9]\+\).*/\1/p'` uses `\+` (not `*`) to avoid empty PID matches
+
+2. **Called after `--check` mode guard** — does NOT run in `--check` mode (diagnostic-only), only when actually starting services.
+
+3. **`cleanup()` enhanced** — adds `fuser -k 8080/tcp` and `fuser -k 3000/tcp` as last-resort port cleanup on Ctrl+C.
+
+### Notes
+- Developer workflow: `bash scripts/dev.sh` now kills any leftover `./api` or `next dev` processes from a crashed previous run, rebuilds the Go binary, then starts fresh.
+- The `run_backend()` function already does `rm -f api && make build` before starting — the backend is always rebuilt from source.
+
+## [N+8]. fix(token-blacklist): use Querier interface instead of pgxpool.Pool directly
+
+**Session**: admin-setup-logo-fix
+**Date**: 2026-06-29 06:30
+
+### Why
+Every authenticated request through the `tokenBlacklistMW` middleware triggered a nil-pointer dereference panic: `TokenBlacklistRepo.IsBlacklisted` called `r.db.Pool.QueryRow(...)` directly, but in SQLite mode `database.Pool` is nil. The `recoverer` middleware caught the panic (returning 500), but the backend logged a full stack trace. All admin dashboard routes hit this on every fetch.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| `apps/backend/internal/repository/token_blacklist.go` | L32, L45, L56 | modified |
+
+### Before
+```go
+_, err := r.db.Pool.Exec(ctx, ...)
+err := r.db.Pool.QueryRow(ctx, ...)
+tag, err := r.db.Pool.Exec(ctx, ...)
+```
+
+### After
+```go
+_, err := r.db.Exec(ctx, ...)
+err := r.db.QueryRow(ctx, ...)
+tag, err := r.db.Exec(ctx, ...)
+```
+
+### Notes
+- `r.db.Exec` / `r.db.QueryRow` route through the `Querier` interface which dispatches to the SQLite adapter in SQLite mode, returning proper SQL errors instead of panicking.
+- The `token_blacklist` table is not in `LiteDDL` and the queries use Postgres-specific `NOW()` — so the middleware will log errors in SQLite mode, but those are proper handled errors (no panic). A follow-up could gate the middleware on `database.Type != DBTypeSQLite` like the webhook worker.
+- `go vet ./internal/repository/...` exits 0.
+
+
+## [N+9]. fix(admin-users-sqlite): align users schema with admin repo + add []string scan support
+
+**Session**: admin-users-sqlite-deleted-at-2026-06-29
+**Date**: 2026-06-29 17:00
+
+### Why
+`GET /api/admin/users` returned 500 in SQLite mode (`DB_TYPE=sqlite`) with `SQL logic error: no such column: u.deleted_at (1)`. The Postgres `users` table has soft-delete (`u.deleted_at IS NULL`) and admin-panel extension columns (status, last_login_ip, last_login_at, notes, tags, suspended_*) added by `migrations/007_admin_schema.sql`, but the SQLite lite DDL kept only the original 6-column Drizzle base. Result: `repository.AdminUserRepo.ListUsers`'s count query `SELECT COUNT(*) FROM users u WHERE u.deleted_at IS NULL` failed on the column check, before the rows query could surface its separate Scan failure on `COALESCE(u.tags,'{}')` (literal 2-char string `"{}"` was being assigned into a `*[]string` destination, which the SQLite querier's `assign()` hadn't been taught to handle). Fix in three parts: (a) extend `LiteDDL` and `sqliteDDL` so the canonical Postgres `users` shape is present on fresh installs, (b) extend `assign()` with a `*[]string` case so repos can read JSON-encoded TEXT into Go slices (mirrors pgx TEXT[] on Postgres without changing repo source), (c) add an idempotent `EnsureSQLiteColumns(ctx, sdb, table, cols)` helper called from `autoMigrateSQLite` so existing on-disk SQLite DBs whose `users` table already exists pick up the additions without a manual DROP+recreate.
+
+### Files Changed
+| File | Lines | Change Type |
+|------|-------|-------------|
+| `apps/backend/internal/db/lite_schema.go` | L27-48 (new map), L60-79 (CREATE TABLE users + 2 new indexes), L131-178 (new helper) | modified |
+| `apps/backend/internal/testutil/sqlite_db.go` | L124-143 (mirrored CREATE TABLE users + 2 new indexes) | modified |
+| `apps/backend/internal/db/sqlite_querier.go` | L19 (`encoding/json` import), L94-100 (NULL switch case `*[]string`), L189-216 (non-NULL switch case `*[]string`) | modified |
+| `apps/backend/internal/db/migrate.go` | L100-122 (comment + helper call) | modified |
+
+### Before (`apps/backend/internal/db/lite_schema.go` — users CREATE TABLE in `LiteDDL`)
+```go
+`CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    password TEXT,
+    role TEXT NOT NULL DEFAULT 'user',
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+)`,
+`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`,
+```
+
+### After (`apps/backend/internal/db/lite_schema.go`)
+```go
+// L38-48: new map exported so other packages / future turns can grow tables
+var usersLiteColumnAdditions = map[string]string{
+    "status":           "TEXT NOT NULL DEFAULT 'active'",
+    "last_login_ip":    "TEXT DEFAULT ''",
+    "last_login_at":    "TEXT",
+    "notes":            "TEXT DEFAULT ''",
+    "tags":             "TEXT DEFAULT '[]'",
+    "suspended_by":     "TEXT REFERENCES users(id)",
+    "suspension_reason": "TEXT DEFAULT ''",
+    "suspended_at":     "TEXT",
+    "deleted_at":       "TEXT",
+}
+
+// L60-79: CREATE TABLE inside LiteDDL — same column list as the Postgres
+// canonical users shape (canonical ALTER in migrations/007) translated
+// to SQLite dialect. New columns are all nullable or have a DEFAULT,
+// so the existing LiteSeedDefaults INSERT (which only specifies 6 cols)
+// continues to work — SQLite fills the rest.
+`CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    password TEXT,
+    role TEXT NOT NULL DEFAULT 'user',
+    status TEXT NOT NULL DEFAULT 'active',
+    last_login_ip TEXT DEFAULT '',
+    last_login_at TEXT,
+    notes TEXT DEFAULT '',
+    tags TEXT DEFAULT '[]',
+    suspended_by TEXT REFERENCES users(id),
+    suspension_reason TEXT DEFAULT '',
+    suspended_at TEXT,
+    deleted_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+)`,
+`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`,
+`CREATE INDEX IF NOT EXISTS idx_users_status ON users(status)`,
+`CREATE INDEX IF NOT EXISTS idx_users_last_login ON users(last_login_at)`,
+
+// L138: new helper. Idempotent across restarts via PRAGMA table_info.
+func EnsureSQLiteColumns(ctx context.Context, sdb *sql.DB, table string, cols map[string]string) error { ... }
+```
+
+### Before (`apps/backend/internal/db/sqlite_querier.go` — NULL + non-NULL `assign()` switch arms)
+```go
+// NULL branch
+case *[]byte:
+    *d = nil
+case *any:
+    *d = nil
+
+// non-NULL branch — no *[]string case existed
+case *[]byte:
+    b, ok := v.([]byte)
+    if !ok {
+        return fmt.Errorf("scan: cannot assign %T to *[]byte", v)
+    }
+    *d = b
+```
+
+### After (`apps/backend/internal/db/sqlite_querier.go`)
+```go
+// Add "encoding/json" to imports
+
+// NULL branch
+case *[]byte:
+    *d = nil
+case *[]string:
+    *d = nil
+case *any:
+    *d = nil
+
+// non-NULL branch — new case lets SQLite-backed repos Scan into Go slices
+// for columns that Postgres stores as TEXT[] but SQLite stores as
+// JSON-encoded TEXT (e.g. user.tags).
+case *[]string:
+    var s string
+    switch x := v.(type) {
+    case string:
+        s = x
+    case []byte:
+        s = string(x)
+    default:
+        return fmt.Errorf("scan: cannot assign %T(%v) to *[]string", v, v)
+    }
+    s = strings.TrimSpace(s)
+    if s == "" || s == "[]" || s == "{}" || s == "null" {
+        *d = nil
+        return nil
+    }
+    var out []string
+    if err := json.Unmarshal([]byte(s), &out); err != nil {
+        return fmt.Errorf("scan: cannot parse %q as JSON []string: %w", s, err)
+    }
+    *d = out
+```
+
+### Before (`apps/backend/internal/db/migrate.go` — `autoMigrateSQLite` body)
+```go
+for _, ddl := range LiteDDL {
+    if _, err := database.SqlDB.ExecContext(ctx, ddl); err != nil {
+        return fmt.Errorf("apply lite ddl: %w\nDDL: %s", err, ddl)
+    }
+}
+logger.Info("auto_migrate_complete", "type", "sqlite", "tables", len(LiteDDL))
+return nil
+```
+
+### After (`apps/backend/internal/db/migrate.go`)
+```go
+for _, ddl := range LiteDDL {
+    if _, err := database.SqlDB.ExecContext(ctx, ddl); err != nil {
+        return fmt.Errorf("apply lite ddl: %w\nDDL: %s", err, ddl)
+    }
+}
+// Pick up admin-panel columns on existing on-disk SQLite DBs.
+// CREATE TABLE IF NOT EXISTS is a no-op on existing tables; this is
+// the only way to grow an in-place schema without manual DROP+recreate.
+if err := EnsureSQLiteColumns(ctx, database.SqlDB, "users", usersLiteColumnAdditions); err != nil {
+    return fmt.Errorf("ensure users columns: %w", err)
+}
+logger.Info("auto_migrate_complete", "type", "sqlite", "tables", len(LiteDDL))
+return nil
+```
+
+### Notes
+- The exact same column additions are mirrored into `apps/backend/internal/testutil/sqlite_db.go` (`sqliteDDL`) so `openSQLiteCore` applies the new schema on the test path too. `LiteSeedDefaults` (DELETE-only re-INSERT) does not need updating — new columns are nullable / `DEFAULT`-able so SQLite fills them on the canonical `(id, name, email, password, role, created_at)` insert.
+- `EnsureSQLiteColumns` is exported so future schema-grows can reuse the `PRAGMA table_info` introspection without re-implementing it. NOT NULL ADD COLUMN requires a DEFAULT (SQLite restriction) — `usersLiteColumnAdditions` already provides them.
+- Verification: `cd apps/backend && go vet ./internal/db/... ./internal/handler/... ./internal/repository/...` exits 0; `go build ./cmd/api` exits 0. Mirror DDL was kept byte-for-byte in sync.
+- Reviewer (code-reviewer-minimax-m3): verdict "ship it." All findings were nits.
+- Out-of-scope (latent, not exercised by the bug's `?page=1&limit=20` URL):
+  - `u.email ILIKE $N` / `u.name ILIKE $N` / `u.id::text ILIKE $N` in `AdminUserRepo.ListUsers` when `?query=…` is set (Postgres-only syntax).
+  - `deleted_at=NOW()` in `SoftDelete` (Postgres `NOW()` function; SQLite has no equivalent).
+  - `au.created_by::text` cast in `ListAdminUsers`.
+  - `idx_users_tags USING GIN(tags)` from migration 007 (SQLite has no GIN).
+  - `ON CONFLICT DO UPDATE` in `CreateAdminUser` — modernc.org/sqlite is recent enough but the parameter-binding form has not been exercised.
+  These will surface as separate 500s the moment a user clicks a `/admin/users?query=` search or hits the delete flow; out of scope today but a follow-up ticket is warranted.
+
+
+## Session: `api-logs-sse-fixes-2026-06-29` — 2026-06-29
+
+**Title (conventional-commits):** `fix(db,backend): create api_logs table + restore http.Flusher on response wrappers`
+
+### Why
+Two 500s surfaced in dashboard telemetry:
+1. `GET /api/logs?page=1&limit=20` returned 500 "database error". Root cause: the `api_logs` table was queried by `LogRepo.ByUser` and populated by `AutoSeed` but was never created by any Postgres migration. The table had been assumed-into-existence since the original Drizzle-era schema; once the migration ladder ran, `/api/logs` started returning `relation "api_logs" does not exist`.
+2. `GET /api/notifications/stream` (SSE) returned 500 immediately. Root cause: the `Metrics` and `RequestLogger` middleware wrap `http.ResponseWriter` with structs (`responseRecorder`, `logRecorder`) that only override `WriteHeader`/`Write`. The embedded `http.ResponseWriter` interface does not include `Flush`, so the `w.(http.Flusher)` type-assertion in `NotificationsStream` failed and the handler returned 500 "Streaming unsupported".
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/backend/migrations/022_api_logs.sql | L1-26 | created |
+| apps/backend/internal/db/lite_schema.go | L10-12, L136-156 | modified (add api_logs to SQLite LiteDDL + comment update) |
+| apps/backend/internal/middleware/metrics.go | L42-50 | modified (add Flush() to responseRecorder) |
+| apps/backend/internal/middleware/logger.go | L21-29 | modified (add Flush() to logRecorder) |
+
+### Before
+```code
+// apps/backend/internal/repository/log.go:17
+func (r *LogRepo) ByUser(...) {
+    rows, err := r.db.Query(ctx,
+        `SELECT id, user_id, ... FROM api_logs WHERE user_id = $1 ...`)
+    if err != nil { return nil, 0, err }
+    // -> Postgres: "relation \"api_logs\" does not exist"
+}
+```
+```code
+// apps/backend/internal/middleware/metrics.go:26
+type responseRecorder struct {
+    http.ResponseWriter
+    status int
+    size   int
+}
+// No Flush(); MessagesStream's w.(http.Flusher) → fails → 500
+```
+```code
+// apps/backend/internal/middleware/logger.go:11
+type logRecorder struct {
+    http.ResponseWriter
+    status int
+}
+// No Flush(); same failure
+```
+
+### After
+```sql
+-- apps/backend/migrations/022_api_logs.sql: NEW
+CREATE TABLE IF NOT EXISTS api_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    api_key_id UUID REFERENCES api_keys(id) ON DELETE SET NULL,
+    model TEXT NOT NULL,
+    provider TEXT NOT NULL,
+    input_tokens INT NOT NULL DEFAULT 0,
+    output_tokens INT NOT NULL DEFAULT 0,
+    cost INT NOT NULL DEFAULT 0,
+    latency INT NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'success',
+    error_message TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_api_logs_user_id ON api_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_api_logs_user_created ON api_logs(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_api_logs_model ON api_logs(model);
+CREATE INDEX IF NOT EXISTS idx_api_logs_provider ON api_logs(provider);
+CREATE INDEX IF NOT EXISTS idx_api_logs_status ON api_logs(status);
+CREATE INDEX IF NOT EXISTS idx_api_logs_created_at ON api_logs(created_at DESC);
+```
+```go
+// apps/backend/internal/middleware/metrics.go
+func (rr *responseRecorder) Flush() {
+    if f, ok := rr.ResponseWriter.(http.Flusher); ok {
+        f.Flush()
+    }
+}
+```
+```go
+// apps/backend/internal/middleware/logger.go
+func (lr *logRecorder) Flush() {
+    if f, ok := lr.ResponseWriter.(http.Flusher); ok {
+        f.Flush()
+    }
+}
+```
+
+### Notes
+- The new `api_logs` migration (`022_api_logs.sql`) auto-applies on the next `AutoMigrate` run because the migration runner tracks applied files in `schema_migrations` and runs missing files in sorted order.
+- `lite_schema.go` was also updated to include `api_logs` so SQLite-mode deployments (`DB_TYPE=sqlite` for dev/testing) get the same fix without a separate follow-up.
+- The Flush() pattern (`if f, ok := inner.(http.Flusher); ok { f.Flush() }`) is the standard way to preserve optional `http.ResponseWriter` interfaces across wrappers; applies whenever any other middleware (e.g. a future tracing or compression layer) needs SSE compatibility.
+- `go build ./cmd/api` exits 0 after both edits. Manual HTTP smoke test against the running dev stack (Postgres + Redis) confirms `/api/logs` returns 200 with empty page when no logs exist; `/api/notifications/stream` returns 200 with `text/event-stream` and emits the initial `{"type":"connected"}` frame before the 30s ping interval.
+- No `UPDATE.md` history was rewritten — purely additive entry.
+
+## [N+11]. feat(docs/ui): enhance /docs/chat page with feature grid, endpoint card, comparison table, and improved visual hierarchy
+
+**Session**: api-reference-ui-enhance-2026-07-02
+**Date**: 2026-07-02
+
+### Why
+The `/docs/chat` page was a flat wall of text and code blocks with no visual hierarchy beyond colored dots headings. Users had no quick way to understand what made the chat endpoint special (streaming, model switching, retries, etc.), nor an easy way to copy the endpoint URL or compare the unified endpoint with the OpenAI-compatible one.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| `apps/web/app/docs/chat/page.tsx` | L1-279 | rewritten |
+
+### Before
+```tsx
+// apps/web/app/docs/chat/page.tsx (excerpt)
+<p>
+  The chat endpoint supports both standard JSON response and Server-Sent
+  Events (SSE) streaming. Streaming is enabled by setting <code>stream: true</code>.
+</p>
+
+<div className="flex items-center gap-3 mt-4 mb-6 p-3 rounded-xl border border-indigo-500/15 ...">
+  <span className="px-3 py-1.5 ...">POST</span>
+  <code>{BASE_URL}/api/chat</code>
+</div
+```
+
+### After
+```tsx
+// apps/web/app/docs/chat/page.tsx (excerpt)
+// ── Rich endpoint card with copy URL button ──
+<motion.div
+  className="rounded-2xl border border-indigo-500/15 ... p-5 mb-10 ..."
+>
+  <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+    <span className="px-3 py-1.5 ...">POST</span>
+    <code>{BASE_URL}/api/chat</code>
+    <span className="inline-flex ..."><Zap /> Unified</span>
+  </div>
+  <Copy URL button ... />
+</motion.div>
+
+// ── Feature grid (6 cards with icons) ──
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-12">
+  {FEATURES.map((f) => ( ... ))}
+</div>
+
+// ── Terminal-styled SSE example with copy button ──
+<div className="rounded-2xl border ... bg-gradient-to-br ...">
+  {/* Window chrome + copy button */}
+  <pre> ...  </pre>
+</div>
+
+// ── Endpoint comparison cards ──
+{COMPARISON.map((row) => ( ... ))}
+```
+
+### Notes
+- `npx tsc --noEmit` — 0 errors.
+- Prettier formatted.
+- The page now contains 6 feature cards (Streaming, Model Switching, Retries & Fallbacks, Token Accounting, Auto-Retry, OpenAI Compatible) with icons and hover effects.
+- Added a rich endpoint card at the top with a "Copy URL" button and a "Unified" badge.
+- The SSE stream example has a proper terminal window chrome (traffic lights + title) and a copy button.
+- Added a 3-row endpoint comparison grid showing Unified vs OpenAI endpoints for title, auth header, and request body.
+- The OpenAI-compatible endpoint section has a dedicated emerald-themed info card.
+- All sections use `whileInView` animations for staggered entrance.

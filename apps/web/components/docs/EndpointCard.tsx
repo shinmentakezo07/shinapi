@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { Lock, ChevronRight } from "lucide-react";
+import { Lock, ChevronRight, Copy, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /* ── Glass Atelier method colors — muted, semantically rich ── */
@@ -74,6 +74,14 @@ export const EndpointCard = ({
   children?: React.ReactNode;
 }) => {
   const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const copyToClipboard = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    void navigator.clipboard.writeText(path);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <motion.div
@@ -105,6 +113,25 @@ export const EndpointCard = ({
               Auth
             </span>
           )}
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={copyToClipboard}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                copyToClipboard(e as unknown as React.MouseEvent);
+              }
+            }}
+            className="w-6 h-6 rounded-md flex items-center justify-center bg-white/[0.02] border border-white/[0.05] text-white/30 hover:text-indigo-200 hover:border-indigo-500/20 hover:bg-indigo-500/[0.04] transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer"
+            aria-label="Copy endpoint path"
+          >
+            {copied ? (
+              <Check className="w-3 h-3 text-emerald-300" />
+            ) : (
+              <Copy className="w-3 h-3" />
+            )}
+          </div>
           <motion.div
             animate={{ rotate: open ? 90 : 0 }}
             transition={{ duration: 0.2, ease: "easeInOut" }}
