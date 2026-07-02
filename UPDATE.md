@@ -1463,3 +1463,130 @@ The `/docs/chat` page was a flat wall of text and code blocks with no visual hie
 - Added a 3-row endpoint comparison grid showing Unified vs OpenAI endpoints for title, auth header, and request body.
 - The OpenAI-compatible endpoint section has a dedicated emerald-themed info card.
 - All sections use `whileInView` animations for staggered entrance.
+
+## [N+12]. feat(dashboard/ui): overhaul `/dashboard` with intentional minimalism and avant-garde aesthetics
+
+**Session**: `dashboard-ui-avant-garde-2026-07-02`
+**Date**: 2026-07-02 16:30
+
+### Why
+The existing `/dashboard` overview page, while functional, suffered from a generic "SaaS template" aesthetic that failed to communicate the platform's premium positioning. The layout was rigid, visual hierarchy was flat, and micro-interactions were either absent or predictable. The goal was to apply a philosophy of *intentional minimalism*: every element must justify its existence, reduction is the ultimate sophistication, and the layout must feel bespoke rather than bootstrapped. This required a full visual overhaul of the metric cards, charts, data presentation lists, and ambient atmosphere, while strictly preserving all existing data-fetching logic and functional behavior.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| `apps/web/app/dashboard/DashboardOverviewClient.tsx` | L1-681 | modified (full rewrite) |
+| `apps/web/components/dashboard/MetricCard.tsx` | L1-55 | modified |
+| `apps/web/components/dashboard/StatusBadge.tsx` | L1-49 | modified |
+
+### Before
+```code
+// apps/web/app/dashboard/DashboardOverviewClient.tsx (original)
+// - Rigid 4-col / 3-col grid for metrics.
+// - Charts used generic recharts defaults (no custom tooltips, basic fills).
+// - Activity list had no stagger animation; flat list presentation.
+// - No atmospheric background; pure #050505 flat color.
+// - Quick action cards had basic border hover.
+// - Metric cards were imported from @/components, limiting per-page customization.
+
+// apps/web/components/dashboard/MetricCard.tsx (original)
+// - Basic card with bottom icon placement.
+// - Standard "hover:bg-white/10" transition.
+// - Used AnimatedCounter but lacked top-edge sheen or hover lift.
+
+// apps/web/components/dashboard/StatusBadge.tsx (original)
+// - Used Framer Motion for the dot animation.
+// - Inconsistent font sizing and spacing compared to new design system.
+```
+
+### After
+```code
+// apps/web/app/dashboard/DashboardOverviewClient.tsx (new)
+// - Introduced ambient background layers: soft animated mesh-shift orbs + noise overlay.
+// - Replaced static card layout with 6-column asymmetric hero metrics.
+// - Inlined enhanced MetricCard with top-edge sheen and ambient hover glow.
+// - Charts now use bespoke CustomTooltip, refined axis gradients, and cursor styling.
+// - Activity list uses staggered Framer Motion entrance (opacity + x-axis slide).
+// - Top models section features animated gradient progress bars.
+// - All sections wrapped in motion.div with carefully tuned spring/delay transitions.
+// - Typography refined: tighter tracking on headings, uppercase mono for metadata.
+
+// apps/web/components/dashboard/MetricCard.tsx (new)
+// - Redesigned for vertical layout: icon top-left, value bottom-left.
+// - Added "top edge sheen" (gradient-to-r line) on hover.
+// - Introduced ambient glow via absolute positioned blur div on group-hover.
+// - Standardized font scale (text-2xl value, 11px label). Tabular-nums enforced.
+
+// apps/web/components/dashboard/StatusBadge.tsx (new)
+// - Simplified to pure CSS (removed Framer Motion dependency for this atomic component).
+// - Standardized dot sizing and spacing.
+// - Added `animate-pulse` exclusively for success state to indicate live/liveness.
+// - Unified font scale with dashboard (10px sm, 11px md).
+```
+
+### Notes
+- `npx tsc --noEmit` — 0 errors.
+- All data-fetching hooks (`useAnalytics`, `useCredits`, `useKeys`) and derived metrics preserved exactly.
+- No new dependencies introduced; designs rely on existing `framer-motion`, `recharts`, `lucide-react`, and Tailwind v4 utilities already present in `globals.css`.
+- The `DashboardOverviewClient` is intentionally self-contained (inline `MetricCard`, `StatusBadge`, `CustomTooltip`) to allow the page to evolve independently of shared component constraints.
+
+## [N+13]. feat(dashboard/logs/ui): overhaul `/dashboard/logs` with intentional minimalism, ambient atmosphere, and refined table
+
+**Session**: `dashboard-logs-ui-avant-garde-2026-07-02`
+**Date**: 2026-07-02 17:15
+
+### Why
+The `/dashboard/logs` page, despite being one of the most frequently used views, retained a generic bootstrap-table aesthetic that clashed with the newly elevated `/dashboard` overview. The table was flat, the model breakdown sidebar was utilitarian, and the detail drawer lacked the tactile feedback expected of a premium devtool. The goal was to extend the *intentional minimalism* philosophy to the logs view: ambient atmosphere, surgical typography, staggered micro-interactions, and a cohesive visual language with the main dashboard.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| `apps/web/app/dashboard/logs/LogsClient.tsx` | L1-500 | modified (full rewrite) |
+| `apps/web/components/dashboard/ModelBreakdown.tsx` | L1-70 | modified |
+| `apps/web/components/dashboard/LogDetailDrawer.tsx` | L1-319 | modified |
+
+### Before
+```code
+// apps/web/app/dashboard/logs/LogsClient.tsx (original)
+// - Metric cards used the old shared MetricCard (still functional, but no sheen/glow).
+// - Table was a standard HTML <table> with `bg-[#0A0A0A]` and thin borders.
+// - No ambient background orbs; flat #050505 background.
+// - Filter buttons had static active state with no layoutId animation.
+// - Model sidebar used generic bars without hover opacity or percentage share labels.
+// - LogDetailDrawer had basic border styling, no glassmorphism or top-sheen.
+// - Token display was text-only: "input / output" with no visual ratio bar.
+```
+
+### After
+```code
+// apps/web/app/dashboard/logs/LogsClient.tsx (new)
+// - Ambient atmosphere: mesh-shift orbs + noise texture overlay (isolated with `z-index -10`).
+// - Inline `MetricCard` now uses the shared upgraded component (from N+12) — sheen + glow applied automatically.
+// - Search bar features a `/` keyboard shortcut badge (hidden on mobile).
+// - Filter buttons use Framer Motion `layoutId="log-filter-pill"` for a sliding active indicator.
+// - Table rows: left-border glow on hover, staggered row entrance animation, `role="button"` a11y preserved.
+// - Token column now renders a visual ratio bar (emerald input + cyan output proportions).
+// - Model sidebar uses `Motion.ModelBreakdown` with refined typography and percentage share labels.
+// - Pagination toned down: no aggressive `whileHover={{ scale: 1.2 }}`, replaced with subtle bg hover.
+
+// apps/web/components/dashboard/ModelBreakdown.tsx (new)
+// - Bars now feature `bg-gradient-to-r` with hover opacity transitions.
+// - Added percentage share label next to bar count.
+// - Refined spacing and typography consistency with the new design language.
+
+// apps/web/components/dashboard/LogDetailDrawer.tsx (new)
+// - Added top-edge sheen and ambient glow via absolute positioned gradients.
+// - Drawer background `bg-[#0c0c0e]` for subtle contrast from the main bg.
+// - Section headers standardized with 10px uppercase mono tracking.
+// - Detail rows got refined hover states (`bg-white/[0.015]` + `rounded-lg`).
+// - Copy button icon color transitions on hover.
+```
+
+### Notes
+- `npx tsc --noEmit` — 0 errors.
+- All data fetching, filtering, pagination, and keyboard shortcuts (`/`) preserved exactly.
+- `ModelBreakdown` and `LogDetailDrawer` are shared components; updates benefit any other consumers (e.g., analytics page).
+- Uses existing shared `MetricCard` (from N+12) and `StatusBadge` (from N+12) for consistency.
+- No new dependencies introduced.
