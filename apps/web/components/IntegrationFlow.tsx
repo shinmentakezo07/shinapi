@@ -3,8 +3,6 @@
 import {
   motion,
   useInView,
-  useScroll,
-  useTransform,
   useReducedMotion,
   AnimatePresence,
 } from "framer-motion";
@@ -26,6 +24,8 @@ import {
   ListChecks,
   FileX,
   Sparkles,
+  Terminal,
+  ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -58,6 +58,7 @@ interface Step {
   micro: MicroVizKind;
 }
 
+const STIData: StepId[] = ["01", "02", "03", "04"];
 const STEPS: ReadonlyArray<Step> = [
   {
     id: "01",
@@ -72,7 +73,7 @@ const STEPS: ReadonlyArray<Step> = [
     id: "02",
     title: "Provision",
     italic: "your key",
-    desc: "Generate credentials from the dashboard. Instant, no waiting room, scoped to your workspace.",
+    desc: "Generate credentials from the dashboard. Instant, named, scoped to your workspace — no waiting room.",
     duration: "instant",
     icon: KeyRound,
     micro: "key-reveal",
@@ -426,6 +427,20 @@ function useCopy() {
   return { copied, copy };
 }
 
+/* Pauses JS-driven timers when the tab/document is hidden — avoids burning
+ * CPU in the background and keeps the live micro-vizzes feeling brisk. */
+
+function useDocumentVisible(): boolean {
+  const [visible, setVisible] = useState(true);
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const onChange = () => setVisible(document.visibilityState === "visible");
+    document.addEventListener("visibilitychange", onChange);
+    return () => document.removeEventListener("visibilitychange", onChange);
+  }, []);
+  return visible;
+}
+
 /* ── Glass card primitive ── */
 
 function GlassCard({
@@ -461,46 +476,48 @@ function GlassCard({
 /* ── Atmospheric background ── */
 
 function AtmosphericBackground() {
+  // Ambient drift runs as CSS animations on the compositor thread (transform/
+  // opacity only), not Framer Motion JS-driven RAF loops. Big re-render win
+  // when the section is tall and several of these used to run together.
   return (
     <div
       className="pointer-events-none absolute inset-0 overflow-hidden"
       aria-hidden
     >
-      <motion.div
-        className="absolute -top-40 -left-40 w-[800px] h-[800px] rounded-full"
+      <style>{`
+        @keyframes s02-drift-a { 0%,100% { transform: translate3d(0,0,0) scale(1); } 50% { transform: translate3d(30px,0,0) scale(1.06); } }
+        @keyframes s02-drift-b { 0%,100% { transform: translate3d(0,0,0) scale(1); } 50% { transform: translate3d(0,-32px,0) scale(1.08); } }
+        @keyframes s02-drift-c { 0%,100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+        .s02-drift-a { animation: s02-drift-a 24s ease-in-out infinite; will-change: transform; }
+        .s02-drift-b { animation: s02-drift-b 28s ease-in-out infinite; will-change: transform; }
+        .s02-drift-c { animation: s02-drift-c 32s ease-in-out infinite; will-change: transform; }
+        @media (prefers-reduced-motion: reduce) {
+          .s02-drift-a, .s02-drift-b, .s02-drift-c { animation: none !important; }
+        }
+      `}</style>
+      <div
+        className="s02-drift-a absolute -top-40 -left-40 w-[800px] h-[800px] rounded-full"
         style={{
           background:
             "radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 65%)",
           mixBlendMode: "screen",
         }}
-        initial={{ scale: 1, x: 0 }}
-        whileInView={{ scale: [1, 1.08, 1], x: [0, 30, 0] }}
-        viewport={{ amount: 0.05 }}
-        transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
       />
-      <motion.div
-        className="absolute top-1/3 -right-40 w-[700px] h-[700px] rounded-full"
+      <div
+        className="s02-drift-b absolute top-1/3 -right-40 w-[700px] h-[700px] rounded-full"
         style={{
           background:
             "radial-gradient(circle, rgba(139,92,246,0.14) 0%, transparent 65%)",
           mixBlendMode: "screen",
         }}
-        initial={{ scale: 1, y: 0 }}
-        whileInView={{ scale: [1, 1.1, 1], y: [0, -40, 0] }}
-        viewport={{ amount: 0.05 }}
-        transition={{ duration: 26, repeat: Infinity, ease: "easeInOut" }}
       />
-      <motion.div
-        className="absolute bottom-0 left-[58%] w-[600px] h-[400px] rounded-full"
+      <div
+        className="s02-drift-c absolute bottom-0 left-[58%] w-[600px] h-[400px] rounded-full"
         style={{
           background:
             "radial-gradient(ellipse, rgba(56,189,248,0.08) 0%, transparent 65%)",
           mixBlendMode: "screen",
         }}
-        initial={{ scale: 1 }}
-        whileInView={{ scale: [1, 1.05, 1] }}
-        viewport={{ amount: 0.05 }}
-        transition={{ duration: 30, repeat: Infinity, ease: "easeInOut" }}
       />
       <div
         className="absolute inset-0 opacity-[0.07] pointer-events-none"
@@ -512,35 +529,206 @@ function AtmosphericBackground() {
             "radial-gradient(ellipse 70% 60% at 50% 40%, black 0%, transparent 100%)",
         }}
       />
-      <div
-        className="absolute inset-0 opacity-[0.025] mix-blend-overlay"
-        style={{
-          backgroundImage:
-            "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
-        }}
-      />
     </div>
   );
 }
 
+/* ── Animated count-up hook (motion-safe) ── */
+
+function useCountUp(target: number, active: boolean, durationMs = 1400) {
+  const reduced = useReducedMotion();
+  const [val, setVal] = useState(0);
+  const startedRef = useRef(false);
+  const rafRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!active) return;
+    if (reduced) {
+      setVal(target);
+      return;
+    }
+    if (startedRef.current) {
+      setVal(target);
+      return;
+    }
+    startedRef.current = true;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / durationMs);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setVal(Math.round(target * eased));
+      if (t < 1) rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [target, active, reduced, durationMs]);
+  return val;
+}
+
+/* ── Tiny inline sparkline ── */
+
+function Sparkline({
+  data,
+  color,
+  className,
+  width = 64,
+  height = 22,
+}: {
+  data: number[];
+  color: string;
+  className?: string;
+  width?: number;
+  height?: number;
+}) {
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  const span = Math.max(1, max - min);
+  const path = data
+    .map((v, i) => {
+      const x = (i / (data.length - 1)) * width;
+      const y = height - 2 - ((v - min) / span) * (height - 4);
+      return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+  const gid = `spark-${color.replace(/[^a-z0-9]/gi, "")}`;
+  return (
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      preserveAspectRatio="none"
+      className={className}
+      aria-hidden
+    >
+      <defs>
+        <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.35" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path
+        d={`${path} L${width},${height} L0,${height} Z`}
+        fill={`url(#${gid})`}
+      />
+      <path
+        d={path}
+        fill="none"
+        stroke={color}
+        strokeWidth="1"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/* Format a numeric label as a count-up render. */
+function MotionNumber({
+  value,
+  suffix = "",
+  prefix = "",
+  decimals = 0,
+  active,
+  className,
+}: {
+  value: number;
+  suffix?: string;
+  prefix?: string;
+  decimals?: number;
+  active: boolean;
+  className?: string;
+}) {
+  const v = useCountUp(value, active);
+  return (
+    <span className={className}>
+      {prefix}
+      {v.toLocaleString("en-US", {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      })}
+      {suffix}
+    </span>
+  );
+}
+
+/* Numeric form of each trust metric for animated count-up. */
+const TRUST_NUMERIC: Record<
+  string,
+  { num: number; prefix?: string; suffix?: string; decimals?: number }
+> = {
+  "Requests / min": { num: 8.4, suffix: "M", decimals: 1 },
+  "p50 latency": { num: 12, suffix: "ms" },
+  Uptime: { num: 99.99, suffix: "%" },
+  Models: { num: 100, suffix: "+" },
+  Engineers: { num: 12.4, suffix: "k", decimals: 1 },
+};
+
+const TRUST_SPARKLINES: Record<string, number[]> = {
+  "Requests / min": [
+    6.1, 5.8, 6.4, 6.0, 7.0, 6.7, 7.4, 7.1, 7.8, 7.5, 8.0, 7.7, 8.4,
+  ],
+  "p50 latency": [14, 13, 12, 13, 12, 12, 11, 12, 12, 13, 12, 12, 12],
+  Uptime: [
+    99.94, 99.96, 99.97, 99.95, 99.98, 99.97, 99.99, 99.98, 99.99, 99.99, 99.98,
+    99.99, 99.99,
+  ],
+  Models: [62, 71, 78, 85, 90, 93, 96, 98, 99, 100, 100, 100, 100],
+  Engineers: [
+    8.2, 9.0, 9.6, 10.1, 10.8, 11.2, 11.6, 11.9, 12.0, 12.2, 12.3, 12.3, 12.4,
+  ],
+};
+
 /* ── Trust strip ── */
 
 function TrustStrip() {
+  const stripRef = useRef<HTMLDivElement>(null);
+  const inView = useInView(stripRef, { once: true, margin: "-40px" });
   return (
     <motion.div
+      ref={stripRef}
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-40px" }}
       transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       className="mt-10 lg:mt-14"
     >
-      <GlassCard className="px-5 lg:px-8 py-4 lg:py-5">
+      <GlassCard className="px-5 lg:px-8 py-5 lg:py-6">
+        {/* Caption row — reinforces this is infra telemetry, not vanity */}
+        <div className="flex items-center justify-between mb-5 lg:mb-6">
+          <div className="flex items-center gap-2">
+            <span
+              className="w-1.5 h-1.5 rounded-full"
+              style={{
+                background: `radial-gradient(circle, ${ACCENT.statusHex} 0%, #047857 100%)`,
+                boxShadow: `0 0 8px ${ACCENT.statusHex}`,
+              }}
+              aria-hidden
+            />
+            <span className="text-[10px] font-mono text-white/45 tracking-[0.22em] uppercase">
+              Live · platform telemetry
+            </span>
+          </div>
+          <span className="text-[10px] font-mono text-white/25 tabular-nums">
+            updated just now
+          </span>
+        </div>
         <ul
           role="list"
-          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-y-4 gap-x-2 lg:gap-x-4"
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-y-5 gap-x-2 lg:gap-x-4"
         >
           {TRUST_METRICS.map((m, i) => {
             const Icon = m.icon;
+            const num = TRUST_NUMERIC[m.label];
+            const spark = TRUST_SPARKLINES[m.label];
+            const sparkColor =
+              i === 0
+                ? "#a5b4fc"
+                : i === 1
+                  ? "#7df0e3"
+                  : i === 2
+                    ? "#6ee7b7"
+                    : i === 3
+                      ? "#c4b5fd"
+                      : "#fcd34d";
             return (
               <li
                 key={m.label}
@@ -555,12 +743,31 @@ function TrustStrip() {
                 >
                   <Icon className="w-4 h-4" strokeWidth={1.75} />
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="text-lg lg:text-xl font-semibold text-white tracking-tight tabular-nums leading-none">
-                    {m.value}
+                    {num ? (
+                      <MotionNumber
+                        value={num.num}
+                        prefix={num.prefix}
+                        suffix={num.suffix}
+                        decimals={num.decimals}
+                        active={inView}
+                      />
+                    ) : (
+                      m.value
+                    )}
                   </div>
-                  <div className="mt-1 text-[10px] font-mono tracking-[0.18em] uppercase text-white/40 truncate">
-                    {m.label}
+                  <div className="mt-1.5 flex items-center gap-2 min-w-0">
+                    <Sparkline
+                      data={spark}
+                      color={sparkColor}
+                      className="w-12 h-3.5 shrink-0"
+                      width={48}
+                      height={14}
+                    />
+                    <div className="text-[10px] font-mono tracking-[0.18em] uppercase text-white/40 truncate">
+                      {m.label}
+                    </div>
                   </div>
                 </div>
               </li>
@@ -692,10 +899,67 @@ function JourneyTracker({
   );
 }
 
+/* ── Mobile Journey Tracker — sticky bottom rail on small screens ── */
+
+function MobileJourneyTracker({ activeId }: { activeId: StepId | null }) {
+  const activeIdx = activeId ? STEPS.findIndex((s) => s.id === activeId) : -1;
+  const pct = activeIdx >= 0 ? ((activeIdx + 1) / STEPS.length) * 100 : 0;
+  return (
+    <nav
+      aria-label="Onboarding journey"
+      className="lg:hidden sticky bottom-4 z-30"
+    >
+      <div className="rounded-2xl border border-white/[0.08] bg-black/70 backdrop-blur-xl px-3 py-2.5 shadow-[0_8px_30px_-10px_rgba(0,0,0,0.5)]">
+        <div className="flex items-center gap-1.5">
+          {STEPS.map((s) => {
+            const Icon = s.icon;
+            const isActive = activeId === s.id;
+            const isPast =
+              activeId !== null &&
+              STEPS.findIndex((x) => x.id === activeId) >
+                STEPS.findIndex((x) => x.id === s.id);
+            return (
+              <a
+                key={s.id}
+                href={`#step-${s.id}`}
+                className={cn(
+                  "flex-1 flex flex-col items-center gap-1 py-1.5 rounded-lg transition-colors",
+                  isActive
+                    ? "bg-white/[0.06] text-white"
+                    : isPast
+                      ? "text-indigo-200/80"
+                      : "text-white/40",
+                )}
+                aria-current={isActive ? "step" : undefined}
+              >
+                <Icon className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden />
+                <span className="text-[8px] font-mono tracking-wider uppercase">
+                  {s.id}
+                </span>
+              </a>
+            );
+          })}
+        </div>
+        <div className="mt-2 h-0.5 rounded-full bg-white/[0.04] overflow-hidden">
+          <div
+            className="h-full origin-left rounded-full"
+            style={{
+              width: `${pct}%`,
+              background: `linear-gradient(90deg, ${ACCENT.hex}, ${ACCENT.hexSoft})`,
+              transition: "width 200ms cubic-bezier(0.16, 1, 0.3, 1)",
+            }}
+          />
+        </div>
+      </div>
+    </nav>
+  );
+}
+
 /* ── Micro-viz: Step 01 — Live signup ── */
 
 function LiveSignupViz() {
   const initial = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const visible = useDocumentVisible();
   const [signups, setSignups] = useState<
     { initials: string; city: string; age: number; id: number }[]
   >(() => [
@@ -707,6 +971,7 @@ function LiveSignupViz() {
   const ageRef = useRef(0);
 
   useEffect(() => {
+    if (!visible) return;
     const cities = [
       "Berlin",
       "San Francisco",
@@ -736,8 +1001,8 @@ function LiveSignupViz() {
 
     const ageTimer = setInterval(() => {
       ageRef.current += 1;
-      setSignups((prev) => prev.map((s) => ({ ...s, age: s.age + 1 })));
-    }, 1000);
+      setSignups((prev) => prev.map((s) => ({ ...s, age: s.age + 3 })));
+    }, 3000);
 
     return () => {
       clearInterval(interval);
@@ -925,9 +1190,32 @@ function CodeBlockWithTabs() {
   );
   const { copied, copy } = useCopy();
   const meta = LANG_META[lang];
+  const reducedMotion = useReducedMotion();
+  const inViewRef = useRef<HTMLDivElement>(null);
+  const inView = useInView(inViewRef, { once: true, margin: "-40px" });
+  const cycleTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Auto-cycle languages as a passive demo, until the user interacts.
+  const [userInteracted, setUserInteracted] = useState(false);
+  useEffect(() => {
+    if (userInteracted || reducedMotion || !inView) return;
+    const langs: Lang[] = ["ts", "py", "curl"];
+    cycleTimer.current = setInterval(() => {
+      setLang((prev) => {
+        const i = langs.indexOf(prev);
+        return langs[(i + 1) % langs.length];
+      });
+    }, 3200);
+    return () => {
+      if (cycleTimer.current) clearInterval(cycleTimer.current);
+    };
+  }, [userInteracted, reducedMotion, inView]);
 
   return (
-    <div className="mt-7 relative rounded-2xl overflow-hidden border border-white/[0.08] bg-black/60 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),0_20px_40px_-20px_rgba(0,0,0,0.6)]">
+    <div
+      ref={inViewRef}
+      className="mt-7 relative rounded-2xl overflow-hidden border border-white/[0.08] bg-black/60 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),0_20px_40px_-20px_rgba(0,0,0,0.6)]"
+    >
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-px"
@@ -936,6 +1224,21 @@ function CodeBlockWithTabs() {
             "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)",
         }}
       />
+      {/* CRT-style slow scanline sweep — reinforces the terminal metaphor */}
+      {!reducedMotion && (
+        <motion.div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 h-16 z-10"
+          style={{
+            background:
+              "linear-gradient(180deg, transparent 0%, rgba(99,102,241,0.06) 50%, transparent 100%)",
+          }}
+          initial={{ y: "-20%" }}
+          whileInView={{ y: ["-20%", "120%"] }}
+          viewport={{ once: false, amount: 0.2 }}
+          transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
+        />
+      )}
       <div className="flex items-center justify-between gap-2 px-3 sm:px-4 py-2.5 border-b border-white/[0.05] bg-white/[0.02]">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           <div className="hidden sm:flex gap-1.5 shrink-0">
@@ -977,7 +1280,10 @@ function CodeBlockWithTabs() {
                   type="button"
                   role="tab"
                   aria-selected={active}
-                  onClick={() => setLang(l)}
+                  onClick={() => {
+                    setUserInteracted(true);
+                    setLang(l);
+                  }}
                   className={cn(
                     "min-h-[28px] px-2.5 text-[10px] font-mono uppercase tracking-wider rounded-md",
                     "motion-safe:transition-[background-color,color] duration-200",
@@ -1022,25 +1328,35 @@ function CodeBlockWithTabs() {
       </div>
       <pre className="p-4 lg:p-5 overflow-x-auto leading-[1.7] text-[12px]">
         <code>
-          {tokens.map((line, li) => (
-            <div key={li} className="flex">
-              <span
-                aria-hidden
-                className="w-7 shrink-0 text-right pr-4 text-white/20 select-none tabular-nums border-r border-white/[0.05] mr-4"
-              >
-                {li + 1}
-              </span>
-              <span className="flex-1 min-w-0 whitespace-pre">
-                {line.tokens.length === 0
-                  ? " "
-                  : line.tokens.map((token, ti) => (
-                      <span key={ti} className={TOKEN_STYLES[token.type]}>
-                        {token.text || " "}
-                      </span>
-                    ))}
-              </span>
-            </div>
-          ))}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={lang}
+              initial={reducedMotion ? false : { opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reducedMotion ? undefined : { opacity: 0, y: -4 }}
+              transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            >
+              {tokens.map((line, li) => (
+                <div key={li} className="flex">
+                  <span
+                    aria-hidden
+                    className="w-7 shrink-0 text-right pr-4 text-white/20 select-none tabular-nums border-r border-white/[0.05] mr-4"
+                  >
+                    {li + 1}
+                  </span>
+                  <span className="flex-1 min-w-0 whitespace-pre">
+                    {line.tokens.length === 0
+                      ? " "
+                      : line.tokens.map((token, ti) => (
+                          <span key={ti} className={TOKEN_STYLES[token.type]}>
+                            {token.text || " "}
+                          </span>
+                        ))}
+                  </span>
+                </div>
+              ))}
+            </motion.div>
+          </AnimatePresence>
         </code>
       </pre>
     </div>
@@ -1050,17 +1366,19 @@ function CodeBlockWithTabs() {
 /* ── Micro-viz: Step 04 — Mini live dashboard ── */
 
 function MiniDashViz() {
+  const visible = useDocumentVisible();
   const [reqPerMin, setReqPerMin] = useState(8421380);
   const [p95, setP95] = useState(47);
 
   useEffect(() => {
+    if (!visible) return;
     const id = setInterval(() => {
       setReqPerMin((n) => n + Math.floor(Math.random() * 180) + 40);
       setP95((n) => {
         const delta = Math.floor(Math.random() * 5) - 2;
         return Math.max(38, Math.min(58, n + delta));
       });
-    }, 2500);
+    }, 5000);
     return () => clearInterval(id);
   }, []);
 
@@ -1199,7 +1517,19 @@ function StepCard({ step, index }: { step: Step; index: number }) {
           }}
         />
 
-        <div className="flex items-start gap-5 lg:gap-7">
+        {/* Massive step-number watermark — anchors asymmetry, signals editorial design */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -top-10 -right-2 lg:-right-4 text-[7rem] lg:text-[10rem] font-display italic font-normal select-none leading-[0.8] motion-safe:transition-[opacity,transform] duration-700 group-hover:opacity-100 group-hover:translate-x-1"
+          style={{
+            color: "rgba(255,255,255,0.035)",
+            textShadow: "0 0 80px rgba(99,102,241,0.10)",
+          }}
+        >
+          {step.id}
+        </span>
+
+        <div className="flex items-start gap-5 lg:gap-7 relative z-10">
           <div
             className={cn(
               "shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center",
@@ -1251,11 +1581,6 @@ function StepCard({ step, index }: { step: Step; index: number }) {
 export function IntegrationFlow() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const reducedMotion = useReducedMotion();
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start 80%", "end 30%"],
-  });
-  const cometY = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
 
   const [activeId, setActiveId] = useState<StepId | null>(null);
   const stepRefs = useRef<Record<StepId, HTMLElement | null>>({
@@ -1265,46 +1590,49 @@ export function IntegrationFlow() {
     "04": null,
   });
 
+  // IntersectionObserver-based scroll-spy: one observer, no per-scroll
+  // getBoundingClientRect loop. Big reduction in main-thread work on tall
+  // sections with many steps mounted at once.
   useEffect(() => {
-    const ids: StepId[] = STEPS.map((s) => s.id);
-    let rafId: number | null = null;
-    let scheduled = false;
+    if (typeof IntersectionObserver === "undefined") return;
+    const ratios = new Map<StepId, number>();
 
-    const compute = () => {
-      scheduled = false;
-      let bestId: StepId | null = null;
-      let bestRatio = 0;
-      for (const id of ids) {
-        const el = stepRefs.current[id];
-        if (!el) continue;
-        const r = el.getBoundingClientRect();
-        const vh = window.innerHeight;
-        const top = Math.max(r.top, 0);
-        const bottom = Math.min(r.bottom, vh);
-        const visiblePx = Math.max(0, bottom - top);
-        const ratio = visiblePx / Math.max(1, r.height);
-        if (ratio > 0.25 && ratio > bestRatio) {
-          bestRatio = ratio;
-          bestId = id;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          const el = e.target as HTMLElement;
+          const id = el.id.slice(-2) as StepId;
+          if (!STIData.includes(id)) continue;
+          ratios.set(id, e.intersectionRatio);
         }
-      }
-      setActiveId((prev) => (prev === bestId ? prev : bestId));
-    };
+        let bestId: StepId | null = null;
+        let bestRatio = 0;
+        for (const [id, ratio] of ratios) {
+          if (ratio > bestRatio) {
+            bestRatio = ratio;
+            bestId = id;
+          }
+        }
+        if (bestRatio >= 0.2) {
+          setActiveId((prev) => (prev === bestId ? prev : bestId));
+        }
+      },
+      {
+        // Bias toward the upper-middle of the viewport so a single step is
+        // always "active" while the section is in view.
+        rootMargin: "-30% 0px -50% 0px",
+        threshold: [0, 0.25, 0.5, 0.75, 1],
+      },
+    );
 
-    const schedule = () => {
-      if (scheduled) return;
-      scheduled = true;
-      rafId = requestAnimationFrame(compute);
-    };
+    // Observe step nodes (refs are populated by setStepRefs during commit,
+    // which runs before this effect).
+    for (const id of STIData) {
+      const el = stepRefs.current[id];
+      if (el) io.observe(el);
+    }
 
-    compute();
-    window.addEventListener("scroll", schedule, { passive: true });
-    window.addEventListener("resize", schedule);
-    return () => {
-      window.removeEventListener("scroll", schedule);
-      window.removeEventListener("resize", schedule);
-      if (rafId !== null) cancelAnimationFrame(rafId);
-    };
+    return () => io.disconnect();
   }, []);
 
   const progress = useMemo(() => {
@@ -1340,7 +1668,7 @@ export function IntegrationFlow() {
               className="pointer-events-none select-none absolute right-2 lg:right-4 top-2 opacity-[0.10] hidden sm:block"
             >
               <pre className="text-[9px] lg:text-[10px] font-mono leading-[1.6] text-white whitespace-pre">
-{`$ yapapa init
+                {`$ yapapa init
 OK workspace ready
 $ yapapa key create
 OK sk-yap-... provisioned
@@ -1500,18 +1828,6 @@ $ yapapa deploy
                 filter: "blur(3px)",
               }}
             />
-            {!reducedMotion && (
-              <motion.div
-                aria-hidden
-                className="absolute left-[-3px] w-[7px] h-[7px] rounded-full hidden lg:block z-20"
-                style={{
-                  top: cometY,
-                  background: `radial-gradient(circle, #c7d2fe 0%, ${ACCENT.hex} 60%, transparent 100%)`,
-                  boxShadow: `0 0 12px ${ACCENT.glow}, 0 0 24px rgba(99,102,241,0.3)`,
-                }}
-              />
-            )}
-
             <ol ref={setStepRefs} className="space-y-6 lg:space-y-8 lg:pl-12">
               {STEPS.map((step, i) => (
                 <StepCard key={step.id} step={step} index={i} />
@@ -1520,142 +1836,228 @@ $ yapapa deploy
           </div>
         </div>
 
-        {/* ── CTA panel (dual-action) ── */}
+        {/* ── Mobile journey tracker — sticky bottom rail ── */}
+        <div className="lg:hidden -mt-6">
+          <MobileJourneyTracker activeId={activeId} />
+        </div>
+
+        {/* ── CTA panel (terminal-prompt aesthetic) ── */}
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
+          initial={{ opacity: 0, y: 32 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           className="mt-20 lg:mt-28"
         >
-          <div className="relative rounded-[2.5rem] overflow-hidden border border-white/[0.08] p-1 bg-gradient-to-br from-white/[0.06] via-white/[0.02] to-transparent shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_40px_80px_-30px_rgba(0,0,0,0.6),0_0_120px_-40px_rgba(99,102,241,0.3)]">
-            <motion.div
-              aria-hidden
-              className="absolute inset-0 opacity-50"
-              style={{
-                background:
-                  "radial-gradient(ellipse 800px 400px at 30% 0%, rgba(99,102,241,0.3) 0%, transparent 50%), radial-gradient(ellipse 600px 300px at 80% 100%, rgba(139,92,246,0.2) 0%, transparent 50%)",
-                mixBlendMode: "screen",
-              }}
-              initial={{ opacity: 0.5 }}
-              whileInView={{ opacity: [0.4, 0.6, 0.4] }}
-              viewport={{ amount: 0.05 }}
-              transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-            />
-
-            <div className="relative bg-gradient-to-br from-[#08080F]/90 to-[#0A0A14]/90 backdrop-blur-2xl rounded-[2.3rem] p-10 lg:p-16 overflow-hidden">
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-x-0 top-0 h-px"
-                style={{
-                  background:
-                    "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)",
-                }}
-              />
-              <div
-                aria-hidden
-                className="absolute inset-0 opacity-[0.05]"
-                style={{
-                  backgroundImage:
-                    "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
-                  backgroundSize: "40px 40px",
-                }}
-              />
-
-              <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-10">
-                <div className="max-w-xl">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 mb-5 rounded-full border border-emerald-400/30 bg-emerald-500/10 backdrop-blur">
-                    <span
-                      className="w-1.5 h-1.5 rounded-full"
-                      style={{
-                        background: `radial-gradient(circle, ${ACCENT.statusHex} 0%, #047857 100%)`,
-                        boxShadow: `0 0 8px ${ACCENT.statusHex}`,
-                      }}
-                    />
-                    <span className="text-[11px] text-emerald-200 font-mono tracking-widest uppercase">
-                      Beta — Free Forever
-                    </span>
-                  </div>
-                  <h3 className="text-4xl lg:text-6xl font-semibold text-white tracking-[-0.03em] leading-[1.05] text-balance">
-                    Ready to{" "}
-                    <span className="font-display italic font-normal bg-gradient-to-br from-white via-indigo-100 to-indigo-300 bg-clip-text text-transparent">
-                      ship?
-                    </span>
-                  </h3>
-                  <p className="mt-5 text-white/55 text-base lg:text-lg leading-relaxed text-pretty">
-                    Full access, zero commitment. No credit card, no expiring
-                    trial, no time bombs.
-                  </p>
-
-                  <div className="mt-7 grid grid-cols-2 gap-x-6 gap-y-2.5 max-w-md">
-                    {[
-                      "No credit card",
-                      "No rate limits",
-                      "No surprise bills",
-                      "Instant provisioning",
-                    ].map((g) => (
-                      <div key={g} className="flex items-center gap-2.5">
-                        <div className="w-4 h-4 rounded-full bg-emerald-500/15 border border-emerald-400/30 flex items-center justify-center">
-                          <div
-                            className="w-1.5 h-1.5 rounded-full"
-                            style={{
-                              background: `radial-gradient(circle, #6ee7b7 0%, ${ACCENT.statusHex} 100%)`,
-                            }}
-                          />
-                        </div>
-                        <span className="text-[13px] text-white/70 font-mono">
-                          {g}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="shrink-0 flex flex-col items-stretch lg:items-end gap-3">
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <Link
-                      href="/signup"
-                      className={cn(
-                        "group relative inline-flex items-center justify-center gap-3 min-h-[52px] px-8 rounded-2xl",
-                        "bg-white text-black font-bold text-base overflow-hidden",
-                        "motion-safe:transition-transform duration-300 hover:scale-[1.02] active:scale-[0.98]",
-                        "shadow-[0_20px_40px_-10px_rgba(255,255,255,0.2),inset_0_1px_0_0_rgba(255,255,255,0.4)]",
-                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0A14]",
-                      )}
-                    >
-                      <div
-                        aria-hidden
-                        className="absolute inset-0 -translate-x-full group-hover:translate-x-full motion-safe:transition-transform duration-700 bg-gradient-to-r from-transparent via-white/40 to-transparent"
-                      />
-                      <span className="relative z-10">Claim your key</span>
-                      <ArrowRight
-                        className="relative z-10 w-5 h-5 motion-safe:transition-transform duration-300 group-hover:translate-x-1"
-                        strokeWidth={2.25}
-                      />
-                    </Link>
-                    <Link
-                      href="/docs"
-                      className={cn(
-                        "group inline-flex items-center justify-center gap-2 min-h-[52px] px-6 rounded-2xl",
-                        "bg-white/[0.04] hover:bg-white/[0.08] text-white border border-white/[0.08] hover:border-white/[0.18]",
-                        "text-sm font-medium",
-                        "motion-safe:transition-[background-color,border-color] duration-200",
-                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0A14]",
-                      )}
-                    >
-                      <BookOpen className="w-4 h-4" strokeWidth={1.75} />
-                      <span>Read the docs</span>
-                    </Link>
-                  </div>
-                  <p className="text-[11px] text-white/30 font-mono lg:text-right">
-                    No signup friction. No hidden fees.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <CTAPanel />
         </motion.div>
       </div>
     </section>
+  );
+}
+
+/* ── CTA panel — terminal prompt aesthetic, mouse-follow spotlight ── */
+
+function CTAPanel() {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const reducedMotion = useReducedMotion();
+
+  // Mouse-follow spotlight via CSS variables — cheap, no per-render.
+  const onMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (reducedMotion) return;
+      const r = panelRef.current?.getBoundingClientRect();
+      if (!r) return;
+      panelRef.current?.style.setProperty("--mx", `${e.clientX - r.left}px`);
+      panelRef.current?.style.setProperty("--my", `${e.clientY - r.top}px`);
+    },
+    [reducedMotion],
+  );
+
+  return (
+    <div
+      ref={panelRef}
+      onMouseMove={onMouseMove}
+      className="group/panel relative rounded-[2rem] overflow-hidden border border-white/[0.08] bg-[#070710] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),0_30px_60px_-25px_rgba(0,0,0,0.6),0_0_120px_-50px_rgba(99,102,241,0.4)]"
+    >
+      <style>{`
+        @keyframes s02-caret { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
+        .s02-caret { animation: s02-caret 1s steps(1, end) infinite; }
+        @media (prefers-reduced-motion: reduce) { .s02-caret { animation: none; opacity: 1; } }
+      `}</style>
+
+      {/* Mouse-follow spotlight — pure CSS, only paints on hover. */}
+      {!reducedMotion && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-0 group-hover/panel:opacity-100 transition-opacity duration-500"
+          style={{
+            background:
+              "radial-gradient(360px circle at var(--mx, 50%) var(--my, 50%), rgba(99,102,241,0.10), transparent 60%)",
+          }}
+        />
+      )}
+
+      {/* Static halo — was an infinite pulsing motion.div, now just a gradient. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 700px 320px at 25% 0%, rgba(99,102,241,0.22) 0%, transparent 55%), radial-gradient(ellipse 500px 280px at 85% 100%, rgba(139,92,246,0.16) 0%, transparent 55%)",
+          mixBlendMode: "screen",
+        }}
+      />
+      {/* Subtle blueprint grid — kept, but reduced opacity for contrast. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-[0.04]"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
+          backgroundSize: "48px 48px",
+          maskImage:
+            "radial-gradient(ellipse 80% 70% at 50% 40%, black 0%, transparent 100%)",
+        }}
+      />
+      {/* Top hairline. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-px"
+        style={{
+          background:
+            "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.35) 50%, transparent 100%)",
+        }}
+      />
+
+      <div className="relative z-10 p-8 sm:p-10 lg:p-14">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-10">
+          <div className="max-w-xl">
+            {/* Beta badge — refined. */}
+            <div className="inline-flex items-center gap-2 px-3 py-1 mb-6 rounded-full border border-emerald-400/25 bg-emerald-500/[0.08] backdrop-blur">
+              <span
+                className="w-1.5 h-1.5 rounded-full"
+                style={{
+                  background: `radial-gradient(circle, ${ACCENT.statusHex} 0%, #047857 100%)`,
+                  boxShadow: `0 0 8px ${ACCENT.statusHex}`,
+                }}
+                aria-hidden
+              />
+              <span className="text-[11px] text-emerald-200 font-mono tracking-[0.18em] uppercase">
+                Open beta · Free forever
+              </span>
+            </div>
+
+            {/* Headline — "request" in italic gradient, anchored to a real promise. */}
+            <h3 className="text-[2.25rem] sm:text-5xl lg:text-[3.5rem] font-semibold text-white tracking-[-0.03em] leading-[1.04] text-balance">
+              Ship your first{" "}
+              <span className="font-display italic font-normal bg-gradient-to-br from-white via-indigo-100 to-indigo-300 bg-clip-text text-transparent">
+                request
+              </span>{" "}
+              tonight.
+            </h3>
+
+            <p className="mt-5 text-white/55 text-base lg:text-lg leading-relaxed text-pretty max-w-lg">
+              Full access, zero commitment. No credit card, no expiring trial,
+              no procurement call.
+            </p>
+
+            {/* Benefits — emerald check icons replace the old dot clusters. */}
+            <ul className="mt-7 grid grid-cols-2 gap-x-5 gap-y-3 max-w-md">
+              {[
+                "No credit card",
+                "All 100+ models",
+                "Usage caps, not trials",
+                "Keys in under 15s",
+              ].map((g) => (
+                <li key={g} className="flex items-center gap-2.5">
+                  <span
+                    className="shrink-0 w-4 h-4 rounded-md flex items-center justify-center bg-emerald-500/15 border border-emerald-400/30"
+                    aria-hidden
+                  >
+                    <Check
+                      className="w-2.5 h-2.5 text-emerald-300"
+                      strokeWidth={3}
+                    />
+                  </span>
+                  <span className="text-[13px] text-white/75 font-mono tracking-tight">
+                    {g}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Action stack — terminal prompt header + dual CTA buttons. */}
+          <div className="shrink-0 flex flex-col items-stretch lg:items-end gap-3 lg:max-w-sm w-full lg:w-auto">
+            {/* Prompt line — reinforces the section's terminal language. */}
+            <div className="flex items-center justify-between lg:justify-end gap-3 lg:gap-4 px-1 mb-1">
+              <div className="flex items-center gap-2 font-mono text-[11px] text-white/45">
+                <Terminal
+                  className="w-3.5 h-3.5 text-indigo-200/70"
+                  strokeWidth={1.75}
+                  aria-hidden
+                />
+                <span>
+                  <span className="text-emerald-300">$</span>{" "}
+                  <span className="text-white/60">ready to ship?</span>
+                  <span className="s02-caret text-emerald-300">_</span>
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link
+                href="/signup"
+                className={cn(
+                  "group/cta relative inline-flex items-center justify-center gap-3 min-h-[52px] px-7 rounded-2xl",
+                  "bg-white text-black font-semibold text-[15px] overflow-hidden",
+                  "motion-safe:transition-transform duration-300 hover:scale-[1.02] active:scale-[0.98]",
+                  "shadow-[0_20px_40px_-12px_rgba(255,255,255,0.18),inset_0_1px_0_0_rgba(255,255,255,0.4)]",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#070710]",
+                )}
+              >
+                <span
+                  aria-hidden
+                  className="absolute inset-0 -translate-x-full group-hover/cta:translate-x-full motion-safe:transition-transform duration-700 bg-gradient-to-r from-transparent via-white/40 to-transparent"
+                />
+                <span className="relative z-10 font-mono tracking-tight">
+                  <span className="text-emerald-600">$</span> claim --free
+                </span>
+                <ArrowRight
+                  className="relative z-10 w-4 h-4 motion-safe:transition-transform duration-300 group-hover/cta:translate-x-1"
+                  strokeWidth={2.25}
+                />
+              </Link>
+              <Link
+                href="/docs"
+                className={cn(
+                  "group/secondary inline-flex items-center justify-center gap-2 min-h-[52px] px-5 rounded-2xl",
+                  "bg-white/[0.03] hover:bg-white/[0.07] text-white/80 hover:text-white border border-white/[0.08] hover:border-white/[0.18]",
+                  "text-sm font-medium",
+                  "motion-safe:transition-[background-color,border-color,color] duration-200",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#070710]",
+                )}
+              >
+                <BookOpen
+                  className="w-4 h-4 text-white/55 group-hover/secondary:text-white"
+                  strokeWidth={1.75}
+                />
+                <span>Read the docs</span>
+                <ChevronRight
+                  className="w-3.5 h-3.5 text-white/40 group-hover/secondary:translate-x-0.5 group-hover/secondary:text-white/70 motion-safe:transition-[transform,color] duration-200"
+                  strokeWidth={2}
+                  aria-hidden
+                />
+              </Link>
+            </div>
+
+            <p className="text-[11px] text-white/30 font-mono lg:text-right mt-1">
+              No signup friction. No hidden fees. Cancel anything, anytime.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

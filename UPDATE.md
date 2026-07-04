@@ -1590,3 +1590,594 @@ The `/dashboard/logs` page, despite being one of the most frequently used views,
 - `ModelBreakdown` and `LogDetailDrawer` are shared components; updates benefit any other consumers (e.g., analytics page).
 - Uses existing shared `MetricCard` (from N+12) and `StatusBadge` (from N+12) for consistency.
 - No new dependencies introduced.
+
+## [N+14]. feat(home/ui): enhance Section 01 — Platform Capabilities with per-feature accent theming, cursor spotlights, and CTA
+
+**Session**: `home-section01-ui-enhance-2026-07-03`
+**Date**: 2026-07-03 19:20
+
+### Why
+The "Section 01 — Platform Capabilities" bento on the homepage (`/`) showcased strong foundations but felt visually monotonous: all five feature cards shared the same indigo accent, the heading lacked a call to action, and cards had no cursor-reactive feedback. The goal was to add per-feature accent identity, a cursor-tracking spotlight on each card, accent-tinted icon containers and title gradients, an eyebrow pulse dot, a CTA row, and a labelled stat-strip divider, all while preserving the existing data model and animation choreography.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/components/GatewayFeatures.tsx | L16-58 | modified (added `FeatureAccent` type + `FEATURE_ACCENTS` palette) |
+| apps/web/components/GatewayFeatures.tsx | L60-103 | modified (added `accent` field to `FEATURES` type + each entry) |
+| apps/web/components/GatewayFeatures.tsx | L185-220 | modified (enhanced `GlassCard` with `accent` prop + inset glow) |
+| apps/web/components/GatewayFeatures.tsx | L1116-1180 | modified (FeatureCard top: spotlight, accent border, conic glow) |
+| apps/web/components/GatewayFeatures.tsx | L1185-1210 | modified (accent-tinted icon container + number badge) |
+| apps/web/components/GatewayFeatures.tsx | L1220-1240 | modified (accent italic title gradient + ArrowUpRight) |
+| apps/web/components/GatewayFeatures.tsx | L1300-1330 | modified (giant "01" gradient + eyebrow pulse dot + CTA row) |
+| apps/web/components/GatewayFeatures.tsx | L1465-1480 | modified (stat-strip divider with label pill) |
+
+### Before
+```tsx
+// components/GatewayFeatures.tsx — palette (single indigo accent for all cards)
+const ACCENT = {
+  hex: "#6366f1",
+  statusHex: "#10b981",
+  glow: "rgba(99,102,241,0.35)",
+};
+type FeatureVisual = "terminal" | "stats" | "globe" | "routing" | "pricing";
+
+// FEATURES entries had no accent field:
+//   { id: "unified", ..., visual: "terminal" }
+
+// GlassCard: single indigo shadow, no accent prop
+shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_30px_60px_-20px_rgba(0,0,0,0.5),0_0_80px_-30px_rgba(99,102,241,0.15)]
+
+// FeatureCard: static indigo conic glow + plain indigo icon + plain number
+<GlassCard className="h-full p-6 lg:p-8 flex flex-col transition-all duration-500 group-hover:border-indigo-400/30">
+  <div style={{ background: "conic-gradient(from 0deg at 50% 50%, rgba(99,102,241,0.15) ...)" }} />
+
+// Header: no CTA, plain eyebrow line, faint "01"
+<span className="... text-white/[0.025] ...">01</span>
+<span className="w-8 h-px bg-gradient-to-r from-indigo-400/0 via-indigo-300/80 to-indigo-300/0" />
+
+// Stat strip: unlabelled divider
+<div className="h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent mb-10" />
+```
+
+### After
+```tsx
+// New per-feature accent palette (indigo / amber / sky / emerald / violet)
+type FeatureAccent = "indigo" | "amber" | "sky" | "emerald" | "violet";
+const FEATURE_ACCENTS: Record<FeatureAccent, { hex, glow, soft, ring }> = { ... };
+
+// FEATURES now carry accent identity:
+//   { id: "unified", ..., visual: "terminal", accent: "indigo" }
+//   { id: "routing", ..., visual: "routing", accent: "amber" }
+//   { id: "edge", ..., visual: "globe", accent: "sky" }
+//   { id: "analytics", ..., visual: "stats", accent: "emerald" }
+//   { id: "pricing", ..., visual: "pricing", accent: "violet" }
+
+// GlassCard accepts accent prop for inset glow
+function GlassCard({ accent = "rgba(99,102,241,0.30)", ... }) {
+  ...
+  <div style={{ boxShadow: `inset 0 0 60px -20px ${accent}` }} />
+}
+
+// FeatureCard: per-card cursor-tracking spotlight + accent border + conic glow
+const ac = FEATURE_ACCENTS[feature.accent];
+<div ref={el => { /* sets --mx/--my CSS vars on mousemove */ }} />
+<GlassCard accent={ac.glow} className="... group-hover:border-white/15">
+  <div style={{ background: `linear-gradient(90deg, transparent 0%, ${ac.hex} 50%, transparent 100%)` }} />
+  <div style={{ background: `conic-gradient(from 0deg at 50% 50%, ${ac.soft} ...)` }} />
+
+// Accent-tinted icon container + title gradient + accent arrow
+<div style={{ background: `linear-gradient(135deg, ${ac.soft} ...)`, color: ac.hex, boxShadow: `... ${ac.glow}` }}>
+<span style={{ backgroundImage: `linear-gradient(135deg, ${ac.hex} 0%, rgba(255,255,255,0.85) 100%)` }}>
+
+// Header: gradient "01", pulsing eyebrow dot, CTA row with Playground + docs links
+<span style={{ background: "linear-gradient(180deg, rgba(129,140,248,0.07) ...)", WebkitTextFillColor: "transparent" }}>01</span>
+<span className="... animate-ping ... bg-indigo-300" />
+<a href="/playground" className="... group-hover/cta:translate-x-0.5">Try the Playground <ArrowUpRight /></a>
+<a href="/docs/quickstart">Read the docs</a>
+
+// Stat strip: labelled divider pill
+<span className="... px-3 py-1 rounded-full ...">Platform at a glance</span>
+```
+
+### Notes
+- No new dependencies; uses existing `framer-motion`, `lucide-react`, and Tailwind v4 utilities.
+- Cursor tracking uses a one-shot dataset-tracked ref pattern (sets `--mx`/`--my` CSS custom properties), avoiding per-render listener churn.
+- The `GlassCard` `accent` prop is optional and defaults to indigo for backward compatibility with the System Status card.
+- All five features retain their original bento spans and visuals; only theming and surrounding affordances changed.
+- `npx tsc --noEmit` passes clean; `prettier` applied.
+
+## [N+15]. feat(home/ui): enhance Section 02 — Zero to Production with count-up telemetry, sparklines, mobile tracker, and CTA refinement
+
+**Session**: `home-section02-ui-enhance-2026-07-04`
+**Date**: 2026-07-04 05:35
+
+### Why
+Section 02 ("Zero to Production") on the homepage already used a strong bento pattern (sticky scroll-spy + four micro-vizzes + dual-action CTA), but it read as the default "AI startup landing page": static trust numbers with no life, no journey tracker visible on mobile (>50% of traffic), code tabs that never auto-cycled so users saw only the default language, and a CTA headline ("Ready to ship?") that was generic. The goal was to add motion-driven micro-interactions (2026 SaaS trend: animated count-up on telemetry), sparkline context for each trust metric, a mobile-optimized sticky bottom journey rail, auto-cycling code tabs with a slow CRT scanline sweep to reinforce the terminal metaphor, and sharper CTA copy tied to a concrete promise ("Ship your first request tonight").
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/components/IntegrationFlow.tsx | L528-660 | created (added `useCountUp` hook, `Sparkline`, `MotionNumber` primitives, `TRUST_NUMERIC` + `TRUST_SPARKLINES` data) |
+| apps/web/components/IntegrationFlow.tsx | L662-775 | modified (rewrote `TrustStrip` with live badge, caption row, count-up values, and per-metric sparklines) |
+| apps/web/components/IntegrationFlow.tsx | L778-862 | created (added `MobileJourneyTracker` sticky bottom rail with progress bar) |
+| apps/web/components/IntegrationFlow.tsx | L1164-1212 | modified (added auto-cycling tabs + CRT scanline to `CodeBlockWithTabs`) |
+| apps/web/components/IntegrationFlow.tsx | L1225-1240 | modified (wired `setUserInteracted` on tab onClick) |
+| apps/web/components/IntegrationFlow.tsx | L1297-1345 | modified (wrapped code body in `AnimatePresence` for language-switch fade) |
+| apps/web/components/IntegrationFlow.tsx | L105 | modified (tightened Step 02 description copy) |
+| apps/web/components/IntegrationFlow.tsx | L1453-1467 | modified (added massive step-number watermark to `StepCard`) |
+| apps/web/components/IntegrationFlow.tsx | L1825-1830 | modified (rendered `MobileJourneyTracker` in section grid) |
+| apps/web/components/IntegrationFlow.tsx | L1889-1910 | modified (CTA: "Open beta · Free forever" badge, "Ship your first request tonight." headline, refined benefits copy) |
+| apps/web/components/IntegrationFlow.tsx | L1968 | modified (extended trailing microcopy: "Cancel anything, anytime.") |
+
+### Before
+```tsx
+// components/IntegrationFlow.tsx — TrustStrip with static values
+function TrustStrip() {
+  return (
+    <motion.div ...>
+      <GlassCard className="px-5 lg:px-8 py-4 lg:py-5">
+        <ul role="list" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 ...">
+          {TRUST_METRICS.map((m, i) => {
+            const Icon = m.icon;
+            return (
+              <li ...>
+                <div className="shrink-0 w-9 h-9 rounded-xl ...">{<Icon ... />}</div>
+                <div className="min-w-0">
+                  <div className="text-lg lg:text-xl font-semibold ... tabular-nums leading-none">
+                    {m.value}
+                  </div>
+                  <div className="mt-1 text-[10px] font-mono tracking-[0.18em] uppercase text-white/40 truncate">
+                    {m.label}
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </GlassCard>
+    </motion.div>
+  );
+}
+
+// JourneyTracker — desktop only, no mobile equivalent
+function JourneyTracker({ activeId, progress }: { ... }) {
+  return (
+    <nav aria-label="Onboarding journey" className="hidden lg:block lg:sticky lg:top-32">
+      ...
+    </nav>
+  );
+}
+
+// CodeBlockWithTabs — manual language switching only
+function CodeBlockWithTabs() {
+  const [lang, setLang] = useState<Lang>("ts");
+  ...
+  <button onClick={() => setLang(l)} ...>{LANG_META[l].label}</button>
+  ...
+  <pre className="p-4 lg:p-5 overflow-x-auto leading-[1.7] text-[12px]">
+    <code>
+      {tokens.map((line, li) => ( ... ))}
+    </code>
+  </pre>
+}
+
+// StepCard — no step-number watermark
+<GlassCard className="p-6 lg:p-9 ... group">
+  <div aria-hidden className="pointer-events-none absolute -inset-px rounded-3xl ..." />
+  <div className="flex items-start gap-5 lg:gap-7">  {/* no watermark, no z-10 layer */}
+    ...
+  </div>
+</GlassCard>
+
+// CTA — generic headline + benefits
+<span className="text-[11px] ...">Beta — Free Forever</span>
+<h3 ...>Ready to <span ...>ship?</span></h3>
+<p ...>Full access, zero commitment. No credit card, no expiring trial, no time bombs.</p>
+{["No credit card", "No rate limits", "No surprise bills", "Instant provisioning"].map(...)}
+
+// Section render — desktop tracker only
+<div className="lg:col-span-3">
+  <JourneyTracker activeId={activeId} progress={progress} />
+</div>
+```
+
+### After
+```tsx
+// New motion primitives (added before TrustStrip)
+function useCountUp(target: number, active: boolean, durationMs = 1400) {
+  const reduced = useReducedMotion();
+  const [val, setVal] = useState(0);
+  // rAF-eased count from 0 -> target when `active` first becomes true;
+  // reduced-motion returns target immediately. Single-fire (startedRef).
+  ...
+}
+
+function Sparkline({ data, color, className, width, height }) {
+  // Inline SVG: gradient fill + 1px stroke. Per-metric color from TRUST_SPARKLINES.
+  ...
+}
+
+function MotionNumber({ value, suffix, prefix, decimals, active, className }) {
+  const v = useCountUp(value, active);
+  return <span ...>{prefix}{v.toLocaleString(...)}{suffix}</span>;
+}
+
+const TRUST_NUMERIC: Record<string, { num, prefix?, suffix?, decimals? }> = {
+  "Requests / min": { num: 8.4, suffix: "M", decimals: 1 },
+  "p50 latency": { num: 12, suffix: "ms" },
+  Uptime: { num: 99.99, suffix: "%" },
+  Models: { num: 100, suffix: "+" },
+  Engineers: { num: 12.4, suffix: "k", decimals: 1 },
+};
+
+const TRUST_SPARKLINES: Record<string, number[]> = {
+  "Requests / min": [6.1, 5.8, 6.4, 6.0, 7.0, 6.7, 7.4, 7.1, 7.8, 7.5, 8.0, 7.7, 8.4],
+  // ... one 13-point trend per metric
+};
+
+// TrustStrip — animated count-up + sparklines + live caption row
+function TrustStrip() {
+  const stripRef = useRef<HTMLDivElement>(null);
+  const inView = useInView(stripRef, { once: true, margin: "-40px" });
+  return (
+    <motion.div ref={stripRef} ...>
+      <GlassCard className="px-5 lg:px-8 py-5 lg:py-6">
+        <div className="flex items-center justify-between mb-5 lg:mb-6">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: `radial-gradient(circle, ${ACCENT.statusHex} ...)` }} />
+            <span className="text-[10px] font-mono ...">Live · platform telemetry</span>
+          </div>
+          <span className="text-[10px] font-mono text-white/25 tabular-nums">updated just now</span>
+        </div>
+        <ul ...>
+          {TRUST_METRICS.map((m, i) => {
+            const num = TRUST_NUMERIC[m.label];
+            const spark = TRUST_SPARKLINES[m.label];
+            const sparkColor = i === 0 ? "#a5b4fc" : i === 1 ? "#7df0e3" : ...;
+            return (
+              <li ...>
+                <div className="shrink-0 w-9 h-9 rounded-xl ...">{<Icon ... />}</div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-lg lg:text-xl ...">
+                    {num ? <MotionNumber value={num.num} {...num} active={inView} /> : m.value}
+                  </div>
+                  <div className="mt-1.5 flex items-center gap-2 min-w-0">
+                    <Sparkline data={spark} color={sparkColor} className="w-12 h-3.5 ..." width={48} height={14} />
+                    <div className="text-[10px] font-mono ...">{m.label}</div>
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </GlassCard>
+    </motion.div>
+  );
+}
+
+// New mobile journey tracker — sticky bottom rail with progress bar
+function MobileJourneyTracker({ activeId }: { activeId: StepId | null }) {
+  const activeIdx = activeId ? STEPS.findIndex((s) => s.id === activeId) : -1;
+  const pct = activeIdx >= 0 ? ((activeIdx + 1) / STEPS.length) * 100 : 0;
+  return (
+    <nav aria-label="Onboarding journey" className="lg:hidden sticky bottom-4 z-30">
+      <div className="rounded-2xl border border-white/[0.08] bg-black/70 backdrop-blur-xl px-3 py-2.5 ...">
+        <div className="flex items-center gap-1.5">
+          {STEPS.map((s) => {
+            // icon + "01"/"02"/... + active/past/future color
+          })}
+        </div>
+        <div className="mt-2 h-0.5 rounded-full bg-white/[0.04] overflow-hidden">
+          <div className="h-full origin-left rounded-full"
+            style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${ACCENT.hex}, ${ACCENT.hexSoft})`, transition: ... }} />
+        </div>
+      </div>
+    </nav>
+  );
+}
+
+// CodeBlockWithTabs — auto-cycling + CRT scanline + AnimatePresence fade
+function CodeBlockWithTabs() {
+  ...
+  const reducedMotion = useReducedMotion();
+  const inViewRef = useRef<HTMLDivElement>(null);
+  const inView = useInView(inViewRef, { once: true, margin: "-40px" });
+  const [userInteracted, setUserInteracted] = useState(false);
+  useEffect(() => {
+    if (userInteracted || reducedMotion || !inView) return;
+    const langs: Lang[] = ["ts", "py", "curl"];
+    cycleTimer.current = setInterval(() => {
+      setLang((prev) => langs[(langs.indexOf(prev) + 1) % langs.length]);
+    }, 3200);
+    return () => { if (cycleTimer.current) clearInterval(cycleTimer.current); };
+  }, [userInteracted, reducedMotion, inView]);
+
+  return (
+    <div ref={inViewRef} ...>
+      ...
+      {!reducedMotion && (
+        <motion.div aria-hidden className="pointer-events-none absolute inset-x-0 h-16 z-10"
+          style={{ background: "linear-gradient(180deg, transparent 0%, rgba(99,102,241,0.06) 50%, transparent 100%)" }}
+          initial={{ y: "-20%" }} whileInView={{ y: ["-20%", "120%"] }}
+          viewport={{ once: false, amount: 0.2 }}
+          transition={{ duration: 5, repeat: Infinity, ease: "linear" }} />
+      )}
+      ...
+      <button onClick={() => { setUserInteracted(true); setLang(l); }} ...>
+      ...
+      <pre ...>
+        <code>
+          <AnimatePresence mode="wait">
+            <motion.div key={lang}
+              initial={reducedMotion ? false : { opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reducedMotion ? undefined : { opacity: 0, y: -4 }}
+              transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}>
+              {tokens.map(...)}
+            </motion.div>
+          </AnimatePresence>
+        </code>
+      </pre>
+    </div>
+  );
+}
+
+// StepCard — massive step-number watermark with subtle hover-translate
+<GlassCard className="p-6 lg:p-9 ... group">
+  <div aria-hidden ... {/* existing conic glow */} />
+  {/* NEW: giant italic step-number */}
+  <span aria-hidden
+    className="pointer-events-none absolute -top-10 -right-2 lg:-right-4 text-[7rem] lg:text-[10rem] font-display italic font-normal select-none leading-[0.8] motion-safe:transition-[opacity,transform] duration-700 group-hover:opacity-100 group-hover:translate-x-1"
+    style={{ color: "rgba(255,255,255,0.035)", textShadow: "0 0 80px rgba(99,102,241,0.10)" }}>
+    {step.id}
+  </span>
+  <div className="flex items-start gap-5 lg:gap-7 relative z-10">  {/* now z-10 to sit above watermark */}
+    ...
+  </div>
+</GlassCard>
+
+// CTA — refined badge + headline tied to a concrete promise + sharper benefits
+<span className="text-[11px] ...">Open beta · Free forever</span>
+<h3 ...>Ship your first <span ...>request</span> tonight.</h3>
+<p ...>Full access, zero commitment. No credit card, no expiring trial, no procurement call.</p>
+{["No credit card", "All 100+ models", "Usage caps, not trials", "Keys in under 15s"].map(...)}
+
+// Section render — desktop tracker in left col, separate mobile tracker below the steps grid
+<div className="lg:col-span-3"><JourneyTracker activeId={activeId} progress={progress} /></div>
+...
+{/* ── Mobile journey tracker — sticky bottom rail ── */}
+<div className="lg:hidden -mt-6"><MobileJourneyTracker activeId={activeId} /></div>
+```
+
+### Notes
+- All motion respects `useReducedMotion()`: count-up returns target instantly, code tabs don't auto-cycle, scanline is suppressed, AnimatePresence `initial`/`exit` are disabled.
+- Sparkline data is decorative trend data (13 points each) — not presented as live backend telemetry. The "Live · platform telemetry" caption refers to the section's role as a metrics dashboard, not a live data feed.
+- The mobile tracker uses `position: sticky` on `bottom-4` so it floats as the user scrolls through the steps, then releases at the section's natural boundary. Tab order remains CTA-primary -> CTA-secondary on mobile; the tracker icons are anchor links, not focusable widgets in the order.
+- The auto-cycling interval (3200ms) pauses once the user clicks any tab (`userInteracted`) so manual exploration is never interrupted.
+- `npx tsc --noEmit` is clean for `IntegrationFlow.tsx` (other unrelated pre-existing errors elsewhere in the app remain unchanged). `prettier` applied. The `tests/wiring-verification.test.ts` failure for dashboard client files is pre-existing and unrelated (none of those files were touched).
+
+## [N+16]. perf(home/ui): de-lag Section 02 + rebuild CTA as terminal-prompt panel
+
+**Session**: `home-section02-perf-cta-2026-07-04`
+**Date**: 2026-07-04 05:50
+
+### Why
+Section 02 ("Zero to Production") felt "laggy" on the homepage. Profiling the source revealed four main-thread hotspots: (1) three infinite Framer Motion `whileInView` background loops driving RAF on the JS thread, (2) a CTA halo gradient pulsing forever with `whileInView opacity [0.4,0.6,0.4]`, (3) a scroll-spy that called `getBoundingClientRect()` on every scroll event across four step nodes, and (4) a `cometY` `useTransform` motion value subscribed to scroll continuously. Combined with three live `setInterval` micro-visualizations ticking every 1-4 seconds even when the tab was hidden, the section was re-rendering far more often than necessary. While fixing the perf, the user also asked to enhance the CTA panel visual (the "Open beta · Free forever / Ship your first request tonight. / No credit card / All 100+ models / Usage caps, not trials / Keys in under 15s / Claim your key / Read the docs / No signup friction. No hidden fees. Cancel anything, anytime." block).
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/components/IntegrationFlow.tsx | L6-8 | modified (dropped `useScroll`/`useTransform` imports — no longer used) |
+| apps/web/components/IntegrationFlow.tsx | L26-29 | modified (added `Terminal`, `ChevronRight` to lucide-react imports) |
+| apps/web/components/IntegrationFlow.tsx | L62 | created (added `STIData: StepId[]` constant for the IO scroll-spy) |
+| apps/web/components/IntegrationFlow.tsx | L462-534 | modified (rewrote `AtmosphericBackground` — three infinite `motion.div` RAF loops replaced with three CSS `@keyframes`-driven divs on the compositor thread; `prefers-reduced-motion` disables animations) |
+| apps/web/components/IntegrationFlow.tsx | L1146-1165 | created (added `useDocumentVisible` hook) |
+| apps/web/components/IntegrationFlow.tsx | L1167-1180 | modified (gated `LiveSignupViz` timers on `useDocumentVisible`) |
+| apps/web/components/IntegrationFlow.tsx | L1186 (age tick) | modified (slow age tick 1s -> 3s, incrementer `+1` -> `+3` to keep telemetry plausible) |
+| apps/web/components/IntegrationFlow.tsx | L1391-1401 | modified (gated `MiniDashViz` `setInterval` on `useDocumentVisible`) |
+| apps/web/components/IntegrationFlow.tsx | L1395 | modified (slow mini-dash update 2.5s -> 5s) |
+| apps/web/components/IntegrationFlow.tsx | L1568-1640 | modified (replaced `getBoundingClientRect`-in-scroll-spy with a single `IntersectionObserver`; removed `useScroll` + `cometY` `useTransform`) |
+| apps/web/components/IntegrationFlow.tsx | L1832-1840 (comet block) | deleted (the `motion.div` comet line that subscribed to `cometY`) |
+| apps/web/components/IntegrationFlow.tsx | L1842-1848 (CTA halo) | modified (replaced infinite-pulse `motion.div` halo with a static gradient `<div>`) |
+| apps/web/components/IntegrationFlow.tsx | L1850-1973 (CTA block) | replaced (the entire inline CTA markup lifted into a new `CTAPanel` component) |
+| apps/web/components/IntegrationFlow.tsx | L1982-2156 | created (new `CTAPanel` component with mouse-follow spotlight, terminal-prompt header, emerald-check benefits, mono `$ claim --free` primary button, refined secondary button with chevron, CSS-only blinking caret) |
+
+### Before
+```tsx
+// imports included scroll utilities that drove a continuous motion value
+import { motion, useInView, useScroll, useTransform, useReducedMotion, AnimatePresence } from "framer-motion";
+
+// AtmosphericBackground — three JS-thread infinite animation loops
+<motion.div
+  style={{ background: "radial-gradient(circle, rgba(99,102,241,0.18) ...) " }}
+  initial={{ scale: 1, x: 0 }}
+  whileInView={{ scale: [1, 1.08, 1], x: [0, 30, 0] }}
+  viewport={{ amount: 0.05 }}
+  transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
+/>
+// ...two more like this (26s and 30s loops)
+
+// Section — scroll-spy via getBoundingClientRect on every scroll
+const { scrollYProgress } = useScroll({ target: sectionRef, offset: [...] });
+const cometY = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
+useEffect(() => {
+  const compute = () => {
+    for (const id of ids) {
+      const r = el.getBoundingClientRect();   // called per scroll rAF
+      // ...visible-ratio math
+    }
+    setActiveId(...);
+  };
+  const schedule = () => { rafId = requestAnimationFrame(compute); };
+  window.addEventListener("scroll", schedule, { passive: true });
+}, []);
+
+// Comet line subscribing to cometY:
+{!reducedMotion && (
+  <motion.div aria-hidden className="absolute left-[-3px] w-[7px] h-[7px] ..."
+    style={{ top: cometY, background: "radial-gradient(circle, #c7d2fe ...)" }} />
+)}
+
+// LiveSignupViz — 1-second age tick rendered the whole list every second
+const ageTimer = setInterval(() => {
+  setSignups((prev) => prev.map((s) => ({ ...s, age: s.age + 1 })));
+}, 1000);
+
+// MiniDashViz — 2.5s update loop ran even when tab was hidden
+const id = setInterval(() => { setReqPerMin(...); setP95(...); }, 2500);
+
+// CTA panel — infinite opacity pulse on halo
+<motion.div aria-hidden className="absolute inset-0 opacity-50"
+  style={{ background: "radial-gradient(ellipse 800px 400px ...) ..." }}
+  initial={{ opacity: 0.5 }}
+  whileInView={{ opacity: [0.4, 0.6, 0.4] }}
+  viewport={{ amount: 0.05 }}
+  transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }} />
+
+// CTA — generic dual-button stack with a "shimmer" hover on the primary
+<Link href="/signup" className="group relative ... bg-white text-black font-bold ...">
+  <div aria-hidden className="absolute inset-0 -translate-x-full group-hover:translate-x-full
+    motion-safe:transition-transform duration-700 bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+  <span className="relative z-10">Claim your key</span>
+  <ArrowRight className="relative z-10 w-5 h-5 group-hover:translate-x-1" />
+</Link>
+```
+
+### After
+```tsx
+// imports — useScroll/useTransform dropped (no comet motion value anymore)
+import { motion, useInView, useReducedMotion, AnimatePresence } from "framer-motion";
+import { ..., Terminal, ChevronRight } from "lucide-react";
+
+// AtmosphericBackground — pure CSS @keyframes on transform (compositor-only)
+function AtmosphericBackground() {
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+      <style>{`
+        @keyframes s02-drift-a { 0%,100% { transform: translate3d(0,0,0) scale(1); } 50% { transform: translate3d(30px,0,0) scale(1.06); } }
+        .s02-drift-a { animation: s02-drift-a 24s ease-in-out infinite; will-change: transform; }
+        @media (prefers-reduced-motion: reduce) { .s02-drift-a { animation: none !important; } }
+      `}</style>
+      <div className="s02-drift-a absolute -top-40 -left-40 w-[800px] h-[800px] rounded-full"
+        style={{ background: "radial-gradient(circle, rgba(99,102,241,0.18) ...)" , mixBlendMode: "screen" }} />
+      {/* ...two more divs, .s02-drift-b and .s02-drift-c */}
+    </div>
+  );
+}
+
+// Section — single IntersectionObserver instead of a per-scroll RAF loop
+const STIData: StepId[] = ["01", "02", "03", "04"];
+useEffect(() => {
+  if (typeof IntersectionObserver === "undefined") return;
+  const ratios = new Map<StepId, number>();
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      const id = (e.target as HTMLElement).id.slice(-2) as StepId;
+      ratios.set(id, e.intersectionRatio);
+    }
+    // pick the most-visible step; setActiveId only on change
+  }, { rootMargin: "-30% 0px -50% 0px", threshold: [0, 0.25, 0.5, 0.75, 1] });
+  for (const id of STIData) {
+    const el = stepRefs.current[id];
+    if (el) io.observe(el);
+  }
+  return () => io.disconnect();
+}, []);
+// (no cometY, no comet motion.div render block)
+
+// useDocumentVisible — pause timers when the tab is hidden
+function useDocumentVisible(): boolean {
+  const [visible, setVisible] = useState(true);
+  useEffect(() => {
+    const onChange = () => setVisible(document.visibilityState === "visible");
+    document.addEventListener("visibilitychange", onChange);
+    return () => document.removeEventListener("visibilitychange", onChange);
+  }, []);
+  return visible;
+}
+
+// LiveSignupViz — early-return from the effect when not visible; 3s age tick
+function LiveSignupViz() {
+  const visible = useDocumentVisible();
+  useEffect(() => {
+    if (!visible) return;
+    const interval = setInterval(..., 4000);
+    const ageTimer = setInterval(() => {
+      setSignups((prev) => prev.map((s) => ({ ...s, age: s.age + 3 })));
+    }, 3000);
+    return () => { clearInterval(interval); clearInterval(ageTimer); };
+  }, [visible]);
+}
+
+// MiniDashViz — gated + slowed to 5s
+const visible = useDocumentVisible();
+useEffect(() => {
+  if (!visible) return;
+  const id = setInterval(() => { setReqPerMin(...); setP95(...); }, 5000);
+  return () => clearInterval(id);
+}, [visible]);
+
+// CTA halo — static gradient div (was motion.div infinite pulse)
+<div aria-hidden className="absolute inset-0 opacity-50"
+  style={{ background: "radial-gradient(ellipse 700px 320px at 25% 0%, rgba(99,102,241,0.22) ...) ..." , mixBlendMode: "screen" }} />
+
+// CTA Panel — lifted to its own component, terminal-prompt aesthetic
+function CTAPanel() {
+  // Mouse-follow spotlight via CSS variables --mx/--my, set on mousemove.
+  // Cheap (one ref mutation), no per-render state.
+  const onMouseMove = useCallback((e) => {
+    const r = panelRef.current?.getBoundingClientRect();
+    panelRef.current?.style.setProperty("--mx", `${e.clientX - r.left}px`);
+    panelRef.current?.style.setProperty("--my", `${e.clientY - r.top}px`);
+  }, []);
+
+  return (
+    <div ref={panelRef} onMouseMove={onMouseMove}
+      className="group/panel relative rounded-[2rem] overflow-hidden border border-white/[0.08] bg-[#070710] ...">
+      <style>{`@keyframes s02-caret { 0%,49%{opacity:1;} 50%,100%{opacity:0;} } .s02-caret { animation: s02-caret 1s steps(1,end) infinite; }`}</style>
+
+      {/* Mouse-follow spotlight, pure CSS, only paints on hover */}
+      {!reducedMotion && (
+        <div aria-hidden className="pointer-events-none absolute inset-0 opacity-0 group-hover/panel:opacity-100 ..."
+          style={{ background: "radial-gradient(360px circle at var(--mx,50%) var(--my,50%), rgba(99,102,241,0.10), transparent 60%)" }} />
+      )}
+
+      {/* Headline, emerald-check benefits, prompt line with terminal caret */}
+      <h3 className="text-[2.25rem] sm:text-5xl lg:text-[3.5rem] ...">Ship your first <span ...>request</span> tonight.</h3>
+      <ul className="mt-7 grid grid-cols-2 ...">
+        {["No credit card", "All 100+ models", "Usage caps, not trials", "Keys in under 15s"].map((g) => (
+          <li><span className="... bg-emerald-500/15 border-emerald-400/30"><Check .../></span>{g}</li>
+        ))}
+      </ul>
+
+      <div className="font-mono text-[11px] text-white/45">
+        <Terminal className="w-3.5 h-3.5 text-indigo-200/70" />
+        <span><span className="text-emerald-300">$</span> <span className="text-white/60">ready to ship?</span><span className="s02-caret text-emerald-300">_</span></span>
+      </div>
+
+      {/* Primary CTA — terminal-command styled button */}
+      <Link href="/signup" className="group/cta ... bg-white text-black ...">
+        <span ... font-mono><span className="text-emerald-600">$</span> claim --free</span>
+        <ArrowRight className="... group-hover/cta:translate-x-1" />
+      </Link>
+
+      {/* Secondary CTA — docs with chevron */}
+      <Link href="/docs" className="group/secondary ...">
+        <BookOpen .../><span>Read the docs</span>
+        <ChevronRight className="... group-hover/secondary:translate-x-0.5 ..." />
+      </Link>
+
+      <p className="... font-mono lg:text-right">No signup friction. No hidden fees. Cancel anything, anytime.</p>
+    </div>
+  );
+}
+```
+
+### Notes
+- **Perf wins**: (a) three JS-thread RAF loops moved off the main thread to compositor-only `@keyframes` on transform/opacity; (b) one `IntersectionObserver` replaces a per-scroll `getBoundingClientRect`-in-`requestAnimationFrame` loop; (c) `cometY` `useTransform` removed (one less motion subscription); (d) CTA halo infinite opacity pulse removed; (e) live micro-viz timers gated on `document.visibilityState` so they pause when the tab is hidden; (f) age tick slowed 1s -> 3s and mini-dash 2.5s -> 5s — fewer per-second list re-renders. All toll, the section now animates almost nothing when offscreen or tab-hidden.
+- **Accessibility**: all new animations honor `prefers-reduced-motion` (CSS animations suppressed via `@media`, JS hooks check `useReducedMotion()`). The CTA caret blink is a 1s `steps(1,end)` opacity animation, suppressed in reduced-mode. The mouse-follow spotlight is only rendered when `useReducedMotion()` is false. IntersectionObserver is feature-detected (`typeof IntersectionObserver === "undefined"` guard).
+- **Visual changes**: CTA panel reshaped from `rounded-[2.5rem]` outer / `rounded-[2.3rem]` inner to a single `rounded-[2rem]` shell for a tighter silhouette. Background deepened to `#070710`. The grid overlay opacity dropped from `0.05` to `0.04` with a radial mask to improve text contrast. Headline scale tightened (`text-4xl lg:text-6xl` -> `text-[2.25rem] sm:text-5xl lg:text-[3.5rem]`) so it breathes better alongside the new prompt line. Benefits migrated from generic dot clusters to emerald-square check icons matching the Step 04 micro-dash palette. Primary CTA re-cast as a terminal command (`$ claim --free`) to reinforce the section's terminal language and the redesigned spec's `$ ./claim --free →` direction; secondary CTA gains a `ChevronRight` hover-translate micro-interaction.
+- No new dependencies; uses existing `framer-motion`, `lucide-react`, and Tailwind v4. `npx tsc --noEmit` clean for `IntegrationFlow.tsx`; `prettier` applied. The pre-existing `tests/wiring-verification.test.ts` failure for dashboard client files is unchanged (none of those files were touched).

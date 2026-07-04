@@ -21,6 +21,43 @@ const ACCENT = {
 };
 
 type FeatureVisual = "terminal" | "stats" | "globe" | "routing" | "pricing";
+type FeatureAccent = "indigo" | "amber" | "sky" | "emerald" | "violet";
+
+const FEATURE_ACCENTS: Record<
+  FeatureAccent,
+  { hex: string; glow: string; soft: string; ring: string }
+> = {
+  indigo: {
+    hex: "#818cf8",
+    glow: "rgba(99,102,241,0.45)",
+    soft: "rgba(99,102,241,0.10)",
+    ring: "rgba(99,102,241,0.30)",
+  },
+  amber: {
+    hex: "#fcd34d",
+    glow: "rgba(245,158,11,0.40)",
+    soft: "rgba(245,158,11,0.10)",
+    ring: "rgba(245,158,11,0.30)",
+  },
+  sky: {
+    hex: "#7dd3fc",
+    glow: "rgba(56,189,248,0.40)",
+    soft: "rgba(56,189,248,0.10)",
+    ring: "rgba(56,189,248,0.30)",
+  },
+  emerald: {
+    hex: "#6ee7b7",
+    glow: "rgba(16,185,129,0.40)",
+    soft: "rgba(16,185,129,0.10)",
+    ring: "rgba(16,185,129,0.30)",
+  },
+  violet: {
+    hex: "#c4b5fd",
+    glow: "rgba(139,92,246,0.40)",
+    soft: "rgba(139,92,246,0.10)",
+    ring: "rgba(139,92,246,0.30)",
+  },
+};
 
 const FEATURES: ReadonlyArray<{
   id: string;
@@ -31,6 +68,7 @@ const FEATURES: ReadonlyArray<{
   desc: string;
   span: string;
   visual: FeatureVisual;
+  accent: FeatureAccent;
 }> = [
   {
     id: "unified",
@@ -41,6 +79,7 @@ const FEATURES: ReadonlyArray<{
     desc: "One endpoint, every frontier model. Hot-swap providers without touching a line of transport code.",
     span: "lg:col-span-2 lg:row-span-2",
     visual: "terminal",
+    accent: "indigo",
   },
   {
     id: "routing",
@@ -51,6 +90,7 @@ const FEATURES: ReadonlyArray<{
     desc: "Cost-optimized, latency-optimized, or fallback-chained.",
     span: "lg:col-span-1 lg:row-span-1",
     visual: "routing",
+    accent: "amber",
   },
   {
     id: "edge",
@@ -61,6 +101,7 @@ const FEATURES: ReadonlyArray<{
     desc: "50+ regions. Sub-50ms p95. Four-nines availability.",
     span: "lg:col-span-1 lg:row-span-1",
     visual: "globe",
+    accent: "sky",
   },
   {
     id: "analytics",
@@ -71,6 +112,7 @@ const FEATURES: ReadonlyArray<{
     desc: "Live cost, latency, and usage telemetry across every provider.",
     span: "lg:col-span-2 lg:row-span-1",
     visual: "stats",
+    accent: "emerald",
   },
   {
     id: "pricing",
@@ -81,6 +123,7 @@ const FEATURES: ReadonlyArray<{
     desc: "Per-token cost visible before you send a single request.",
     span: "lg:col-span-3 lg:row-span-1",
     visual: "pricing",
+    accent: "violet",
   },
 ];
 
@@ -137,15 +180,16 @@ function useMagneticHover(strength = 0.06) {
 function GlassCard({
   className,
   children,
+  accent = "rgba(99,102,241,0.30)",
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+}: React.HTMLAttributes<HTMLDivElement> & { accent?: string }) {
   return (
     <div
       className={cn(
         "relative rounded-3xl overflow-hidden",
         "bg-gradient-to-br from-white/[0.04] via-white/[0.02] to-transparent",
         "border border-white/[0.08]",
-        "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_30px_60px_-20px_rgba(0,0,0,0.5),0_0_80px_-30px_rgba(99,102,241,0.15)]",
+        "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_30px_60px_-20px_rgba(0,0,0,0.5)]",
         className,
       )}
       {...props}
@@ -156,6 +200,13 @@ function GlassCard({
         style={{
           background:
             "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)",
+        }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -inset-px rounded-3xl opacity-50"
+        style={{
+          boxShadow: `inset 0 0 60px -20px ${accent}`,
         }}
       />
       {children}
@@ -837,9 +888,7 @@ function RegionsGlobeMini() {
             strokeWidth={0.4}
             initial={{ opacity: 0 }}
             animate={
-              inView
-                ? { scale: [1, 2.2, 1], opacity: [0.5, 0, 0.5] }
-                : {}
+              inView ? { scale: [1, 2.2, 1], opacity: [0.5, 0, 0.5] } : {}
             }
             transition={{
               delay: 0.5 + i * 0.15,
@@ -1062,6 +1111,7 @@ function FeatureCard({
 }) {
   const Icon = feature.icon;
   const magnetic = useMagneticHover(isHero ? 0.08 : 0);
+  const ac = FEATURE_ACCENTS[feature.accent];
 
   return (
     <motion.div
@@ -1069,14 +1119,44 @@ function FeatureCard({
       className={cn("relative group", feature.span)}
       style={{ perspective: 1000 }}
     >
-      <GlassCard className="h-full p-6 lg:p-8 flex flex-col transition-all duration-500 group-hover:border-indigo-400/30">
+      {/* Cursor-tracking spotlight */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+        style={{
+          background: `radial-gradient(400px circle at var(--mx, 50%) var(--my, 50%), ${ac.soft} 0%, transparent 60%)`,
+        }}
+        ref={(el) => {
+          if (el && !el.dataset.tracked) {
+            el.dataset.tracked = "1";
+            const parent = el.parentElement;
+            if (parent)
+              parent.addEventListener("mousemove", (e: MouseEvent) => {
+                const rect = parent.getBoundingClientRect();
+                parent.style.setProperty("--mx", `${e.clientX - rect.left}px`);
+                parent.style.setProperty("--my", `${e.clientY - rect.top}px`);
+              });
+          }
+        }}
+      />
+      <GlassCard
+        accent={ac.glow}
+        className="h-full p-6 lg:p-8 flex flex-col transition-all duration-500 group-hover:border-white/15"
+      >
+        {/* Accent top border on hover */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+          style={{
+            background: `linear-gradient(90deg, transparent 0%, ${ac.hex} 50%, transparent 100%)`,
+          }}
+        />
         {/* Conic glow on hover */}
         <div
           aria-hidden
           className="pointer-events-none absolute -inset-px rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"
           style={{
-            background:
-              "conic-gradient(from 0deg at 50% 50%, rgba(99,102,241,0.15) 0%, transparent 25%, transparent 75%, rgba(99,102,241,0.15) 100%)",
+            background: `conic-gradient(from 0deg at 50% 50%, ${ac.soft} 0%, transparent 25%, transparent 75%, ${ac.soft} 100%)`,
             filter: "blur(12px)",
             zIndex: -1,
           }}
@@ -1103,12 +1183,15 @@ function FeatureCard({
             <div className="flex items-center gap-3">
               <div
                 className={cn(
-                  "shrink-0 rounded-2xl flex items-center justify-center",
-                  "bg-gradient-to-br from-white/[0.08] via-white/[0.02] to-transparent",
-                  "border border-white/[0.08] text-indigo-200",
-                  "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]",
+                  "shrink-0 rounded-2xl flex items-center justify-center transition-all duration-500",
                   isHero ? "w-14 h-14" : "w-11 h-11",
                 )}
+                style={{
+                  background: `linear-gradient(135deg, ${ac.soft} 0%, rgba(255,255,255,0.02) 60%, transparent 100%)`,
+                  borderColor: ac.ring,
+                  color: ac.hex,
+                  boxShadow: `inset 0 1px 0 0 rgba(255,255,255,0.1), 0 0 24px -6px ${ac.glow}`,
+                }}
               >
                 <Icon className={cn(isHero ? "w-6 h-6" : "w-5 h-5")} />
               </div>
@@ -1116,15 +1199,24 @@ function FeatureCard({
                 <span className="text-[9px] font-mono tracking-[0.2em] uppercase text-indigo-200/55">
                   {feature.category}
                 </span>
-                <span className="text-[9px] font-mono text-white/25">
+                <span
+                  className="text-[9px] font-mono tabular-nums"
+                  style={{ color: ac.hex, opacity: 0.6 }}
+                >
                   {String(
                     FEATURES.findIndex((f) => f.id === feature.id) + 1,
                   ).padStart(2, "0")}
                 </span>
               </div>
             </div>
-            <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.08] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-              <ArrowUpRight className="w-3.5 h-3.5 text-white/45" />
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300"
+              style={{
+                background: ac.soft,
+                borderColor: ac.ring,
+              }}
+            >
+              <ArrowUpRight className="w-3.5 h-3.5" style={{ color: ac.hex }} />
             </div>
           </div>
 
@@ -1137,7 +1229,12 @@ function FeatureCard({
           >
             {feature.title}{" "}
             {feature.italic && (
-              <span className="font-display italic font-normal bg-gradient-to-br from-indigo-100 to-indigo-300 bg-clip-text text-transparent">
+              <span
+                className="font-display italic font-normal bg-clip-text text-transparent"
+                style={{
+                  backgroundImage: `linear-gradient(135deg, ${ac.hex} 0%, rgba(255,255,255,0.85) 100%)`,
+                }}
+              >
                 {feature.italic}
               </span>
             )}
@@ -1196,7 +1293,14 @@ export function GatewayFeatures() {
           <div className="lg:col-span-8 relative">
             <span
               aria-hidden
-              className="pointer-events-none absolute -top-20 -left-3 lg:-left-8 text-[12rem] lg:text-[18rem] font-display italic font-normal text-white/[0.025] select-none leading-none"
+              className="pointer-events-none absolute -top-24 -left-4 lg:-left-12 text-[13rem] lg:text-[20rem] font-display italic font-normal select-none leading-[0.8]"
+              style={{
+                background:
+                  "linear-gradient(180deg, rgba(129,140,248,0.07) 0%, rgba(129,140,248,0.012) 100%)",
+                backgroundClip: "text",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
             >
               01
             </span>
@@ -1208,10 +1312,14 @@ export function GatewayFeatures() {
               transition={{ duration: 0.5 }}
               className="relative inline-flex items-center gap-2.5 mb-6"
             >
-              <span className="w-8 h-px bg-gradient-to-r from-indigo-400/0 via-indigo-300/80 to-indigo-300/0" />
+              <span className="relative flex items-center justify-center w-2 h-2">
+                <span className="absolute inset-0 rounded-full bg-indigo-400/40 animate-ping" />
+                <span className="relative w-1.5 h-1.5 rounded-full bg-indigo-300" />
+              </span>
               <span className="text-[10px] font-mono tracking-[0.28em] uppercase text-indigo-200/70">
                 Section 01 — Platform Capabilities
               </span>
+              <span className="w-8 h-px bg-gradient-to-r from-indigo-300/80 to-indigo-400/0" />
             </motion.div>
 
             <motion.h2
@@ -1265,6 +1373,36 @@ export function GatewayFeatures() {
                 No SDK lock-in, no migration pain.
               </span>
             </motion.p>
+
+            {/* CTA row */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.35, duration: 0.6 }}
+              className="mt-8 flex flex-wrap items-center gap-3"
+            >
+              <a
+                href="/playground"
+                className="group/cta relative inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[12px] font-mono tracking-wide text-white/90 transition-all duration-300"
+                style={{
+                  background:
+                    "linear-gradient(135deg, rgba(99,102,241,0.18) 0%, rgba(99,102,241,0.06) 100%)",
+                  border: "1px solid rgba(129,140,248,0.30)",
+                  boxShadow:
+                    "inset 0 1px 0 0 rgba(255,255,255,0.10), 0 0 24px -8px rgba(99,102,241,0.45)",
+                }}
+              >
+                <span>Try the Playground</span>
+                <ArrowUpRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover/cta:translate-x-0.5 group-hover/cta:-translate-y-0.5" />
+              </a>
+              <a
+                href="/docs/quickstart"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[12px] font-mono tracking-wide text-white/60 transition-all duration-300 hover:text-white/90 border border-white/[0.08] hover:border-white/20 bg-white/[0.02]"
+              >
+                Read the docs
+              </a>
+            </motion.div>
           </div>
 
           {/* Right: live status */}
@@ -1347,7 +1485,14 @@ export function GatewayFeatures() {
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="mt-20 lg:mt-28"
         >
-          <div className="h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent mb-10" />
+          <div className="mb-10 flex items-center gap-4">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/[0.10] to-transparent" />
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.08] bg-white/[0.02] text-[10px] font-mono tracking-[0.2em] uppercase text-white/45">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+              Platform at a glance
+            </span>
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/[0.10] to-transparent" />
+          </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {STATS.map((s, i) => (
