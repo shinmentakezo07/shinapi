@@ -381,7 +381,7 @@ func (t *testProv) ChatStream(ctx context.Context, req *llm.ChatRequest) (<-chan
 	return ch, nil
 }
 func (t *testProv) ListModels(ctx context.Context) ([]llm.ModelInfo, error) { return t.models, nil }
-func (t *testProv) SupportsThinking() bool                                 { return false }
+func (t *testProv) SupportsThinking() bool                                  { return false }
 
 func TestWithHTTPClient(t *testing.T) {
 	customClient := &http.Client{Timeout: 5 * time.Second}

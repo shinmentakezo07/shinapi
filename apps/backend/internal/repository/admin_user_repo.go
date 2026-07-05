@@ -17,9 +17,12 @@ func NewAdminUserRepo(d *db.DB) *AdminUserRepo { return &AdminUserRepo{db: d} }
 
 func (r *AdminUserRepo) ListUsers(ctx context.Context, f domain.UserFilter) ([]domain.AdminUserDetail, int, error) {
 	offset := (f.Page - 1) * f.Limit
-	if offset < 0 { offset = 0 }
+	if offset < 0 {
+		offset = 0
+	}
 	w := "WHERE u.deleted_at IS NULL"
-	args := []interface{}{}; n := 1
+	args := []interface{}{}
+	n := 1
 
 	if f.Query != "" {
 		w += fmt.Sprintf(" AND (u.email ILIKE $%d OR u.name ILIKE $%d OR u.id::text ILIKE $%d)", n, n+1, n+2)
@@ -29,7 +32,8 @@ func (r *AdminUserRepo) ListUsers(ctx context.Context, f domain.UserFilter) ([]d
 	}
 	if f.Status != "" {
 		w += fmt.Sprintf(" AND COALESCE(u.status, 'active') = $%d", n)
-		args = append(args, f.Status); n++
+		args = append(args, f.Status)
+		n++
 	}
 
 	var total int
@@ -40,7 +44,9 @@ func (r *AdminUserRepo) ListUsers(ctx context.Context, f domain.UserFilter) ([]d
 	cols := "u.id,u.name,u.email,u.role,COALESCE(u.status,'active'),u.created_at,u.last_login_at,COALESCE(u.last_login_ip,''),COALESCE(u.notes,''),COALESCE(u.tags,'{}')"
 	q, _ := paginatedQuery(cols, "users u", w, n)
 	rows, err := r.db.Query(ctx, q, append(args, f.Limit, offset)...)
-	if err != nil { return nil, 0, fmt.Errorf("query: %w", err) }
+	if err != nil {
+		return nil, 0, fmt.Errorf("query: %w", err)
+	}
 	defer rows.Close()
 
 	var users []domain.AdminUserDetail
@@ -51,7 +57,9 @@ func (r *AdminUserRepo) ListUsers(ctx context.Context, f domain.UserFilter) ([]d
 		if err := rows.Scan(&u.ID, &u.Name, &u.Email, &u.Role, &u.Status, &u.CreatedAt, &u.LastLoginAt, &lip, &notes, &tags); err != nil {
 			return nil, 0, fmt.Errorf("scan: %w", err)
 		}
-		u.LastLoginIP = lip; u.Notes = notes; u.Tags = tags
+		u.LastLoginIP = lip
+		u.Notes = notes
+		u.Tags = tags
 		users = append(users, u)
 	}
 	return users, total, nil
@@ -64,24 +72,36 @@ func (r *AdminUserRepo) GetUser(ctx context.Context, id string) (*domain.AdminUs
 	err := r.db.QueryRow(ctx, `SELECT id,name,email,role,COALESCE(status,'active'),created_at,last_login_at,COALESCE(last_login_ip,''),COALESCE(notes,''),COALESCE(tags,'{}') FROM users WHERE id=$1 AND deleted_at IS NULL`, id).
 		Scan(&u.ID, &u.Name, &u.Email, &u.Role, &u.Status, &u.CreatedAt, &u.LastLoginAt, &lip, &notes, &tags)
 	if err != nil {
-		if err == pgx.ErrNoRows { return nil, nil }
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
 		return nil, fmt.Errorf("get user: %w", err)
 	}
-	u.LastLoginIP = lip; u.Notes = notes; u.Tags = tags
+	u.LastLoginIP = lip
+	u.Notes = notes
+	u.Tags = tags
 	return &u, nil
 }
 
 func (r *AdminUserRepo) UpdateUserStatus(ctx context.Context, userID, status, reason, actorID string) error {
 	tag, err := r.db.Exec(ctx, `UPDATE users SET status=$2,suspension_reason=$3,suspended_by=$4,suspended_at=$5 WHERE id=$1`, userID, status, reason, actorID, time.Now())
-	if err != nil { return fmt.Errorf("update status: %w", err) }
-	if tag.RowsAffected() == 0 { return fmt.Errorf("user not found: %s", userID) }
+	if err != nil {
+		return fmt.Errorf("update status: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("user not found: %s", userID)
+	}
 	return nil
 }
 
 func (r *AdminUserRepo) UpdateUserRole(ctx context.Context, userID, role string) error {
 	tag, err := r.db.Exec(ctx, `UPDATE users SET role=$2 WHERE id=$1`, userID, role)
-	if err != nil { return fmt.Errorf("update role: %w", err) }
-	if tag.RowsAffected() == 0 { return fmt.Errorf("user not found: %s", userID) }
+	if err != nil {
+		return fmt.Errorf("update role: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("user not found: %s", userID)
+	}
 	return nil
 }
 
@@ -113,7 +133,9 @@ func (r *AdminUserRepo) SearchByEmail(ctx context.Context, email string) (*domai
 	err := r.db.QueryRow(ctx, `SELECT id,name,email,role,created_at FROM users WHERE email=$1 AND deleted_at IS NULL`, email).
 		Scan(&u.ID, &u.Name, &u.Email, &u.Role, &u.CreatedAt)
 	if err != nil {
-		if err == pgx.ErrNoRows { return nil, nil }
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
 		return nil, fmt.Errorf("search: %w", err)
 	}
 	return &u, nil

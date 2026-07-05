@@ -27,8 +27,8 @@ func TestValidateJSON_TypeMismatch(t *testing.T) {
 
 func TestValidateJSON_RequiredFields(t *testing.T) {
 	schema := &Schema{
-		Type:       TypeObject,
-		Required:   []string{"name", "age"},
+		Type:     TypeObject,
+		Required: []string{"name", "age"},
 		Properties: map[string]*Schema{
 			"name": {Type: TypeString},
 			"age":  {Type: TypeInteger},
@@ -57,9 +57,9 @@ func TestValidateJSON_StringConstraints(t *testing.T) {
 		want int // number of errors
 	}{
 		{`"hello"`, 0},
-		{`"ab"`, 1},     // too short
+		{`"ab"`, 1},          // too short
 		{`"hello world"`, 2}, // too long + pattern mismatch
-		{`"Hello1"`, 1}, // pattern mismatch
+		{`"Hello1"`, 1},      // pattern mismatch
 	}
 
 	for _, tt := range tests {
@@ -126,7 +126,7 @@ func TestValidateJSON_Enum(t *testing.T) {
 
 func TestValidateJSON_ArrayItems(t *testing.T) {
 	schema := &Schema{
-		Type: TypeArray,
+		Type:  TypeArray,
 		Items: &Schema{Type: TypeString},
 	}
 

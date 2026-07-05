@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -33,6 +34,17 @@ import (
 type sqliteQuerier struct {
 	db *sql.DB
 	tx *sql.Tx
+}
+
+var (
+	sqliteCastPattern  = regexp.MustCompile(`(?i)::[a-z_][a-z0-9_]*(?:\[\])?`)
+	sqliteILikePattern = regexp.MustCompile(`(?i)\bILIKE\b`)
+)
+
+func normalizeSQLiteSQL(qStr string) string {
+	qStr = sqliteCastPattern.ReplaceAllString(qStr, "")
+	qStr = sqliteILikePattern.ReplaceAllString(qStr, "LIKE")
+	return qStr
 }
 
 func (q *sqliteQuerier) Query(ctx context.Context, qStr string, args ...any) (pgx.Rows, error) {
@@ -52,6 +64,7 @@ func (q *sqliteQuerier) Exec(ctx context.Context, qStr string, args ...any) (pgc
 		res sql.Result
 		err error
 	)
+	qStr = normalizeSQLiteSQL(qStr)
 	if q.tx != nil {
 		res, err = q.tx.ExecContext(ctx, qStr, args...)
 	} else {
@@ -65,6 +78,7 @@ func (q *sqliteQuerier) Exec(ctx context.Context, qStr string, args ...any) (pgc
 }
 
 func (q *sqliteQuerier) queryCtx(ctx context.Context, qStr string, args ...any) (*sql.Rows, error) {
+	qStr = normalizeSQLiteSQL(qStr)
 	if q.tx != nil {
 		return q.tx.QueryContext(ctx, qStr, args...)
 	}
@@ -75,7 +89,24 @@ func (q *sqliteQuerier) queryCtx(ctx context.Context, qStr string, args ...any) 
 // call. Methods that don't have a 1:1 *sql.Rows mapping return safe no-ops.
 type sqliteRows struct{ *sql.Rows }
 
-func (r *sqliteRows) Scan(dest ...any) error { return r.Rows.Scan(dest...) }
+func (r *sqliteRows) Scan(dest ...any) error {
+	if r == nil || r.Rows == nil {
+		return fmt.Errorf("nil rows")
+	}
+	vals, err := scanColumns(r.Rows)
+	if err != nil {
+		return err
+	}
+	if len(dest) != len(vals) {
+		return fmt.Errorf("scan: %d destination args for %d columns", len(dest), len(vals))
+	}
+	for i := range dest {
+		if err := assign(dest[i], vals[i]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 func (r *sqliteRows) Values() ([]any, error) {
 	if r == nil || r.Rows == nil {
@@ -143,8 +174,8 @@ func (r *sqliteRow) Scan(dest ...any) error {
 				r.err = err
 				return err
 			}
-		r.err = pgx.ErrNoRows
-		return pgx.ErrNoRows
+			r.err = pgx.ErrNoRows
+			return pgx.ErrNoRows
 		}
 		vals, err := scanColumns(rows)
 		if err != nil {

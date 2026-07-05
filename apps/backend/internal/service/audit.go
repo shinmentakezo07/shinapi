@@ -27,7 +27,9 @@ func NewAuditService(repo *repository.AdminAuditRepo, bufferSize int) *AuditServ
 
 func (s *AuditService) Log(ctx context.Context, action domain.AuditAction, targetType, targetID string, changes interface{}) {
 	entry := domain.AuditLog{Action: action, TargetType: targetType, TargetID: targetID, Severity: domain.AuditSeverityInfo}
-	if c, ok := changes.([]domain.ChangeEntry); ok { entry.Changes = c }
+	if c, ok := changes.([]domain.ChangeEntry); ok {
+		entry.Changes = c
+	}
 	select {
 	case s.ch <- entry:
 	default:
@@ -41,19 +43,30 @@ func (s *AuditService) processLoop() {
 	for {
 		select {
 		case entry, ok := <-s.ch:
-			if !ok { s.flush(); return }
+			if !ok {
+				s.flush()
+				return
+			}
 			s.mu.Lock()
 			s.batch = append(s.batch, entry)
 			if len(s.batch) >= 100 {
-				batch := s.batch; s.batch = make([]domain.AuditLog, 0, 100)
-				s.mu.Unlock(); s.writeBatch(batch)
-			} else { s.mu.Unlock() }
+				batch := s.batch
+				s.batch = make([]domain.AuditLog, 0, 100)
+				s.mu.Unlock()
+				s.writeBatch(batch)
+			} else {
+				s.mu.Unlock()
+			}
 		case <-ticker.C:
 			s.mu.Lock()
 			if len(s.batch) > 0 {
-				batch := s.batch; s.batch = make([]domain.AuditLog, 0, 100)
-				s.mu.Unlock(); s.writeBatch(batch)
-			} else { s.mu.Unlock() }
+				batch := s.batch
+				s.batch = make([]domain.AuditLog, 0, 100)
+				s.mu.Unlock()
+				s.writeBatch(batch)
+			} else {
+				s.mu.Unlock()
+			}
 		}
 	}
 }
@@ -71,7 +84,10 @@ func (s *AuditService) writeBatch(batch []domain.AuditLog) {
 func (s *AuditService) flush() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if len(s.batch) > 0 { s.writeBatch(s.batch); s.batch = s.batch[:0] }
+	if len(s.batch) > 0 {
+		s.writeBatch(s.batch)
+		s.batch = s.batch[:0]
+	}
 }
 
 func (s *AuditService) Shutdown() { close(s.ch); s.wg.Wait() }

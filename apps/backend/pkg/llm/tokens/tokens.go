@@ -18,13 +18,13 @@ type ModelPricing struct {
 
 // PricingTable contains known model prices.
 var PricingTable = map[string]ModelPricing{
-	"openai/gpt-4o":              {InputPricePer1k: 0.0025, OutputPricePer1k: 0.01, ContextWindow: 128000},
-	"openai/gpt-4o-mini":         {InputPricePer1k: 0.00015, OutputPricePer1k: 0.0006, ContextWindow: 128000},
-	"openai/gpt-4.1":             {InputPricePer1k: 0.002, OutputPricePer1k: 0.008, ContextWindow: 256000},
-	"openai/o3-mini":             {InputPricePer1k: 0.0011, OutputPricePer1k: 0.0044, ContextWindow: 200000},
-	"openai/o1":                  {InputPricePer1k: 0.015, OutputPricePer1k: 0.06, ContextWindow: 200000},
-	"anthropic/claude-sonnet-4-20250514": {InputPricePer1k: 0.003, OutputPricePer1k: 0.015, ContextWindow: 200000},
-	"anthropic/claude-opus-4-20250514":   {InputPricePer1k: 0.015, OutputPricePer1k: 0.075, ContextWindow: 200000},
+	"openai/gpt-4o":                       {InputPricePer1k: 0.0025, OutputPricePer1k: 0.01, ContextWindow: 128000},
+	"openai/gpt-4o-mini":                  {InputPricePer1k: 0.00015, OutputPricePer1k: 0.0006, ContextWindow: 128000},
+	"openai/gpt-4.1":                      {InputPricePer1k: 0.002, OutputPricePer1k: 0.008, ContextWindow: 256000},
+	"openai/o3-mini":                      {InputPricePer1k: 0.0011, OutputPricePer1k: 0.0044, ContextWindow: 200000},
+	"openai/o1":                           {InputPricePer1k: 0.015, OutputPricePer1k: 0.06, ContextWindow: 200000},
+	"anthropic/claude-sonnet-4-20250514":  {InputPricePer1k: 0.003, OutputPricePer1k: 0.015, ContextWindow: 200000},
+	"anthropic/claude-opus-4-20250514":    {InputPricePer1k: 0.015, OutputPricePer1k: 0.075, ContextWindow: 200000},
 	"anthropic/claude-3-5-haiku-20241022": {InputPricePer1k: 0.0008, OutputPricePer1k: 0.004, ContextWindow: 200000},
 }
 

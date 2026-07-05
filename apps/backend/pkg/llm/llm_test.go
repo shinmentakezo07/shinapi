@@ -90,8 +90,8 @@ func TestEstimateTokens(t *testing.T) {
 func TestValidateRequest(t *testing.T) {
 	temp := 0.5
 	req := &ChatRequest{
-		Model:    "gpt-4o",
-		Messages: []Message{{Role: RoleUser, Content: "Hi"}},
+		Model:       "gpt-4o",
+		Messages:    []Message{{Role: RoleUser, Content: "Hi"}},
 		Temperature: &temp,
 	}
 	if err := ValidateRequest(req); err != nil {
@@ -350,7 +350,7 @@ func TestValidateRequest_MissingContent(t *testing.T) {
 	}
 }
 
-func TestValidateRequest_ClampsValues(t *testing.T) {
+func TestValidateRequest_RejectsOutOfRangeValues(t *testing.T) {
 	temp := 5.0
 	topP := 2.0
 	req := &ChatRequest{
@@ -359,14 +359,14 @@ func TestValidateRequest_ClampsValues(t *testing.T) {
 		Temperature: &temp,
 		TopP:        &topP,
 	}
-	if err := ValidateRequest(req); err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	if err := ValidateRequest(req); err == nil {
+		t.Fatal("expected error for out-of-range values")
 	}
-	if *req.Temperature != 2.0 {
-		t.Errorf("temperature = %f, want 2.0", *req.Temperature)
+	if *req.Temperature != 5.0 {
+		t.Errorf("temperature mutated to %f, want original 5.0", *req.Temperature)
 	}
-	if *req.TopP != 1.0 {
-		t.Errorf("topP = %f, want 1.0", *req.TopP)
+	if *req.TopP != 2.0 {
+		t.Errorf("topP mutated to %f, want original 2.0", *req.TopP)
 	}
 }
 
@@ -419,6 +419,5 @@ func TestDeepCopyRequest_Independent(t *testing.T) {
 	}
 }
 
-func ptrInt(v int) *int     { return &v }
+func ptrInt(v int) *int           { return &v }
 func ptrFloat(v float64) *float64 { return &v }
-

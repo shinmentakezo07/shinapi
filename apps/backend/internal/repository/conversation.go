@@ -58,7 +58,9 @@ func (r *ConversationRepo) GetConversation(ctx context.Context, id string) (*Con
 		`SELECT id, user_id, title, model, created_at, updated_at FROM conversations WHERE id = $1`, id)
 	var c Conversation
 	if err := row.Scan(&c.ID, &c.UserID, &c.Title, &c.Model, &c.CreatedAt, &c.UpdatedAt); err != nil {
-		if err == pgx.ErrNoRows { return nil, nil }
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return &c, nil
@@ -66,11 +68,15 @@ func (r *ConversationRepo) GetConversation(ctx context.Context, id string) (*Con
 
 // ListConversations lists conversations for a user.
 func (r *ConversationRepo) ListConversations(ctx context.Context, userID string, limit, offset int) ([]Conversation, error) {
-	if limit <= 0 { limit = 20 }
+	if limit <= 0 {
+		limit = 20
+	}
 	rows, err := r.db.Query(ctx,
 		`SELECT id, user_id, title, model, created_at, updated_at FROM conversations WHERE user_id = $1 ORDER BY updated_at DESC LIMIT $2 OFFSET $3`,
 		userID, limit, offset)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	defer rows.Close()
 
 	var result []Conversation
@@ -109,11 +115,15 @@ func (r *ConversationRepo) AddMessage(ctx context.Context, convID, role, content
 
 // GetMessages retrieves messages for a conversation.
 func (r *ConversationRepo) GetMessages(ctx context.Context, convID string, limit, offset int) ([]ConversationMessage, error) {
-	if limit <= 0 { limit = 100 }
+	if limit <= 0 {
+		limit = 100
+	}
 	rows, err := r.db.Query(ctx,
 		`SELECT id, conversation_id, role, content, input_tokens, output_tokens, created_at FROM conversation_messages WHERE conversation_id = $1 ORDER BY created_at ASC LIMIT $2 OFFSET $3`,
 		convID, limit, offset)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	defer rows.Close()
 
 	var result []ConversationMessage

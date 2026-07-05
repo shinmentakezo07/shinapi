@@ -15,8 +15,8 @@ type BatchJob struct {
 	ID        string     `json:"id"`
 	UserID    string     `json:"user_id"`
 	Status    string     `json:"status"`
-	Items     []byte     `json:"items"`     // JSONB
-	Results   []byte     `json:"results"`   // JSONB
+	Items     []byte     `json:"items"`   // JSONB
+	Results   []byte     `json:"results"` // JSONB
 	Error     string     `json:"error,omitempty"`
 	Progress  int        `json:"progress"`
 	Total     int        `json:"total"`
@@ -52,7 +52,9 @@ func (r *BatchJobRepo) ByID(ctx context.Context, id string) (*BatchJob, error) {
 
 // ByUser lists batch jobs for a user.
 func (r *BatchJobRepo) ByUser(ctx context.Context, userID string, limit, offset int) ([]BatchJob, error) {
-	if limit <= 0 { limit = 20 }
+	if limit <= 0 {
+		limit = 20
+	}
 	rows, err := r.db.Query(ctx,
 		`SELECT id, user_id, status, items, results, error, progress, total, created_at, started_at, ended_at
 		FROM batch_jobs WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,

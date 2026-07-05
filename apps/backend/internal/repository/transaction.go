@@ -18,7 +18,9 @@ func (r *TransactionRepo) ByUser(ctx context.Context, userID string, page, limit
 	rows, err := r.db.Query(ctx,
 		`SELECT id, user_id, amount, type, description, related_log_id, created_at FROM credit_transactions WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
 		userID, limit, offset)
-	if err != nil { return nil, 0, err }
+	if err != nil {
+		return nil, 0, err
+	}
 	defer rows.Close()
 
 	var txs []domain.CreditTransaction

@@ -39,7 +39,7 @@ func TestQuotaTracker_CheckRequest_ModelNotAllowed(t *testing.T) {
 func TestQuotaTracker_CheckRequest_IPNotAllowed(t *testing.T) {
 	qt := NewQuotaTracker()
 	key := &ScopedAPIKey{
-		Key:       "test-key",
+		Key:        "test-key",
 		AllowedIPs: []string{"10.0.0.0/8"},
 	}
 

@@ -15,18 +15,18 @@ import (
 
 // SemanticCache caches responses based on semantic similarity of prompts.
 type SemanticCache struct {
-	mu       sync.RWMutex
-	entries  []semanticEntry
-	maxSize  int
+	mu                  sync.RWMutex
+	entries             []semanticEntry
+	maxSize             int
 	similarityThreshold float64
 }
 
 type semanticEntry struct {
-	Embedding  []float64
-	Response   *llm.ChatResponse
-	Model      string
-	CreatedAt  time.Time
-	TTL        time.Duration
+	Embedding []float64
+	Response  *llm.ChatResponse
+	Model     string
+	CreatedAt time.Time
+	TTL       time.Duration
 }
 
 // NewSemanticCache creates a new semantic cache.

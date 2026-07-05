@@ -41,7 +41,9 @@ func HashAPIKey(key, pepper string) string {
 func (r *APIKeyRepo) ByUser(ctx context.Context, userID string) ([]domain.APIKey, error) {
 	rows, err := r.db.Query(ctx,
 		`SELECT id, user_id, name, key, last_used, created_at, revoked_at, COALESCE(allowed_models, '{}'::text[]), COALESCE(allowed_ips, '{}'::text[]), COALESCE(max_tokens_per_request, 0), COALESCE(daily_request_limit, 0), COALESCE(monthly_token_limit, 0) FROM api_keys WHERE user_id = $1 ORDER BY created_at DESC`, userID)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	defer rows.Close()
 
 	var keys []domain.APIKey
@@ -76,7 +78,9 @@ func (r *APIKeyRepo) ByKey(ctx context.Context, key string) (*domain.APIKey, err
 		row = r.db.QueryRow(ctx,
 			`SELECT id, user_id, name, key, last_used, created_at, revoked_at, COALESCE(allowed_models, '{}'::text[]), COALESCE(allowed_ips, '{}'::text[]), COALESCE(max_tokens_per_request, 0), COALESCE(daily_request_limit, 0), COALESCE(monthly_token_limit, 0) FROM api_keys WHERE key = $1`, key)
 		if err := row.Scan(&k.ID, &k.UserID, &k.Name, &k.Key, &k.LastUsed, &k.CreatedAt, &k.RevokedAt, &k.AllowedModels, &k.AllowedIPs, &k.MaxTokensPerRequest, &k.DailyRequestLimit, &k.MonthlyTokenLimit); err != nil {
-			if err == pgx.ErrNoRows { return nil, nil }
+			if err == pgx.ErrNoRows {
+				return nil, nil
+			}
 			return nil, err
 		}
 	}
@@ -96,7 +100,9 @@ func (r *APIKeyRepo) ByID(ctx context.Context, id string) (*domain.APIKey, error
 	row := r.db.QueryRow(ctx,
 		`SELECT id, user_id, name, key, last_used, created_at, revoked_at, COALESCE(allowed_models, '{}'::text[]), COALESCE(allowed_ips, '{}'::text[]), COALESCE(max_tokens_per_request, 0), COALESCE(daily_request_limit, 0), COALESCE(monthly_token_limit, 0) FROM api_keys WHERE id = $1`, id)
 	if err := row.Scan(&k.ID, &k.UserID, &k.Name, &k.Key, &k.LastUsed, &k.CreatedAt, &k.RevokedAt, &k.AllowedModels, &k.AllowedIPs, &k.MaxTokensPerRequest, &k.DailyRequestLimit, &k.MonthlyTokenLimit); err != nil {
-		if err == pgx.ErrNoRows { return nil, nil }
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
 		return nil, err
 	}
 	if r.cache != nil {

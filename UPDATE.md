@@ -2181,3 +2181,318 @@ function CTAPanel() {
 - **Accessibility**: all new animations honor `prefers-reduced-motion` (CSS animations suppressed via `@media`, JS hooks check `useReducedMotion()`). The CTA caret blink is a 1s `steps(1,end)` opacity animation, suppressed in reduced-mode. The mouse-follow spotlight is only rendered when `useReducedMotion()` is false. IntersectionObserver is feature-detected (`typeof IntersectionObserver === "undefined"` guard).
 - **Visual changes**: CTA panel reshaped from `rounded-[2.5rem]` outer / `rounded-[2.3rem]` inner to a single `rounded-[2rem]` shell for a tighter silhouette. Background deepened to `#070710`. The grid overlay opacity dropped from `0.05` to `0.04` with a radial mask to improve text contrast. Headline scale tightened (`text-4xl lg:text-6xl` -> `text-[2.25rem] sm:text-5xl lg:text-[3.5rem]`) so it breathes better alongside the new prompt line. Benefits migrated from generic dot clusters to emerald-square check icons matching the Step 04 micro-dash palette. Primary CTA re-cast as a terminal command (`$ claim --free`) to reinforce the section's terminal language and the redesigned spec's `$ ./claim --free →` direction; secondary CTA gains a `ChevronRight` hover-translate micro-interaction.
 - No new dependencies; uses existing `framer-motion`, `lucide-react`, and Tailwind v4. `npx tsc --noEmit` clean for `IntegrationFlow.tsx`; `prettier` applied. The pre-existing `tests/wiring-verification.test.ts` failure for dashboard client files is unchanged (none of those files were touched).
+
+---
+
+## 2026-07-05 14:22Z — `dashboard-ui-avant-garde` feat(dashboard/ui): enhance login page with avant-garde visual treatment
+
+**Session**: `dashboard-ui-avant-garde-session`
+**Date**: 2026-07-05
+
+### Why
+The login page needed an avant-garde visual upgrade to match the intentional minimalism philosophy while adding atmosphere and modern interaction design — mesh gradients, glassmorphism, typing effects, and refined micro-interactions that elevate the gateway experience.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| `apps/web/app/login/page.tsx` | L1–668 | modified |
+
+### Before
+```code
+// apps/web/app/login/page.tsx — 396 lines, flat dark background, no atmospheric elements
+function AccentRuler({ reduce }: { reduce: boolean | null }) { ... }
+function Field({ ... }) { /* static underline, no scaleX animation */ }
+function Submit({ reduce }: { reduce: boolean | null }) { ... }
+function SocialButton({ provider, label }: { provider: string; label: string }) { /* flat button */ }
+
+export default function LoginPage() {
+  // No background layers — plain bg-[#060607]
+  // No typewriter effect on headline
+  // No glassmorphism card — plain max-w-[400px] container
+  // Static underlines without scaleX animation
+  // No particle or mesh gradient effects
+  return (
+    <div className="min-h-screen bg-[#060607] text-white selection:bg-white/20 relative overflow-hidden">
+      {/* No MeshOrbs, Particles, or NoiseOverlay — plain dark */}
+      <div className="relative z-10 min-h-screen grid lg:grid-cols-[1.1fr_1fr]">
+        <section className="...">
+          <AccentRuler reduce={reduce} />
+          <motion.h1 ...>One gateway.<br />Every model.</motion.h1>
+        </section>
+        <section className="...">
+          {/* No glass card — flat container */}
+          <motion.div className="w-full max-w-[400px]">
+            <Field ... />
+            <div className="...">
+              <input ... />
+              <div className="absolute -bottom-px left-0 h-px w-full transition-all duration-300 ..." />
+            </div>
+            <SocialButton ... />
+          </motion.div>
+        </section>
+      </div>
+    </div>
+  );
+}
+```
+
+### After
+```code
+// apps/web/app/login/page.tsx — 668 lines, atmospheric background with glassmorphism
+function MeshOrbs({ reduce }: { reduce: boolean | null }) { /* animated radial gradient orbs */ }
+function Particles({ reduce }: { reduce: boolean | null }) { /* subliminal floating particles */ }
+function NoiseOverlay() { /* subtle grain texture */ }
+function AccentRuler({ reduce }: { reduce: boolean | null }) { ... }
+function useTypewriter(texts: string[], speed: number, pause: number) { /* typing hook */ }
+function Field({ ... }) { /* scaleX-animated underline */ }
+function Submit({ reduce }: { reduce: boolean | null }) { ... }
+function SocialButton({ provider, label }: { provider: string; label: string }) { /* gradient hover */ }
+
+export default function LoginPage() {
+  const { displayed: typedHeadline, isTyping } = useTypewriter(
+    ["One gateway.", "Every model."], 120, 2500
+  );
+  return (
+    <div className="min-h-screen bg-[#060607] text-white selection:bg-white/20 relative overflow-hidden">
+      <MeshOrbs reduce={reduce} />
+      <Particles reduce={reduce} />
+      <NoiseOverlay />
+      <div className="relative z-10 min-h-screen grid lg:grid-cols-[1.1fr_1fr]">
+        <section className="...">
+          <AccentRuler reduce={reduce} />
+          <motion.h1 className="...">
+            {isTyping ? (
+              <span className="block min-h-[1.1em]">
+                {typedHeadline}
+                <span className="inline-block w-[3px] h-[0.8em] bg-white/60 ml-1 animate-pulse align-middle" />
+              </span>
+            ) : (
+              <>One gateway.<br />Every model.</>
+            )}
+          </motion.h1>
+          {/* operational indicator with animate-ping */}
+          <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400/60 opacity-60 animate-ping" />
+        </section>
+        <section className="...">
+          <motion.div className="w-full max-w-[420px] relative">
+            {/* Glassmorphism card with 40px blur, subtle border */}
+            <div
+              className="relative rounded-2xl px-8 py-10 lg:px-10 lg:py-12"
+              style={{
+                backdropFilter: "blur(40px) saturate(1.1)",
+                background: "rgba(255,255,255,0.015)",
+                border: "1px solid rgba(255,255,255,0.06)",
+              }}
+            >
+              <form ...>
+                <Field ... /> {/* scaleX animated underline on focus/error */}
+                <input ... />
+                <SocialButton ... /> {/* gradient hover wash */}
+              </form>
+            </div>
+          </motion.div>
+        </section>
+      </div>
+    </div>
+  );
+}
+```
+
+### Notes
+- Added `MeshOrbs` component with three animated radial gradient orbs using existing `animate-mesh-shift` CSS keyframe (15s ease-in-out infinite) for a living, breathing background.
+- Added `Particles` component using Canvas 2D (30 particles, 0.3px/s random velocity, opacity 0.1–0.4) — subliminal and performance-conscious, gracefully disabled under `prefers-reduced-motion`.
+- Added `NoiseOverlay` — SVG fractal noise texture at 3% opacity for analog film grain without performance cost.
+- Added `useTypewriter` hook with cycling text lines, 120ms per character, blink cursor, and auto-delete for the left-column headline, bringing kinetic energy to the editorial side.
+- Refactored `Field` and password `<input>` underlines from static `bg-white/10` bars to `scaleX` animated transitions (500ms ease-out) that reveal left-to-right on focus or error — cleaner motion, aligns with the intentional minimalism principle.
+- Rewrapped the right-column form in a glassmorphism card: `backdrop-filter: blur(40px) saturate(1.1)`, `background: rgba(255,255,255,0.015)`, `border: 1px solid rgba(255,255,255,0.06)`, plus inset top highlight and soft drop shadow for depth.
+- `SocialButton` hover state upgraded: subtle radial gradient wash (`rgba(99,102,241,0.03)` → `rgba(139,92,246,0.04)`), smoother 300ms transition.
+- Operational status dot now uses `animate-ping` on the outer glow layer for a more sophisticated pulse effect.
+- Logo dot gains `hover:shadow` glow on rollover, giving every micro-interaction something to say.
+- All effects respect `prefers-reduced-motion`: `useTypewriter` shows final text, `Particles` unmounts, `MeshOrbs` drop animation class.
+- No new dependencies; uses existing `framer-motion`, `lucide-react`, and Tailwind v4. `npx tsc --noEmit` clean for `login/page.tsx`; `prettier` applied.
+
+---
+
+## 102. Fix Admin Cost Lucide Import
+
+**Session**: admin-cost-build-fix-2026-07-05
+**Date**: 2026-07-05 10:46
+
+### Why
+The admin cost page failed Turbopack parsing because the `lucide-react` import list was malformed: `TrendingUp` and `DollarSign` were adjacent without a comma, leaving `DollarSign` parsed as an unexpected identifier. The page already renders `DollarSign` in two forecast cards, so the import needed to include it explicitly with valid syntax.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| `apps/web/app/admin/(protected)/cost/page.tsx` | L5 | modified |
+| `UPDATE.md` | L2315-2345 | modified |
+
+### Before
+```tsx
+// apps/web/app/admin/(protected)/cost/page.tsx:5
+import { Info, TrendingUp   DollarSign,
+} from "lucide-react";
+```
+
+### After
+```tsx
+// apps/web/app/admin/(protected)/cost/page.tsx:5
+import { Info, TrendingUp, DollarSign } from "lucide-react";
+```
+
+### Notes
+Attempted to verify with `npm run --workspace apps/web build` and `npx prettier --check apps/web/app/admin/\(protected\)/cost/page.tsx`, but both commands exited with status 139 and produced no actionable output in this environment. The targeted syntax error shown by Next.js is fixed in the import statement.
+
+---
+
+## 103. Fix SQLite Admin Runtime Queries
+
+**Session**: sqlite-admin-runtime-fix-2026-07-05
+**Date**: 2026-07-05 11:18
+
+### Why
+The SQLite runtime was now serving the admin frontend, but two backend compatibility gaps blocked admin pages: PostgreSQL casts such as `created_by::text` reached SQLite unchanged and failed with `unrecognized token: ":"`, and multi-row SQLite scans delegated directly to `database/sql.Rows.Scan`, bypassing the existing `assign()` helper that parses SQLite `TEXT` timestamps into `time.Time` fields.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| `apps/backend/internal/db/sqlite_querier.go` | L19-109 | modified |
+| `UPDATE.md` | L2348-2415 | modified |
+
+### Before
+```go
+// apps/backend/internal/db/sqlite_querier.go:50-78
+func (q *sqliteQuerier) Exec(ctx context.Context, qStr string, args ...any) (pgconn.CommandTag, error) {
+	var (
+		res sql.Result
+		err error
+	)
+	if q.tx != nil {
+		res, err = q.tx.ExecContext(ctx, qStr, args...)
+	} else {
+		res, err = q.db.ExecContext(ctx, qStr, args...)
+	}
+	if err != nil {
+		return pgconn.CommandTag{}, err
+	}
+	ra, _ := res.RowsAffected()
+	return sqliteTag(ra, sqliteOpKeyword(qStr)), nil
+}
+
+func (q *sqliteQuerier) queryCtx(ctx context.Context, qStr string, args ...any) (*sql.Rows, error) {
+	if q.tx != nil {
+		return q.tx.QueryContext(ctx, qStr, args...)
+	}
+	return q.db.QueryContext(ctx, qStr, args...)
+}
+
+func (r *sqliteRows) Scan(dest ...any) error { return r.Rows.Scan(dest...) }
+```
+
+### After
+```go
+// apps/backend/internal/db/sqlite_querier.go:39-109
+var (
+	sqliteCastPattern  = regexp.MustCompile(`(?i)::[a-z_][a-z0-9_]*(?:\[\])?`)
+	sqliteILikePattern = regexp.MustCompile(`(?i)\bILIKE\b`)
+)
+
+func normalizeSQLiteSQL(qStr string) string {
+	qStr = sqliteCastPattern.ReplaceAllString(qStr, "")
+	qStr = sqliteILikePattern.ReplaceAllString(qStr, "LIKE")
+	return qStr
+}
+
+func (q *sqliteQuerier) Exec(ctx context.Context, qStr string, args ...any) (pgconn.CommandTag, error) {
+	var (
+		res sql.Result
+		err error
+	)
+	qStr = normalizeSQLiteSQL(qStr)
+	if q.tx != nil {
+		res, err = q.tx.ExecContext(ctx, qStr, args...)
+	} else {
+		res, err = q.db.ExecContext(ctx, qStr, args...)
+	}
+	// ...
+}
+
+func (q *sqliteQuerier) queryCtx(ctx context.Context, qStr string, args ...any) (*sql.Rows, error) {
+	qStr = normalizeSQLiteSQL(qStr)
+	if q.tx != nil {
+		return q.tx.QueryContext(ctx, qStr, args...)
+	}
+	return q.db.QueryContext(ctx, qStr, args...)
+}
+
+func (r *sqliteRows) Scan(dest ...any) error {
+	if r == nil || r.Rows == nil {
+		return fmt.Errorf("nil rows")
+	}
+	vals, err := scanColumns(r.Rows)
+	if err != nil {
+		return err
+	}
+	if len(dest) != len(vals) {
+		return fmt.Errorf("scan: %d destination args for %d columns", len(dest), len(vals))
+	}
+	for i := range dest {
+		if err := assign(dest[i], vals[i]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+```
+
+### Notes
+- SQLite SQL normalization is scoped to the SQLite adapter only; PostgreSQL and Neon paths still execute repository SQL unchanged through pgx.
+- `sqliteRows.Scan` now matches the existing `sqliteRow.Scan` conversion behavior, so repository list queries can scan SQLite `TEXT` timestamps and JSON-backed string slices into domain structs.
+- Verification passed: `cd apps/backend && gofmt -w internal/db/sqlite_querier.go && go test ./internal/db/... ./internal/repository/... && go build ./cmd/api`.
+
+
+---
+
+## 2026-07-05T11:50Z — admin-design-style-guide-2026-07-05 — docs(admin): capture admin visual design system
+
+**Session**: admin-design-style-guide-2026-07-05
+**Date**: 2026-07-05 11:50
+
+### Why
+The user wanted the color style, visual grading, UI language, and layout rules from `http://localhost:3000/admin/` documented so the same admin visual UI can be rebuilt in another project without reverse-engineering the React/CSS source.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| `admindegine.md` | L1-825 | created |
+
+### Before
+```markdown
+// admindegine.md:1
+// File did not exist before this documentation pass.
+```
+
+### After
+```markdown
+// admindegine.md:1-18
+# Admin Visual Design System
+
+Use this document as a portable reference for recreating the `http://localhost:3000/admin/` look in another product. The admin UI is a dark, minimal, command-center interface: near-black surfaces, very low-contrast borders, blue/violet accent light, compact typography, mono numeric data, and subtle motion.
+
+## 1. Overall visual direction
+
+- **Mood:** premium infrastructure console, quiet cyber, operational command center.
+- **Density:** compact but breathable; avoid oversized enterprise dashboard spacing.
+- **Contrast style:** black-on-black layering with thin translucent white borders.
+- **Accent behavior:** blue is primary; violet/purple is secondary. Accents should feel like ambient light, not heavy color blocks.
+- **Texture:** soft radial glows, faint grid, tiny noise overlays, and 1px gradient highlights.
+- **Motion:** short, smooth, spring-like entrance animations and micro hover states.
+```
+
+### Notes
+- Documentation-only change; no runtime code or tests were modified.
+- The filename follows the user's requested spelling: `admindegine.md`.

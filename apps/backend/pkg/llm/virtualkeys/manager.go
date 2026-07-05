@@ -14,30 +14,30 @@ import (
 
 // VirtualKey represents a virtual API key.
 type VirtualKey struct {
-	ID                 string
-	KeyHash            string
-	KeyPrefix          string
-	Name               string
-	TeamID             string
-	UserID             string
-	ModelAccess        []string // nil = all models
-	RateLimitRPM       int
-	RateLimitRPD       int
-	RateLimitTPM       int
-	BudgetLimitCents   int64 // 0 = unlimited
-	BudgetUsedCents    int64
-	BudgetResetPeriod  string // monthly, daily, weekly
-	MaxTokensPerReq    int    // 0 = unlimited
-	AllowedIPs         []string // nil = all IPs
-	ExpiresAt          *time.Time
-	LastUsedAt         *time.Time
-	LastUsedIP         string
-	RequestCount       int64
-	TotalTokens        int64
-	IsActive           bool
-	Metadata           map[string]any
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
+	ID                string
+	KeyHash           string
+	KeyPrefix         string
+	Name              string
+	TeamID            string
+	UserID            string
+	ModelAccess       []string // nil = all models
+	RateLimitRPM      int
+	RateLimitRPD      int
+	RateLimitTPM      int
+	BudgetLimitCents  int64 // 0 = unlimited
+	BudgetUsedCents   int64
+	BudgetResetPeriod string   // monthly, daily, weekly
+	MaxTokensPerReq   int      // 0 = unlimited
+	AllowedIPs        []string // nil = all IPs
+	ExpiresAt         *time.Time
+	LastUsedAt        *time.Time
+	LastUsedIP        string
+	RequestCount      int64
+	TotalTokens       int64
+	IsActive          bool
+	Metadata          map[string]any
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
 }
 
 // Store is the interface for virtual key persistence.

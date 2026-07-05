@@ -24,17 +24,19 @@ func NewStreamPump(w StreamWriter) *StreamPump {
 func (p *StreamPump) Pump(ctx context.Context, ch <-chan llm.StreamChunk) (llm.Message, *llm.Usage, error) {
 	acc := NewAccumulator()
 	var lastUsage *llm.Usage
+	finished := false
 
 	for {
 		select {
 		case chunk, ok := <-ch:
 			if !ok {
-				// Channel closed — write finish
 				msg, _ := acc.Message()
-				if err := p.writer.WriteFinish(acc.FinishReason(), lastUsage); err != nil {
-					return msg, lastUsage, err
+				if !finished {
+					if err := p.writer.WriteFinish(acc.FinishReason(), lastUsage); err != nil {
+						return msg, lastUsage, err
+					}
+					p.writer.Flush()
 				}
-				p.writer.Flush()
 				return msg, lastUsage, nil
 			}
 
@@ -49,6 +51,9 @@ func (p *StreamPump) Pump(ctx context.Context, ch <-chan llm.StreamChunk) (llm.M
 			if err := p.writeChunk(chunk); err != nil {
 				msg, _ := acc.Message()
 				return msg, lastUsage, err
+			}
+			if chunk.FinishReason != nil {
+				finished = true
 			}
 			p.writer.Flush()
 
@@ -69,15 +74,15 @@ func (p *StreamPump) writeChunk(chunk llm.StreamChunk) error {
 	}
 
 	// Write tool call deltas
-	for _, tc := range chunk.Delta.ToolCalls {
+	for i, tc := range chunk.Delta.ToolCalls {
 		if tc.ID != "" {
 			// New tool call starting
-			if err := p.writer.WriteToolCallStart(&tc); err != nil {
+			if err := p.writer.WriteToolCallStart(i, &tc); err != nil {
 				return err
 			}
 		}
 		if len(tc.Function.Arguments) > 0 {
-			if err := p.writer.WriteToolCallDelta(0, string(tc.Function.Arguments)); err != nil {
+			if err := p.writer.WriteToolCallDelta(i, string(tc.Function.Arguments)); err != nil {
 				return err
 			}
 		}

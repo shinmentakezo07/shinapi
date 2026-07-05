@@ -296,12 +296,12 @@ func (r *mongoRow) Scan(dest ...any) error {
 }
 
 type mongoRows struct {
-	docs  []bson.M
-	cols  []string
-	idx   int
+	docs   []bson.M
+	cols   []string
+	idx    int
 	closed bool
-	err   error
-	tag   pgconn.CommandTag
+	err    error
+	tag    pgconn.CommandTag
 }
 
 func (r *mongoRows) Close() {

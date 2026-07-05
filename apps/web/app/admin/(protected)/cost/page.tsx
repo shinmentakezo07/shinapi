@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { getAdminSDK } from "@/lib/api/admin-sdk";
-import { Info, TrendingUp } from "lucide-react";
+import { Info, TrendingUp, DollarSign } from "lucide-react";
 import AdminPageHeader from "../../AdminPageHeader";
 import { cn } from "@/lib/utils";
 import {

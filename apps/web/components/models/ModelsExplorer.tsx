@@ -32,7 +32,7 @@ interface Model {
   gradient: string;
   popular: boolean;
   speed: string;
-  description?: string;
+  description?: string | null;
 }
 
 const providerConfig: Record<

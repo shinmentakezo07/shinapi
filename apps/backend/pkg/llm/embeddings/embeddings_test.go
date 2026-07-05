@@ -10,8 +10,8 @@ import (
 
 func TestSplitModelID(t *testing.T) {
 	tests := []struct {
-		input    string
-		wantProv string
+		input     string
+		wantProv  string
 		wantModel string
 	}{
 		{"openai/text-embedding-3-small", "openai", "text-embedding-3-small"},
@@ -143,9 +143,9 @@ func TestOpenAIProvider_Embed_NoKey(t *testing.T) {
 }
 
 type mockEmbeddingProvider struct {
-	name   string
-	resp   *EmbeddingResponse
-	err    error
+	name string
+	resp *EmbeddingResponse
+	err  error
 }
 
 func (m *mockEmbeddingProvider) Name() string { return m.name }

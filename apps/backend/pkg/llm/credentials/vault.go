@@ -17,23 +17,23 @@ import (
 
 // Credential represents a stored provider API key.
 type Credential struct {
-	ID             string
-	Name           string
-	ProviderType   string
-	EncryptedKey   string
-	KeyHash        string
-	KeyLastFour    string
-	APIBase        string
-	ExtraConfig    map[string]any
-	Priority       int
-	IsActive       bool
-	HealthStatus   string // healthy, degraded, unhealthy, unknown
+	ID              string
+	Name            string
+	ProviderType    string
+	EncryptedKey    string
+	KeyHash         string
+	KeyLastFour     string
+	APIBase         string
+	ExtraConfig     map[string]any
+	Priority        int
+	IsActive        bool
+	HealthStatus    string // healthy, degraded, unhealthy, unknown
 	LastHealthCheck *time.Time
-	LastRotatedAt  *time.Time
-	FailureCount   int
-	SuccessCount   int64
-	TotalRequests  int64
-	LastError      string
+	LastRotatedAt   *time.Time
+	FailureCount    int
+	SuccessCount    int64
+	TotalRequests   int64
+	LastError       string
 }
 
 // Store is the interface for credential persistence.

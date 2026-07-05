@@ -313,10 +313,10 @@ func TestFromInternalStreamChunk_Basic(t *testing.T) {
 func TestFromInternalStreamChunk_WithFinishReason(t *testing.T) {
 	stop := llm.FinishReasonStop
 	chunk := FromInternalStreamChunk(&llm.StreamChunk{
-		ID:    "chunk1",
-		Model: "gpt-4o",
-		Index: 0,
-		Delta: llm.Message{Content: "done"},
+		ID:           "chunk1",
+		Model:        "gpt-4o",
+		Index:        0,
+		Delta:        llm.Message{Content: "done"},
 		FinishReason: &stop,
 	})
 	if chunk == nil {

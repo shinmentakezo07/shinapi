@@ -102,6 +102,7 @@ docker-compose --profile mongo up -d  # Start Postgres + Mongo profile
 - **Data fetching**: `lib/api/hooks.ts` wraps the SDK with React Query. Prefer the SDK and hooks layer over direct `fetch()` from UI components.
 - **Drizzle** schema in `db/schema.ts`. Uses `@neondatabase/serverless` against both cloud Neon and local Postgres.
 - **`next.config.ts` has `typescript: { ignoreBuildErrors: true }`** — `next build` will NOT catch type errors. Use `tsc --noEmit` or the LSP for type checking.
+- **Admin panel** (`app/admin/`) uses a separate auth flow from the main NextAuth dashboard. The first-time admin bootstrap is handled by `internal/handler/setup.go` (exposes `GET /api/setup/status` and `POST /api/setup/bootstrap` when no admin exists).
 - **Styling**: Tailwind CSS v4 — CSS-first config (`globals.css @theme`), NOT `tailwind.config.ts`. Uses `cva` + `tailwind-merge` for variants.
 - **Charts**: Recharts. **Animations**: Framer Motion (components) + GSAP (scroll-triggered).
 - **Frontend API layer** (`lib/api/`): `sdk.ts` (~1700 lines, typed client), `admin-sdk.ts` (admin endpoints), `hooks.ts` (~800 lines, React Query wrappers), `errors.ts`, `proxy.ts`, `types.ts`, `key-auth.ts`, `rate-limit.ts`, `require-auth.ts`.
@@ -247,6 +248,7 @@ bash scripts/smoke-test.sh  # Wiring verification after significant changes
 - **`opencode.json`** configures the project to use its own Yapapa instance as the LLM provider.
 - **Package overrides** in root `package.json`: dompurify, esbuild, postcss, uuid — pinned across all workspaces.
 - **Frontend dual DB driver**: Uses `@neondatabase/serverless` for cloud Neon databases, `pg` for local Postgres. Check `DATABASE_URL` for `neon.tech` to determine which driver is active.
+- **Docker entrypoint** is `start.sh` with supervisord. In production, the backend binary is `/app/backend/server` and the frontend runs `apps/web/server.js` in standalone `output: 'standalone'` mode.
 - **API Sandbox Mode**: Send `X-Sandbox: true` header on `/v1/chat/completions` to disable quota, cost tracking, and logging. Useful for testing — never ship with it enabled.
 
 ## Files Worth Checking Before Non-Trivial Changes

@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -11,11 +12,11 @@ import (
 )
 
 type RateLimiter struct {
-	mu      sync.RWMutex
-	store   map[string]*rateEntry
-	window  time.Duration
-	max     int
-	stopCh  chan struct{}
+	mu     sync.RWMutex
+	store  map[string]*rateEntry
+	window time.Duration
+	max    int
+	stopCh chan struct{}
 }
 
 type rateEntry struct {
@@ -40,11 +41,22 @@ func (rl *RateLimiter) Stop() {
 }
 
 func (rl *RateLimiter) Allow(key string) bool {
+	now := time.Now()
+
+	// Fast read path: if already at limit, avoid write lock.
+	rl.mu.RLock()
+	e, ok := rl.store[key]
+	if ok && !e.resetAt.Before(now) && e.count >= rl.max {
+		rl.mu.RUnlock()
+		return false
+	}
+	rl.mu.RUnlock()
+
+	// Slow write path: state may have changed, recheck under lock.
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 
-	now := time.Now()
-	e, ok := rl.store[key]
+	e, ok = rl.store[key]
 	if !ok || e.resetAt.Before(now) {
 		rl.store[key] = &rateEntry{count: 1, resetAt: now.Add(rl.window)}
 		return true
@@ -76,10 +88,23 @@ func (rl *RateLimiter) cleanup() {
 	}
 }
 
+// isTrustedProxy returns true if addr is from a loopback or private network.
+func isTrustedProxy(addr string) bool {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		host = addr
+	}
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return false
+	}
+	return ip.IsLoopback() || ip.IsPrivate()
+}
+
 // clientIP extracts the real client IP from X-Forwarded-For header,
 // falling back to RemoteAddr when not present.
 func clientIP(r *http.Request) string {
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" && isTrustedProxy(r.RemoteAddr) {
 		return strings.TrimSpace(strings.SplitN(xff, ",", 2)[0])
 	}
 	return r.RemoteAddr

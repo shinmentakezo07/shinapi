@@ -27,6 +27,7 @@ export interface EnrichedModel {
   logo?: string | null;
   provider: string;
   context_length?: number;
+  created?: number;
   pricing?: {
     prompt?: string;
     completion?: string;

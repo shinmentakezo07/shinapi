@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"dra-platform/backend/internal/middleware"
 	"dra-platform/backend/internal/pkg/logger"
 	"dra-platform/backend/internal/pkg/response"
 	"dra-platform/backend/pkg/llm/audit"
@@ -148,11 +149,16 @@ func (h *Handler) CreateVirtualKey(w http.ResponseWriter, r *http.Request) {
 		response.Error(w, 400, "invalid request body")
 		return
 	}
+	u := middleware.GetUser(r)
+	if u == nil {
+		response.Error(w, 401, "not authenticated")
+		return
+	}
 	if req.UserID == "" {
-		// Get user ID from auth context
-		if u := getUserFromRequest(r); u != nil {
-			req.UserID = u.ID
-		}
+		req.UserID = u.ID
+	} else if req.UserID != u.ID && !u.IsAdmin() {
+		response.Error(w, 403, "cannot create virtual key for another user")
+		return
 	}
 	vk, rawKey, err := h.vkeyManager.Create(virtualkeys.CreateOptions{
 		Name: req.Name, TeamID: req.TeamID, UserID: req.UserID,
@@ -387,16 +393,4 @@ func (h *Handler) ProviderHealthDetailed(w http.ResponseWriter, r *http.Request)
 		result = []providerHealth{}
 	}
 	response.OK(w, result)
-}
-
-// getUserFromRequest extracts user from request context (set by auth middleware).
-func getUserFromRequest(r *http.Request) *userInfo {
-	if u, ok := r.Context().Value("user").(*userInfo); ok {
-		return u
-	}
-	return nil
-}
-
-type userInfo struct {
-	ID string
 }

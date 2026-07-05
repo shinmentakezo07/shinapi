@@ -30,18 +30,18 @@ const (
 
 // Budget represents a budget for a scope.
 type Budget struct {
-	ID            string
-	Scope         BudgetScope
-	ScopeID       string
-	LimitCents    int64        // 0 = unlimited
-	UsedCents     int64
-	Period        BudgetPeriod
-	SoftLimitPct  int          // Alert threshold (e.g., 80 = alert at 80%)
-	HardLimit     bool         // true = reject when exceeded, false = warn only
-	ResetAt       time.Time
-	LastAlertAt   *time.Time
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
+	ID           string
+	Scope        BudgetScope
+	ScopeID      string
+	LimitCents   int64 // 0 = unlimited
+	UsedCents    int64
+	Period       BudgetPeriod
+	SoftLimitPct int  // Alert threshold (e.g., 80 = alert at 80%)
+	HardLimit    bool // true = reject when exceeded, false = warn only
+	ResetAt      time.Time
+	LastAlertAt  *time.Time
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 // Store is the interface for budget persistence.
@@ -59,11 +59,11 @@ type AlertFunc func(ctx context.Context, b *Budget, currentPct int)
 
 // Manager manages hierarchical budgets.
 type Manager struct {
-	store      Store
-	alertFunc  AlertFunc
-	mu         sync.RWMutex
-	cache      map[string]*Budget // "scope:id" -> budget
-	stopCh     chan struct{}
+	store     Store
+	alertFunc AlertFunc
+	mu        sync.RWMutex
+	cache     map[string]*Budget // "scope:id" -> budget
+	stopCh    chan struct{}
 }
 
 // NewManager creates a new budget manager.

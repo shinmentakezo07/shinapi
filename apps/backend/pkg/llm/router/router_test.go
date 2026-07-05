@@ -9,9 +9,10 @@ import (
 )
 
 type testProvider struct {
-	name             string
-	models           []llm.ModelInfo
-	thinking         bool
+	name     string
+	models   []llm.ModelInfo
+	thinking bool
+	tools    bool
 }
 
 func (m *testProvider) Name() string { return m.name }
@@ -24,7 +25,8 @@ func (m *testProvider) ChatStream(ctx context.Context, req *llm.ChatRequest) (<-
 	return ch, nil
 }
 func (m *testProvider) ListModels(ctx context.Context) ([]llm.ModelInfo, error) { return m.models, nil }
-func (m *testProvider) SupportsThinking() bool { return m.thinking }
+func (m *testProvider) SupportsThinking() bool                                  { return m.thinking }
+func (m *testProvider) SupportsTools() bool                                     { return m.tools }
 
 func TestNewRouter(t *testing.T) {
 	r := New(StrategyCost)
@@ -45,11 +47,11 @@ func TestRouter_RouteByCost(t *testing.T) {
 	r := New(StrategyCost)
 
 	r.Register(&testProvider{
-		name: "cheap",
+		name:   "cheap",
 		models: []llm.ModelInfo{{ID: "gpt-4", InputPricePer1k: 0.01, OutputPricePer1k: 0.02}},
 	})
 	r.Register(&testProvider{
-		name: "expensive",
+		name:   "expensive",
 		models: []llm.ModelInfo{{ID: "gpt-4", InputPricePer1k: 0.10, OutputPricePer1k: 0.20}},
 	})
 
@@ -108,12 +110,12 @@ func TestRouter_RouteByCapability(t *testing.T) {
 	r := New(StrategyCapability)
 
 	r.Register(&testProvider{name: "dumb-provider"})
-	r.Register(&testProvider{name: "smart-provider", thinking: true})
+	r.Register(&testProvider{name: "smart-provider", tools: true})
 
 	temp := 1.0
 	p, err := r.Route(context.Background(), &llm.ChatRequest{
-		Model: "claude",
-		Tools: []llm.ToolDefinition{{Type: "function"}},
+		Model:       "claude",
+		Tools:       []llm.ToolDefinition{{Type: "function"}},
 		Temperature: &temp,
 	})
 	if err != nil {

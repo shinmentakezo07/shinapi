@@ -21,16 +21,16 @@ import (
 
 // BaseProvider provides common functionality for HTTP-based providers.
 type BaseProvider struct {
-	name       string
-	apiKey     string
-	baseURL    string
-	client     *http.Client
-	openaiClient *openai.Client
-	translator translator.Translator
-	cache      llm.Cache
-	watcher    *watcher.Watcher
+	name             string
+	apiKey           string
+	baseURL          string
+	client           *http.Client
+	openaiClient     *openai.Client
+	translator       translator.Translator
+	cache            llm.Cache
+	watcher          *watcher.Watcher
 	supportsThinking bool
-	models     []llm.ModelInfo
+	models           []llm.ModelInfo
 }
 
 // Option configures a BaseProvider.

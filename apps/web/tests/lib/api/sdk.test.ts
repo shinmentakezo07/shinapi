@@ -769,12 +769,10 @@ describe("DraSDK", () => {
         {
           id: "w1",
           userId: "u1",
-          name: "My Hook",
           url: "https://example.com/hook",
           events: ["log.created"],
           active: true,
           createdAt: "2024-01-01",
-          updatedAt: "2024-01-01",
         },
       ];
       mockFetch.mockResolvedValueOnce({
@@ -787,19 +785,17 @@ describe("DraSDK", () => {
       const sdk = new DraSDK({ baseUrl: "http://localhost:3000" });
       const result = await sdk.listWebhooks();
       expect(result).toHaveLength(1);
-      expect(result[0].name).toBe("My Hook");
+      expect(result[0].url).toBe("https://example.com/hook");
     });
 
     it("creates a webhook", async () => {
       const webhook = {
         id: "w1",
         userId: "u1",
-        name: "My Hook",
         url: "https://example.com/hook",
         events: ["log.created"],
         active: true,
         createdAt: "2024-01-01",
-        updatedAt: "2024-01-01",
       };
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -810,7 +806,6 @@ describe("DraSDK", () => {
 
       const sdk = new DraSDK({ baseUrl: "http://localhost:3000" });
       const result = await sdk.createWebhook({
-        name: "My Hook",
         url: "https://example.com/hook",
         events: ["log.created"],
       });
@@ -821,12 +816,10 @@ describe("DraSDK", () => {
       const webhook = {
         id: "w1",
         userId: "u1",
-        name: "My Hook",
         url: "https://example.com/hook",
         events: ["log.created"],
         active: true,
         createdAt: "2024-01-01",
-        updatedAt: "2024-01-01",
       };
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -844,12 +837,10 @@ describe("DraSDK", () => {
       const webhook = {
         id: "w1",
         userId: "u1",
-        name: "Updated Hook",
-        url: "https://example.com/hook",
+        url: "https://example.com/updated-hook",
         events: ["log.created"],
         active: true,
         createdAt: "2024-01-01",
-        updatedAt: "2024-01-01",
       };
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -859,8 +850,8 @@ describe("DraSDK", () => {
       });
 
       const sdk = new DraSDK({ baseUrl: "http://localhost:3000" });
-      const result = await sdk.updateWebhook("w1", { name: "Updated Hook" });
-      expect(result.name).toBe("Updated Hook");
+      const result = await sdk.updateWebhook("w1", { url: "https://example.com/updated-hook" });
+      expect(result.url).toBe("https://example.com/updated-hook");
     });
 
     it("deletes a webhook", async () => {
@@ -1032,10 +1023,9 @@ describe("DraSDK", () => {
       const job = {
         id: "b1",
         userId: "u1",
-        status: "completed" as const,
+        status: "completed",
         total: 2,
-        completed: 2,
-        failed: 0,
+        progress: 2,
         createdAt: "2024-01-01",
       };
       mockFetch.mockResolvedValueOnce({
@@ -1047,7 +1037,8 @@ describe("DraSDK", () => {
 
       const sdk = new DraSDK({ baseUrl: "http://localhost:3000" });
       const result = await sdk.getBatchJob("b1");
-      expect(result.completed).toBe(2);
+      expect(result.total).toBe(2);
+      expect(result.progress).toBe(2);
     });
   });
 

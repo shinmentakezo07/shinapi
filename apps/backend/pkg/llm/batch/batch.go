@@ -14,26 +14,26 @@ import (
 type Status string
 
 const (
-	StatusPending    Status = "pending"
-	StatusRunning    Status = "running"
-	StatusCompleted  Status = "completed"
-	StatusFailed     Status = "failed"
-	StatusPartial    Status = "partial"
-	StatusCancelled  Status = "cancelled"
+	StatusPending   Status = "pending"
+	StatusRunning   Status = "running"
+	StatusCompleted Status = "completed"
+	StatusFailed    Status = "failed"
+	StatusPartial   Status = "partial"
+	StatusCancelled Status = "cancelled"
 )
 
 // JobItem is a single request within a batch.
 type JobItem struct {
-	ID      string          `json:"id"`
+	ID      string           `json:"id"`
 	Request *llm.ChatRequest `json:"request"`
 }
 
 // JobResult is the result for a single item.
 type JobResult struct {
-	ID       string           `json:"id"`
+	ID       string            `json:"id"`
 	Response *llm.ChatResponse `json:"response,omitempty"`
-	Error    string           `json:"error,omitempty"`
-	Latency  int64            `json:"latency_ms"`
+	Error    string            `json:"error,omitempty"`
+	Latency  int64             `json:"latency_ms"`
 }
 
 // Job represents a batch processing job.
@@ -207,6 +207,13 @@ func (p *Processor) process(ctx context.Context, job *Job) {
 			start := time.Now()
 			resp, err := p.chatFn(ctx, it.Request)
 			latency := time.Since(start).Milliseconds()
+
+			job.mu.Lock()
+			if job.Status == StatusCancelled {
+				job.mu.Unlock()
+				return
+			}
+			job.mu.Unlock()
 
 			if err != nil {
 				results[idx] = JobResult{

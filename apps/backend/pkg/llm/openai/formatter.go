@@ -13,13 +13,13 @@ func ToInternalRequest(req *ChatCompletionRequest) *llm.ChatRequest {
 		return &llm.ChatRequest{}
 	}
 	internal := &llm.ChatRequest{
-		Model:           req.Model,
-		Stream:          req.Stream,
-		Tools:           req.Tools,
-		Temperature:     req.Temperature,
-		MaxTokens:       req.MaxTokens,
-		TopP:            req.TopP,
-		ResponseFormat:  req.ResponseFormat,
+		Model:          req.Model,
+		Stream:         req.Stream,
+		Tools:          req.Tools,
+		Temperature:    req.Temperature,
+		MaxTokens:      req.MaxTokens,
+		TopP:           req.TopP,
+		ResponseFormat: req.ResponseFormat,
 	}
 
 	if req.Stop != nil {

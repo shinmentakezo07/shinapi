@@ -11,46 +11,46 @@ import (
 
 // GenAI semantic convention attribute keys.
 const (
-	GenAISystem         = "gen_ai.system"
-	GenAIRequestModel   = "gen_ai.request.model"
-	GenAITemperature    = "gen_ai.request.temperature"
-	GenAITopP           = "gen_ai.request.top_p"
-	GenAIMaxTokens      = "gen_ai.request.max_tokens"
-	GenAIResponseModel  = "gen_ai.response.model"
-	GenAIFinishReason   = "gen_ai.response.finish_reason"
-	GenAIUsageInput     = "gen_ai.usage.input_tokens"
-	GenAIUsageOutput    = "gen_ai.usage.output_tokens"
-	GenAIUsageTotal     = "gen_ai.usage.total_tokens"
-	GenAIUsageThinking  = "gen_ai.usage.thinking_tokens"
-	GenAIStream         = "gen_ai.stream"
+	GenAISystem        = "gen_ai.system"
+	GenAIRequestModel  = "gen_ai.request.model"
+	GenAITemperature   = "gen_ai.request.temperature"
+	GenAITopP          = "gen_ai.request.top_p"
+	GenAIMaxTokens     = "gen_ai.request.max_tokens"
+	GenAIResponseModel = "gen_ai.response.model"
+	GenAIFinishReason  = "gen_ai.response.finish_reason"
+	GenAIUsageInput    = "gen_ai.usage.input_tokens"
+	GenAIUsageOutput   = "gen_ai.usage.output_tokens"
+	GenAIUsageTotal    = "gen_ai.usage.total_tokens"
+	GenAIUsageThinking = "gen_ai.usage.thinking_tokens"
+	GenAIStream        = "gen_ai.stream"
 
 	// Gateway-specific attributes
-	GatewayRequestID    = "gateway.request_id"
-	GatewayUserID       = "gateway.user_id"
-	GatewayKeyID        = "gateway.key_id"
-	GatewayTeamID       = "gateway.team_id"
-	GatewayProvider     = "gateway.provider"
-	GatewayModel        = "gateway.model"
-	GatewayCacheHit     = "gateway.cache_hit"
-	GatewayLatencyMs    = "gateway.latency_ms"
-	GatewayCostCents    = "gateway.cost_cents"
-	GatewayTranslated   = "gateway.translated"
-	GatewayTranslator   = "gateway.translator"
-	GatewayFallback     = "gateway.fallback"
-	GatewayError        = "gateway.error"
+	GatewayRequestID      = "gateway.request_id"
+	GatewayUserID         = "gateway.user_id"
+	GatewayKeyID          = "gateway.key_id"
+	GatewayTeamID         = "gateway.team_id"
+	GatewayProvider       = "gateway.provider"
+	GatewayModel          = "gateway.model"
+	GatewayCacheHit       = "gateway.cache_hit"
+	GatewayLatencyMs      = "gateway.latency_ms"
+	GatewayCostCents      = "gateway.cost_cents"
+	GatewayTranslated     = "gateway.translated"
+	GatewayTranslator     = "gateway.translator"
+	GatewayFallback       = "gateway.fallback"
+	GatewayError          = "gateway.error"
 	GatewaySecurityAction = "gateway.security_action"
 )
 
 // Span names.
 const (
-	SpanGatewayRequest  = "gateway.request"
-	SpanTranslation     = "gateway.translation"
-	SpanProviderCall    = "gateway.provider.call"
-	SpanCacheLookup     = "gateway.cache.lookup"
-	SpanGuardrailCheck  = "gateway.guardrail.check"
-	SpanTokenCount      = "gateway.token.count"
-	SpanRouting         = "gateway.routing"
-	SpanFallback        = "gateway.fallback"
+	SpanGatewayRequest = "gateway.request"
+	SpanTranslation    = "gateway.translation"
+	SpanProviderCall   = "gateway.provider.call"
+	SpanCacheLookup    = "gateway.cache.lookup"
+	SpanGuardrailCheck = "gateway.guardrail.check"
+	SpanTokenCount     = "gateway.token.count"
+	SpanRouting        = "gateway.routing"
+	SpanFallback       = "gateway.fallback"
 )
 
 // Metric names.
@@ -232,9 +232,9 @@ func (p *Provider) Shutdown() error {
 // NoopExporter is a no-op exporter.
 type NoopExporter struct{}
 
-func (n *NoopExporter) ExportSpan(span *Span) error   { return nil }
+func (n *NoopExporter) ExportSpan(span *Span) error       { return nil }
 func (n *NoopExporter) ExportMetric(metric *Metric) error { return nil }
-func (n *NoopExporter) Shutdown() error                { return nil }
+func (n *NoopExporter) Shutdown() error                   { return nil }
 
 // LoggingExporter logs telemetry to stdout.
 type LoggingExporter struct{}

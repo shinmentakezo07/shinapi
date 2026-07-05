@@ -33,8 +33,8 @@ func paginatedResult[T any](e *envelope) (*PaginatedResult[T], error) {
 		return nil, err
 	}
 	pr := &PaginatedResult[T]{
-		Data: items,
-		Page: 1,
+		Data:  items,
+		Page:  1,
 		Limit: 20,
 	}
 	if e.Meta != nil {

@@ -25,7 +25,7 @@ type StreamWriter interface {
 	WriteChunk(chunk *llm.StreamChunk) error
 
 	// WriteToolCallStart writes the start of a tool call (Anthropic: content_block_start).
-	WriteToolCallStart(tc *llm.ToolCall) error
+	WriteToolCallStart(index int, tc *llm.ToolCall) error
 
 	// WriteToolCallDelta writes a tool call argument delta.
 	WriteToolCallDelta(index int, argsDelta string) error
@@ -86,6 +86,14 @@ func (s *SSEWriter) WriteEvent(event string, data []byte) error {
 	return err
 }
 
+// WriteData writes a raw SSE data line.
+func (s *SSEWriter) WriteData(data []byte) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	_, err := fmt.Fprintf(s.w, "data: %s\n\n", data)
+	return err
+}
+
 // WriteComment writes an SSE comment (used as keepalive).
 func (s *SSEWriter) WriteComment(comment string) error {
 	s.mu.Lock()
@@ -125,6 +133,8 @@ func NewOpenAIStreamWriter(w io.Writer, model string) *OpenAIStreamWriter {
 }
 
 func (f *OpenAIStreamWriter) nextID() string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	f.counter++
 	return fmt.Sprintf("chatcmpl-%d-%d", time.Now().UnixNano(), f.counter)
 }
@@ -139,12 +149,12 @@ func (f *OpenAIStreamWriter) WriteChunk(chunk *llm.StreamChunk) error {
 	return f.sse.WriteEvent("", marshal(out))
 }
 
-func (f *OpenAIStreamWriter) WriteToolCallStart(tc *llm.ToolCall) error {
+func (f *OpenAIStreamWriter) WriteToolCallStart(index int, tc *llm.ToolCall) error {
 	if tc == nil {
 		return nil
 	}
 	out := buildOpenAIChunk(f.nextID(), f.model, 0, llm.RoleAssistant, "", &openAIToolCallDelta{
-		Index:    0,
+		Index:    index,
 		ID:       tc.ID,
 		Type:     tc.Type,
 		Function: &openAIFunctionDelta{Name: tc.Function.Name},
@@ -197,8 +207,7 @@ func (f *OpenAIStreamWriter) WriteFinish(reason llm.FinishReason, usage *llm.Usa
 	if err := f.sse.WriteEvent("", marshal(out)); err != nil {
 		return err
 	}
-	_, err := fmt.Fprintf(f.sse.Writer(), "data: [DONE]\n\n")
-	return err
+	return f.sse.WriteData([]byte("[DONE]"))
 }
 
 func (f *OpenAIStreamWriter) WriteError(code, message string) error {
@@ -227,12 +236,12 @@ func (f *OpenAIStreamWriter) Flush() { f.sse.Flush() }
 
 // AnthropicStreamWriter writes Anthropic-compatible SSE events.
 type AnthropicStreamWriter struct {
-	sse        *SSEWriter
-	model      string
+	sse         *SSEWriter
+	model       string
 	streamState *anthropicStreamState
-	mu         sync.Mutex
-	msgStarted bool
-	blockIndex int
+	mu          sync.Mutex
+	msgStarted  bool
+	blockIndex  int
 }
 
 type anthropicStreamState struct {
@@ -273,6 +282,8 @@ func (f *AnthropicStreamWriter) ensureMessageStart(chunkID string) error {
 }
 
 func (f *AnthropicStreamWriter) WriteChunk(chunk *llm.StreamChunk) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	if chunk == nil {
 		return nil
 	}
@@ -308,7 +319,9 @@ func (f *AnthropicStreamWriter) WriteChunk(chunk *llm.StreamChunk) error {
 	return nil
 }
 
-func (f *AnthropicStreamWriter) WriteToolCallStart(tc *llm.ToolCall) error {
+func (f *AnthropicStreamWriter) WriteToolCallStart(index int, tc *llm.ToolCall) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	if tc == nil {
 		return nil
 	}
@@ -343,6 +356,8 @@ func (f *AnthropicStreamWriter) WriteToolCallStart(tc *llm.ToolCall) error {
 }
 
 func (f *AnthropicStreamWriter) WriteToolCallDelta(index int, argsDelta string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	deltaEvent := map[string]interface{}{
 		"type":  "content_block_delta",
 		"index": f.blockIndex,
@@ -355,6 +370,8 @@ func (f *AnthropicStreamWriter) WriteToolCallDelta(index int, argsDelta string) 
 }
 
 func (f *AnthropicStreamWriter) WriteToolCallEnd(index int) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	if f.streamState.HasToolUseBlock {
 		stopEvent := map[string]interface{}{
 			"type":  "content_block_stop",
@@ -368,6 +385,8 @@ func (f *AnthropicStreamWriter) WriteToolCallEnd(index int) error {
 }
 
 func (f *AnthropicStreamWriter) WriteThinking(thinking string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	if err := f.ensureMessageStart(""); err != nil {
 		return err
 	}
@@ -397,6 +416,8 @@ func (f *AnthropicStreamWriter) WriteThinking(thinking string) error {
 }
 
 func (f *AnthropicStreamWriter) WriteFinish(reason llm.FinishReason, usage *llm.Usage) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	// Close any open content blocks
 	if f.streamState.HasTextBlock || f.streamState.HasThinkingBlock || f.streamState.HasToolUseBlock {
 		stopEvent := map[string]interface{}{
@@ -470,8 +491,11 @@ func (f *InternalStreamWriter) WriteChunk(chunk *llm.StreamChunk) error {
 	return f.sse.WriteEvent("chunk", marshal(chunk))
 }
 
-func (f *InternalStreamWriter) WriteToolCallStart(tc *llm.ToolCall) error {
-	return f.sse.WriteEvent("tool_call_start", marshal(tc))
+func (f *InternalStreamWriter) WriteToolCallStart(index int, tc *llm.ToolCall) error {
+	return f.sse.WriteEvent("tool_call_start", marshal(map[string]interface{}{
+		"index":     index,
+		"tool_call": tc,
+	}))
 }
 
 func (f *InternalStreamWriter) WriteToolCallDelta(index int, argsDelta string) error {
@@ -524,9 +548,9 @@ func marshal(v interface{}) []byte {
 }
 
 type openAIToolCallDelta struct {
-	Index    int                `json:"index"`
-	ID       string             `json:"id,omitempty"`
-	Type     string             `json:"type,omitempty"`
+	Index    int                  `json:"index"`
+	ID       string               `json:"id,omitempty"`
+	Type     string               `json:"type,omitempty"`
 	Function *openAIFunctionDelta `json:"function,omitempty"`
 }
 

@@ -98,7 +98,7 @@ export class AdminSDK {
   }
 
   async listProviders(): Promise<Provider[]> {
-    return this.api.adminListProviders();
+    return this.api.adminListProviders() as unknown as Provider[];
   }
 
   async getProvider(id: string): Promise<Provider> {
@@ -110,7 +110,7 @@ export class AdminSDK {
   ): Promise<Provider> {
     return this.api.adminCreateProvider(
       data as Parameters<typeof this.api.adminCreateProvider>[0],
-    );
+    ) as unknown as Provider;
   }
 
   async updateProvider(data: Partial<Provider>): Promise<void> {

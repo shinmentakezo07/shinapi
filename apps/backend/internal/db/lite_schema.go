@@ -36,15 +36,15 @@ import (
 // NOT NULL requires a DEFAULT; arrays/JSON become a JSON-encoded TEXT
 // cell with [] / {} as the empty payload.
 var usersLiteColumnAdditions = map[string]string{
-	"status":           "TEXT NOT NULL DEFAULT 'active'",
-	"last_login_ip":    "TEXT DEFAULT ''",
-	"last_login_at":    "TEXT",
-	"notes":            "TEXT DEFAULT ''",
-	"tags":             "TEXT DEFAULT '[]'",
-	"suspended_by":     "TEXT REFERENCES users(id)",
+	"status":            "TEXT NOT NULL DEFAULT 'active'",
+	"last_login_ip":     "TEXT DEFAULT ''",
+	"last_login_at":     "TEXT",
+	"notes":             "TEXT DEFAULT ''",
+	"tags":              "TEXT DEFAULT '[]'",
+	"suspended_by":      "TEXT REFERENCES users(id)",
 	"suspension_reason": "TEXT DEFAULT ''",
-	"suspended_at":     "TEXT",
-	"deleted_at":       "TEXT",
+	"suspended_at":      "TEXT",
+	"deleted_at":        "TEXT",
 }
 
 // LiteDDL is the SQLite-dialect schema for the lite runtime. Mirrors

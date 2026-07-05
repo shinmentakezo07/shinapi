@@ -132,10 +132,10 @@ func TestSeedDefaults_BalancesMatchSeedSchema(t *testing.T) {
 	ctx := context.Background()
 
 	want := []struct {
-		email           string
-		balance         int64
-		totalPurchased  int64
-		totalSpent      int64
+		email          string
+		balance        int64
+		totalPurchased int64
+		totalSpent     int64
 	}{
 		{SeedAdminEmail, 1000000, 1000000, 0},
 		{SeedUser1Email, 500000, 750000, 250000},

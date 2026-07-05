@@ -145,9 +145,9 @@ func TestPaginated(t *testing.T) {
 
 func TestPaginated_TotalPages(t *testing.T) {
 	tests := []struct {
-		total      int
-		limit      int
-		wantPages  int
+		total     int
+		limit     int
+		wantPages int
 	}{
 		{0, 10, 0},
 		{1, 10, 1},

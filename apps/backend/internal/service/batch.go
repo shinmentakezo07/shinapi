@@ -16,8 +16,8 @@ import (
 
 // BatchService handles batch job operations with persistence.
 type BatchService struct {
-	repo      *repository.BatchJobRepo
-	chatFn    func(ctx context.Context, req *llm.ChatRequest) (*llm.ChatResponse, error)
+	repo   *repository.BatchJobRepo
+	chatFn func(ctx context.Context, req *llm.ChatRequest) (*llm.ChatResponse, error)
 }
 
 // NewBatchService creates a new batch service.
@@ -148,8 +148,8 @@ func (s *BatchService) process(jobID string, items []batch.JobItem) {
 			progress++
 			resultsJSON, _ := json.Marshal(results)
 			if err := s.repo.UpdateStatus(ctx, jobID, string(batch.StatusRunning), resultsJSON, "", progress); err != nil {
-					slog.Warn("batch_status_update_failed", "jobID", jobID, "error", err.Error())
-				}
+				slog.Warn("batch_status_update_failed", "jobID", jobID, "error", err.Error())
+			}
 		}
 		close(done)
 	}()

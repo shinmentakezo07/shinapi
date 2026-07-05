@@ -76,7 +76,8 @@ export function useCredits() {
 export function usePurchaseCredits() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { amount: number }) => getSDK().purchaseCredits(data),
+    mutationFn: (data: { amount: number; description?: string }) =>
+      getSDK().purchaseCredits(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["credits"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
@@ -450,7 +451,11 @@ export function useBatchJob(id: string) {
     enabled: !!id,
     refetchInterval: (query) => {
       const data = query.state.data;
-      if (data?.status === "pending" || data?.status === "processing") {
+      if (
+        data?.status === "pending" ||
+        data?.status === "processing" ||
+        data?.status === "running"
+      ) {
         return 5_000;
       }
       return false;
@@ -592,8 +597,10 @@ export function useRedeemPromoCode() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (code: string) => getSDK().redeemPromoCode(code),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["credits", "transactions"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["credits"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+    },
   });
 }
 

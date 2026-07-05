@@ -62,7 +62,7 @@ func (h *Handler) AdminGetProvider(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) AdminCreateProvider(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		domain.Provider
-		APIKey string                `json:"apiKey,omitempty"`
+		APIKey string                 `json:"apiKey,omitempty"`
 		Models []domain.ModelRegistry `json:"models,omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -372,8 +372,7 @@ func validateNotPrivateURL(rawURL string) error {
 	// Resolve hostname to IP — this catches DNS rebinding attempts too
 	ips, err := net.LookupIP(host)
 	if err != nil {
-		// If we can't resolve, let the request proceed (it'll fail at connection time)
-		return nil
+		return fmt.Errorf("cannot resolve hostname: %w", err)
 	}
 	for _, ip := range ips {
 		if ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {

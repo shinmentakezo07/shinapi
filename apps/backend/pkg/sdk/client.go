@@ -1402,13 +1402,13 @@ func (c *Client) GetUserMessageUnreadCount(ctx context.Context) (int, error) {
 // MarkMessageRead marks a message as read.
 func (c *Client) MarkMessageRead(ctx context.Context, id string) error {
 	return c.post(ctx, "/api/messages/"+id+"/read", nil, nil)
-	
+
 }
 
 // MarkAllMessagesRead marks all messages as read.
 func (c *Client) MarkAllMessagesRead(ctx context.Context) error {
 	return c.post(ctx, "/api/messages/read-all", nil, nil)
-	
+
 }
 
 // Files — Delete
@@ -1474,7 +1474,7 @@ func (c *Client) AdminStartImpersonation(ctx context.Context, id string) (string
 // AdminStopImpersonation stops an impersonation session (admin only).
 func (c *Client) AdminStopImpersonation(ctx context.Context, sessionID string) error {
 	return c.post(ctx, "/api/admin/impersonations/"+sessionID+"/stop", nil, nil)
-	
+
 }
 
 // AdminBulkSuspendUsers suspends multiple users (admin only).
@@ -1722,7 +1722,7 @@ func (c *Client) AdminCostBreakdown(ctx context.Context) (*CostBreakdown, error)
 // AdminRetryWebhook retries a failed webhook delivery (admin only).
 func (c *Client) AdminRetryWebhook(ctx context.Context, id string) error {
 	return c.post(ctx, "/api/admin/webhooks/"+id+"/retry", nil, nil)
-	
+
 }
 
 // RBAC
@@ -1769,7 +1769,7 @@ func (c *Client) AdminGetRolePermissions(ctx context.Context, role string) ([]st
 // AdminAddRolePermission adds a permission to a role (admin only).
 func (c *Client) AdminAddRolePermission(ctx context.Context, role, permissionName string) error {
 	return c.post(ctx, "/api/admin/rbac/roles/"+role+"/permissions", map[string]string{"permissionName": permissionName}, nil)
-	
+
 }
 
 // AdminRemoveRolePermission removes a permission from a role (admin only).

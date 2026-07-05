@@ -28,12 +28,13 @@ func NewPostgresCredentialStore(pool *pgxpool.Pool) *PostgresCredentialStore {
 
 func (s *PostgresCredentialStore) Save(c *credentials.Credential) error {
 	if c.ID == "" {
-		_, err := s.pool.Exec(context.Background(), `
+		var createdAt, updatedAt time.Time
+		return s.pool.QueryRow(context.Background(), `
 			INSERT INTO credentials (name, provider_type, encrypted_key, key_hash, key_last_four, api_base, priority, is_active, health_status)
 			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
 			RETURNING id, created_at, updated_at`,
-			c.Name, c.ProviderType, c.EncryptedKey, c.KeyHash, c.KeyLastFour, c.APIBase, c.Priority, c.IsActive, c.HealthStatus)
-		return err
+			c.Name, c.ProviderType, c.EncryptedKey, c.KeyHash, c.KeyLastFour, c.APIBase, c.Priority, c.IsActive, c.HealthStatus).
+			Scan(&c.ID, &createdAt, &updatedAt)
 	}
 	_, err := s.pool.Exec(context.Background(), `
 		INSERT INTO credentials (id, name, provider_type, encrypted_key, key_hash, key_last_four, api_base, priority, is_active, health_status)

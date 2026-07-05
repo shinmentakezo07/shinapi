@@ -32,8 +32,8 @@ func (m *mockConn) Close() error {
 	return nil
 }
 
-func (m *mockConn) SetReadDeadline(_ time.Time) error  { return nil }
-func (m *mockConn) SetWriteDeadline(_ time.Time) error { return nil }
+func (m *mockConn) SetReadDeadline(_ time.Time) error   { return nil }
+func (m *mockConn) SetWriteDeadline(_ time.Time) error  { return nil }
 func (m *mockConn) SetPongHandler(_ func(string) error) {}
 
 func (m *mockConn) lastMessage() *Message {

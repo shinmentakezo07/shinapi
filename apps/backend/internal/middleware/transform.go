@@ -29,13 +29,16 @@ func TransformMiddleware(cfg TransformConfig) func(http.Handler) http.Handler {
 
 			// Read body with a reasonable size limit (10MB)
 			const maxBodySize = 10 << 20
-			body, err := io.ReadAll(io.LimitReader(r.Body, maxBodySize))
+			body, err := io.ReadAll(io.LimitReader(r.Body, maxBodySize+1))
 			if err != nil {
 				next.ServeHTTP(w, r)
 				return
 			}
-			if len(body) >= maxBodySize {
+			if len(body) > maxBodySize {
 				logger.Warn("transform_middleware_body_too_large", "path", r.URL.Path)
+				r.Body.Close()
+				http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
+				return
 			}
 			r.Body.Close()
 

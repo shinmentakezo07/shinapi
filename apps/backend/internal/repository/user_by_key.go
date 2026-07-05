@@ -50,7 +50,9 @@ func GetUserByAPIKey(ctx context.Context, db *db.DB, key, pepper string) (*domai
 			&k.AllowedModels, &k.AllowedIPs, &k.MaxTokensPerRequest, &k.DailyRequestLimit, &k.MonthlyTokenLimit,
 		)
 		if err != nil {
-			if err == pgx.ErrNoRows { return nil, nil, nil }
+			if err == pgx.ErrNoRows {
+				return nil, nil, nil
+			}
 			return nil, nil, err
 		}
 	}

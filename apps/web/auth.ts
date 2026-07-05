@@ -28,18 +28,32 @@ function isTokenExpired(token: string): boolean {
 }
 
 async function backendLogin(email: string, password: string) {
-  const res = await fetch(`${BACKEND_URL}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
-  if (!res.ok) return null;
-  const json = await res.json();
-  if (!json.success) return null;
-  return json.data as {
-    user: { id: string; name: string; email: string; role: string };
-    token: string;
-  };
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10_000);
+  try {
+    const res = await fetch(`${BACKEND_URL}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+      signal: controller.signal,
+    });
+    if (!res.ok) return null;
+    let json: { success?: boolean; data?: unknown };
+    try {
+      json = (await res.json()) as { success?: boolean; data?: unknown };
+    } catch {
+      return null;
+    }
+    if (!json.success) return null;
+    return json.data as {
+      user: { id: string; name: string; email: string; role: string };
+      token: string;
+    };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export const { auth, signIn, signOut, handlers } = NextAuth({
@@ -96,8 +110,8 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
-        session.user.role = token.role;
-        session.user.backendToken = token.backendToken;
+        session.user.role = token.role as string;
+        session.user.backendToken = token.backendToken as string | undefined;
       }
       return session;
     },

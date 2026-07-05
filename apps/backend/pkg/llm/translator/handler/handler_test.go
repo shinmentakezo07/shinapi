@@ -134,7 +134,7 @@ func TestHandler_TranslateRequest_WithTools(t *testing.T) {
 	h := NewHandler(reg)
 
 	req := &llm.ChatRequest{
-		Model: "claude-sonnet-4",
+		Model:    "claude-sonnet-4",
 		Messages: []llm.Message{{Role: llm.RoleUser, Content: "Calculate"}},
 		Tools: []llm.ToolDefinition{
 			{

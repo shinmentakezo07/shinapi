@@ -18,13 +18,13 @@ import (
 
 // ScopedAPIKey extends API key with scoping and quota limits.
 type ScopedAPIKey struct {
-	Key                string
-	UserID             string
-	AllowedModels      []string
-	AllowedIPs         []string
-	MaxTokensPerReq    int
-	DailyRequestLimit  int
-	MonthlyTokenLimit  int
+	Key               string
+	UserID            string
+	AllowedModels     []string
+	AllowedIPs        []string
+	MaxTokensPerReq   int
+	DailyRequestLimit int
+	MonthlyTokenLimit int
 }
 
 // QuotaTrackerInterface allows swapping in-memory and Redis implementations.
@@ -37,10 +37,10 @@ type QuotaTrackerInterface interface {
 
 // QuotaTracker tracks usage per API key.
 type QuotaTracker struct {
-	mu       sync.RWMutex
-	daily    map[string]*dailyQuota
-	monthly  map[string]*monthlyQuota
-	stopCh   chan struct{}
+	mu      sync.RWMutex
+	daily   map[string]*dailyQuota
+	monthly map[string]*monthlyQuota
+	stopCh  chan struct{}
 }
 
 type dailyQuota struct {
@@ -131,6 +131,7 @@ func (qt *QuotaTracker) CheckRequest(_ context.Context, key *ScopedAPIKey, model
 			qt.mu.Unlock()
 			return fmt.Errorf("monthly token limit %d exceeded", key.MonthlyTokenLimit)
 		}
+		mq.tokens += estimatedTokens
 		qt.mu.Unlock()
 	}
 
@@ -261,6 +262,9 @@ func QuotaCheck(tracker QuotaTrackerInterface, getKey func(r *http.Request) *Sco
 				r.Body.Close()
 				r.Body = io.NopCloser(bytes.NewReader(body))
 				model, tokens = parseRequest(r)
+				// parseRequest consumes the body via JSON decode.
+				// Restore it so downstream handlers can read the bytes.
+				r.Body = io.NopCloser(bytes.NewReader(body))
 				if seeker, ok := r.Body.(io.Seeker); ok {
 					if _, err := seeker.Seek(0, io.SeekStart); err != nil {
 						logger.Warn("quota_body_seek_failed", "error", err.Error())
@@ -268,14 +272,7 @@ func QuotaCheck(tracker QuotaTrackerInterface, getKey func(r *http.Request) *Sco
 				}
 			}
 
-			clientIP := r.RemoteAddr
-			if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-				if idx := strings.Index(xff, ","); idx > 0 {
-					clientIP = strings.TrimSpace(xff[:idx])
-				} else {
-					clientIP = strings.TrimSpace(xff)
-				}
-			}
+			clientIP := clientIP(r)
 
 			if err := tracker.CheckRequest(r.Context(), key, model, tokens, clientIP); err != nil {
 				keyPrefix := key.Key

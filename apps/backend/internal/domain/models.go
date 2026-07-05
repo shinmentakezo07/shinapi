@@ -82,17 +82,17 @@ type APILog struct {
 }
 
 type UserCredits struct {
-	ID             string    `json:"id"`
-	UserID         string    `json:"userId"`
-	Balance        int       `json:"balance"`
-	TotalPurchased int       `json:"totalPurchased"`
-	TotalSpent     int       `json:"totalSpent"`
-	MonthlyBudget  *int      `json:"monthlyBudget,omitempty"`
-	DailyBudget    *int      `json:"dailyBudget,omitempty"`
-	DailySpent     int       `json:"dailySpent"`
-	MonthlySpent   int       `json:"monthlySpent"`
+	ID             string     `json:"id"`
+	UserID         string     `json:"userId"`
+	Balance        int        `json:"balance"`
+	TotalPurchased int        `json:"totalPurchased"`
+	TotalSpent     int        `json:"totalSpent"`
+	MonthlyBudget  *int       `json:"monthlyBudget,omitempty"`
+	DailyBudget    *int       `json:"dailyBudget,omitempty"`
+	DailySpent     int        `json:"dailySpent"`
+	MonthlySpent   int        `json:"monthlySpent"`
 	BudgetResetAt  *time.Time `json:"budgetResetAt,omitempty"`
-	UpdatedAt      time.Time `json:"updatedAt"`
+	UpdatedAt      time.Time  `json:"updatedAt"`
 }
 
 type CreditTransaction struct {
@@ -257,17 +257,17 @@ func (r *CreateWebhookRequest) Validate() *AppError {
 }
 
 var validWebhookEvents = map[string]bool{
-	"chat.completed":       true,
-	"credits.purchased":    true,
-	"credits.deducted":     true,
-	"request.completed":    true,
-	"request.failed":       true,
-	"user.created":         true,
-	"user.deleted":         true,
-	"key.created":          true,
-	"key.revoked":          true,
-	"budget.exceeded":      true,
-	"*":                    true,
+	"chat.completed":    true,
+	"credits.purchased": true,
+	"credits.deducted":  true,
+	"request.completed": true,
+	"request.failed":    true,
+	"user.created":      true,
+	"user.deleted":      true,
+	"key.created":       true,
+	"key.revoked":       true,
+	"budget.exceeded":   true,
+	"*":                 true,
 }
 
 func isValidWebhookEvent(event string) bool {
@@ -359,8 +359,8 @@ type BatchJob struct {
 	ID        string     `json:"id"`
 	UserID    string     `json:"userId"`
 	Status    string     `json:"status"`
-	Items     []byte     `json:"items"`     // JSONB
-	Results   []byte     `json:"results"`   // JSONB
+	Items     []byte     `json:"items"`   // JSONB
+	Results   []byte     `json:"results"` // JSONB
 	Error     string     `json:"error,omitempty"`
 	Progress  int        `json:"progress"`
 	Total     int        `json:"total"`
@@ -492,21 +492,21 @@ type BudgetCap struct {
 }
 
 type ABComparison struct {
-	ID        string     `json:"id"`
-	UserID    string     `json:"userId"`
-	ModelA    string     `json:"modelA"`
-	ModelB    string     `json:"modelB"`
-	Prompt    string     `json:"prompt"`
-	ResultA   *string    `json:"resultA,omitempty"`
-	ResultB   *string    `json:"resultB,omitempty"`
-	LatencyA  *int       `json:"latencyA,omitempty"`
-	LatencyB  *int       `json:"latencyB,omitempty"`
-	CostA     *int       `json:"costA,omitempty"`
-	CostB     *int       `json:"costB,omitempty"`
-	TokensA   *int       `json:"tokensA,omitempty"`
-	TokensB   *int       `json:"tokensB,omitempty"`
-	Status    string     `json:"status"`
-	CreatedAt time.Time  `json:"createdAt"`
+	ID        string    `json:"id"`
+	UserID    string    `json:"userId"`
+	ModelA    string    `json:"modelA"`
+	ModelB    string    `json:"modelB"`
+	Prompt    string    `json:"prompt"`
+	ResultA   *string   `json:"resultA,omitempty"`
+	ResultB   *string   `json:"resultB,omitempty"`
+	LatencyA  *int      `json:"latencyA,omitempty"`
+	LatencyB  *int      `json:"latencyB,omitempty"`
+	CostA     *int      `json:"costA,omitempty"`
+	CostB     *int      `json:"costB,omitempty"`
+	TokensA   *int      `json:"tokensA,omitempty"`
+	TokensB   *int      `json:"tokensB,omitempty"`
+	Status    string    `json:"status"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 type FineTuningDataset struct {
@@ -535,17 +535,17 @@ type FineTuningJob struct {
 }
 
 type ProviderPlugin struct {
-	ID                 string            `json:"id"`
-	Name               string            `json:"name"`
-	Type               string            `json:"type"`
-	BaseURL            string            `json:"baseUrl"`
-	APIKeyEnv          *string           `json:"apiKeyEnv,omitempty"`
-	ModelListEndpoint  string            `json:"modelListEndpoint"`
-	ChatEndpoint       string            `json:"chatEndpoint"`
-	EmbeddingEndpoint  string            `json:"embeddingEndpoint"`
-	Headers            map[string]string `json:"headers,omitempty"`
-	IsActive           bool              `json:"isActive"`
-	CreatedAt          time.Time         `json:"createdAt"`
+	ID                string            `json:"id"`
+	Name              string            `json:"name"`
+	Type              string            `json:"type"`
+	BaseURL           string            `json:"baseUrl"`
+	APIKeyEnv         *string           `json:"apiKeyEnv,omitempty"`
+	ModelListEndpoint string            `json:"modelListEndpoint"`
+	ChatEndpoint      string            `json:"chatEndpoint"`
+	EmbeddingEndpoint string            `json:"embeddingEndpoint"`
+	Headers           map[string]string `json:"headers,omitempty"`
+	IsActive          bool              `json:"isActive"`
+	CreatedAt         time.Time         `json:"createdAt"`
 }
 
 type ExportJob struct {
@@ -665,13 +665,13 @@ func (r *CreateExportJobRequest) Validate() *AppError {
 }
 
 type RateLimit struct {
-	ID                 string    `json:"id"`
-	Tier               string    `json:"tier"`
-	RPM                int       `json:"rpm"`
-	DailyRequests      int       `json:"dailyRequests"`
-	MonthlyRequests    int       `json:"monthlyRequests"`
-	MaxTokensPerRequest int      `json:"maxTokensPerRequest"`
-	CreatedAt          time.Time `json:"createdAt"`
+	ID                  string    `json:"id"`
+	Tier                string    `json:"tier"`
+	RPM                 int       `json:"rpm"`
+	DailyRequests       int       `json:"dailyRequests"`
+	MonthlyRequests     int       `json:"monthlyRequests"`
+	MaxTokensPerRequest int       `json:"maxTokensPerRequest"`
+	CreatedAt           time.Time `json:"createdAt"`
 }
 
 func NewID() string { return uuid.New().String() }

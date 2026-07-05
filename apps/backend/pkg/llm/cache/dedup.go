@@ -13,8 +13,8 @@ import (
 // DedupCache wraps a Cache with request deduplication using singleflight.
 // Concurrent identical requests are collapsed into a single upstream call.
 type DedupCache struct {
-	cache   Cache
-	group   singleflight.Group
+	cache Cache
+	group singleflight.Group
 }
 
 // NewDedupCache wraps an existing cache with deduplication.

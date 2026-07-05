@@ -40,11 +40,11 @@ type Handler func(ctx context.Context, record ErrorRecord) error
 
 // Watcher monitors errors and applies handling strategies.
 type Watcher struct {
-	mu         sync.RWMutex
-	handlers   map[ErrorCategory][]Handler
-	allHandlers []Handler
-	history    []ErrorRecord
-	maxHistory int
+	mu              sync.RWMutex
+	handlers        map[ErrorCategory][]Handler
+	allHandlers     []Handler
+	history         []ErrorRecord
+	maxHistory      int
 	circuitBreakers map[string]*CircuitBreaker
 }
 
@@ -227,14 +227,14 @@ func toLower(b byte) byte {
 
 // CircuitBreaker implements the circuit breaker pattern.
 type CircuitBreaker struct {
-	mu                sync.RWMutex
-	failureThreshold  int
-	recoveryTimeout   time.Duration
-	failureCount      int
-	lastFailureTime   time.Time
-	state             State
-	halfOpenMaxCalls  int
-	halfOpenCalls     int
+	mu               sync.RWMutex
+	failureThreshold int
+	recoveryTimeout  time.Duration
+	failureCount     int
+	lastFailureTime  time.Time
+	state            State
+	halfOpenMaxCalls int
+	halfOpenCalls    int
 }
 
 // State represents the circuit breaker state.
@@ -328,20 +328,20 @@ func (w *Watcher) GetOrCreateCircuitBreaker(key string, failureThreshold int, re
 
 // RetryConfig configures retry behavior.
 type RetryConfig struct {
-	MaxRetries  int
-	BaseDelay   time.Duration
-	MaxDelay    time.Duration
-	Multiplier  float64
+	MaxRetries          int
+	BaseDelay           time.Duration
+	MaxDelay            time.Duration
+	Multiplier          float64
 	RetryableCategories []ErrorCategory
 }
 
 // DefaultRetryConfig returns a default retry configuration.
 func DefaultRetryConfig() *RetryConfig {
 	return &RetryConfig{
-		MaxRetries:  3,
-		BaseDelay:   500 * time.Millisecond,
-		MaxDelay:    30 * time.Second,
-		Multiplier:  2.0,
+		MaxRetries: 3,
+		BaseDelay:  500 * time.Millisecond,
+		MaxDelay:   30 * time.Second,
+		Multiplier: 2.0,
 		RetryableCategories: []ErrorCategory{
 			CategoryNetwork,
 			CategoryRateLimit,
@@ -368,7 +368,7 @@ func (rc *RetryConfig) CalculateDelay(attempt int) time.Duration {
 		delay = float64(rc.MaxDelay)
 	}
 	// Add jitter (±20%)
-	jitter := delay * 0.2 * (float64(time.Now().UnixNano()%100) / 100.0 - 0.5)
+	jitter := delay * 0.2 * (float64(time.Now().UnixNano()%100)/100.0 - 0.5)
 	return time.Duration(delay + jitter)
 }
 

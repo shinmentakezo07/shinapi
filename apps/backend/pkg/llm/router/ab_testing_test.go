@@ -117,11 +117,11 @@ func TestABTestGetCounts(t *testing.T) {
 func TestCanaryRouting(t *testing.T) {
 	r := NewCanaryRouter()
 	r.AddCanary(&CanaryConfig{
-		ID:             "canary-1",
-		StableModel:    "gpt-4",
-		CanaryModel:    "gpt-4-turbo",
-		CanaryPercent:  10,
-		IsActive:       true,
+		ID:              "canary-1",
+		StableModel:     "gpt-4",
+		CanaryModel:     "gpt-4-turbo",
+		CanaryPercent:   10,
+		IsActive:        true,
 		MaxCanaryErrors: 5,
 	})
 

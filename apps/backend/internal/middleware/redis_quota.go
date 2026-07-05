@@ -149,4 +149,3 @@ func (qt *RedisQuotaTracker) MonthlyTokens(ctx context.Context, key string) int 
 	}
 	return val
 }
-

@@ -6,7 +6,7 @@ import { getSDK } from "@/lib/api/sdk";
 export async function signOutAction() {
   try {
     const sdk = getSDK();
-    await sdk.auth.logout();
+    await sdk.logout();
   } catch {
     // Backend logout failure — still clear local session
   }

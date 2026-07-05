@@ -16,12 +16,12 @@ import (
 
 // Entry represents a cached response with metadata.
 type Entry struct {
-	Response   *llm.ChatResponse `json:"response"`
-	CreatedAt  time.Time         `json:"created_at"`
-	ExpiresAt  time.Time         `json:"expires_at"`
-	AccessCount int              `json:"access_count"`
-	Model      string            `json:"model"`
-	Hash       string            `json:"hash"`
+	Response    *llm.ChatResponse `json:"response"`
+	CreatedAt   time.Time         `json:"created_at"`
+	ExpiresAt   time.Time         `json:"expires_at"`
+	AccessCount int               `json:"access_count"`
+	Model       string            `json:"model"`
+	Hash        string            `json:"hash"`
 }
 
 // IsExpired returns true if the cache entry has expired.
@@ -43,20 +43,20 @@ type Cache interface {
 
 // Stats represents cache statistics.
 type Stats struct {
-	Hits       int64 `json:"hits"`
-	Misses     int64 `json:"misses"`
-	Size       int   `json:"size"`
-	TotalEntries int `json:"total_entries"`
+	Hits         int64 `json:"hits"`
+	Misses       int64 `json:"misses"`
+	Size         int   `json:"size"`
+	TotalEntries int   `json:"total_entries"`
 }
 
 // MemoryCache is an in-memory cache implementation.
 type MemoryCache struct {
-	mu         sync.RWMutex
-	entries    map[string]*Entry
-	hits       int64
-	misses     int64
-	maxSize    int
-	defaultTTL time.Duration
+	mu            sync.RWMutex
+	entries       map[string]*Entry
+	hits          int64
+	misses        int64
+	maxSize       int
+	defaultTTL    time.Duration
 	cleanupCancel context.CancelFunc
 }
 
@@ -327,6 +327,31 @@ func deepCopyResponse(resp *llm.ChatResponse) *llm.ChatResponse {
 		cpy.Choices[i] = ch
 		if ch.Message.Content != "" {
 			cpy.Choices[i].Message.Content = strings.Clone(ch.Message.Content)
+		}
+		// Deep copy ContentBlocks (contains pointers and json.RawMessage).
+		if len(ch.Message.ContentBlocks) > 0 {
+			cbs := make([]llm.ContentBlock, len(ch.Message.ContentBlocks))
+			for j, cb := range ch.Message.ContentBlocks {
+				cbs[j] = cb
+				if cb.ImageURL != nil {
+					img := *cb.ImageURL
+					cbs[j].ImageURL = &img
+				}
+				if cb.ToolUse != nil {
+					tu := *cb.ToolUse
+					if cb.ToolUse.Input != nil {
+						inputCopy := make([]byte, len(cb.ToolUse.Input))
+						copy(inputCopy, cb.ToolUse.Input)
+						tu.Input = inputCopy
+					}
+					cbs[j].ToolUse = &tu
+				}
+				if cb.ToolResult != nil {
+					tr := *cb.ToolResult
+					cbs[j].ToolResult = &tr
+				}
+			}
+			cpy.Choices[i].Message.ContentBlocks = cbs
 		}
 		if len(ch.Message.ToolCalls) > 0 {
 			tc := make([]llm.ToolCall, len(ch.Message.ToolCalls))

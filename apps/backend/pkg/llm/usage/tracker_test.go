@@ -230,9 +230,9 @@ func TestCustomPricing(t *testing.T) {
 	tracker := NewTracker(store, ps)
 
 	tracker.SetPricing(&Pricing{
-		Model:               "custom-model",
-		Provider:            "custom",
-		InputCostPerMillion: 100,
+		Model:                "custom-model",
+		Provider:             "custom",
+		InputCostPerMillion:  100,
 		OutputCostPerMillion: 200,
 	})
 

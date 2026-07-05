@@ -14,37 +14,37 @@ import (
 type Strategy string
 
 const (
-	StrategyRoundRobin  Strategy = "round-robin"
-	StrategyLeastBusy   Strategy = "least-busy"
+	StrategyRoundRobin   Strategy = "round-robin"
+	StrategyLeastBusy    Strategy = "least-busy"
 	StrategyLatencyBased Strategy = "latency-based"
-	StrategyCostBased   Strategy = "cost"
-	StrategyWeighted    Strategy = "weighted"
-	StrategyRandom      Strategy = "random"
+	StrategyCostBased    Strategy = "cost"
+	StrategyWeighted     Strategy = "weighted"
+	StrategyRandom       Strategy = "random"
 )
 
 // Endpoint represents a provider endpoint.
 type Endpoint struct {
-	ID            string
-	Provider      string
-	Model         string
-	BaseURL       string
-	Weight        int     // For weighted routing
-	Priority      int     // Higher = preferred
-	CostPerToken  float64 // For cost-based routing
-	IsActive      bool
-	IsHealthy     bool
+	ID           string
+	Provider     string
+	Model        string
+	BaseURL      string
+	Weight       int     // For weighted routing
+	Priority     int     // Higher = preferred
+	CostPerToken float64 // For cost-based routing
+	IsActive     bool
+	IsHealthy    bool
 }
 
 // EndpointStats tracks runtime statistics for an endpoint.
 type EndpointStats struct {
-	ActiveRequests  atomic.Int64
-	TotalRequests   atomic.Int64
-	TotalErrors     atomic.Int64
-	TotalLatencyMs  atomic.Int64
-	AvgLatencyMs    float64
-	LastUsedAt      time.Time
-	LastErrorAt     time.Time
-	SuccessRate     float64
+	ActiveRequests atomic.Int64
+	TotalRequests  atomic.Int64
+	TotalErrors    atomic.Int64
+	TotalLatencyMs atomic.Int64
+	AvgLatencyMs   float64
+	LastUsedAt     time.Time
+	LastErrorAt    time.Time
+	SuccessRate    float64
 }
 
 // Balancer routes requests across endpoints using configurable strategies.

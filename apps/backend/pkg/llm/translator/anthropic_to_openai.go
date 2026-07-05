@@ -23,7 +23,7 @@ func (t *AnthropicToOpenAITranslator) Direction() Direction {
 }
 
 // TranslateRequest converts an Anthropic-style request to OpenAI format.
-func (t *AnthropicToOpenAITranslator)TranslateRequest(req *llm.ChatRequest) (map[string]interface{}, error) {
+func (t *AnthropicToOpenAITranslator) TranslateRequest(req *llm.ChatRequest) (map[string]interface{}, error) {
 	body := map[string]interface{}{
 		"model":    req.Model,
 		"messages": t.BuildOpenAIMessages(req.Messages, req.System),
@@ -91,7 +91,7 @@ func (t *AnthropicToOpenAITranslator)TranslateRequest(req *llm.ChatRequest) (map
 }
 
 // TranslateResponse converts an OpenAI response to unified format.
-func (t *AnthropicToOpenAITranslator)TranslateResponse(body []byte, model, provider string) (*llm.ChatResponse, error) {
+func (t *AnthropicToOpenAITranslator) TranslateResponse(body []byte, model, provider string) (*llm.ChatResponse, error) {
 	_, usage, finishReason, err := t.ExtractOpenAIContent(body, model)
 	if err != nil {
 		return nil, err
@@ -177,18 +177,18 @@ func (t *AnthropicToOpenAITranslator)TranslateResponse(body []byte, model, provi
 }
 
 // TranslateStreamChunk converts an OpenAI stream chunk to unified format.
-func (t *AnthropicToOpenAITranslator)TranslateStreamChunk(data []byte, model, provider string) (*llm.StreamChunk, error) {
+func (t *AnthropicToOpenAITranslator) TranslateStreamChunk(data []byte, model, provider string) (*llm.StreamChunk, error) {
 	var chunk struct {
 		ID      string `json:"id"`
 		Object  string `json:"object"`
 		Created int64  `json:"created"`
 		Model   string `json:"model"`
 		Choices []struct {
-			Index        int `json:"index"`
-			Delta        struct {
-				Role       string `json:"role"`
-				Content    string `json:"content"`
-				ToolCalls  []struct {
+			Index int `json:"index"`
+			Delta struct {
+				Role      string `json:"role"`
+				Content   string `json:"content"`
+				ToolCalls []struct {
 					Index    int    `json:"index"`
 					ID       string `json:"id"`
 					Type     string `json:"type"`
@@ -280,6 +280,6 @@ func (t *AnthropicToOpenAITranslator)TranslateStreamChunk(data []byte, model, pr
 }
 
 // ExtractOpenAIContent extracts content from an OpenAI-style response with model info.
-func (t *AnthropicToOpenAITranslator)ExtractOpenAIContent(body []byte, model string) (string, llm.Usage, llm.FinishReason, error) {
+func (t *AnthropicToOpenAITranslator) ExtractOpenAIContent(body []byte, model string) (string, llm.Usage, llm.FinishReason, error) {
 	return t.BaseTranslator.ExtractOpenAIContent(body)
 }

@@ -45,7 +45,7 @@ func WithPIIPatterns(patterns []string) Option {
 			}
 		}
 	}
-	}
+}
 
 // WithMaxPromptLength sets maximum prompt length.
 func WithMaxPromptLength(max int) Option {
@@ -244,10 +244,10 @@ func (s *SandboxProvider) SupportsThinking() bool { return false }
 // Chat returns a mock response.
 func (s *SandboxProvider) Chat(ctx context.Context, req *llm.ChatRequest) (*llm.ChatResponse, error) {
 	return &llm.ChatResponse{
-		ID:      "sandbox-chat-" + generateSandboxID(),
-		Object:  "chat.completion",
-		Created: 0,
-		Model:   req.Model,
+		ID:       "sandbox-chat-" + generateSandboxID(),
+		Object:   "chat.completion",
+		Created:  0,
+		Model:    req.Model,
 		Provider: s.name,
 		Choices: []llm.Choice{{
 			Index: 0,

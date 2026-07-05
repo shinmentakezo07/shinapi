@@ -170,12 +170,12 @@ func (c *MemoryRepoCache) DeletePrefix(ctx context.Context, prefix string) error
 }
 
 // cacheKey helpers
-func userCacheKey(id string) string    { return "user:id:" + id }
+func userCacheKey(id string) string         { return "user:id:" + id }
 func userEmailCacheKey(email string) string { return "user:email:" + email }
-func apiKeyCacheKey(key string) string  { return "apikey:" + key }
-func settingCacheKey(key string) string { return "setting:" + key }
-func providerCacheKey(id string) string { return "provider:id:" + id }
-func providerListCacheKey() string     { return "provider:list" }
-func modelCacheKey(id string) string   { return "model:id:" + id }
-func modelListCacheKey() string        { return "model:list" }
-func creditsCacheKey(userID string) string { return "credits:" + userID }
+func apiKeyCacheKey(key string) string      { return "apikey:" + key }
+func settingCacheKey(key string) string     { return "setting:" + key }
+func providerCacheKey(id string) string     { return "provider:id:" + id }
+func providerListCacheKey() string          { return "provider:list" }
+func modelCacheKey(id string) string        { return "model:id:" + id }
+func modelListCacheKey() string             { return "model:list" }
+func creditsCacheKey(userID string) string  { return "credits:" + userID }

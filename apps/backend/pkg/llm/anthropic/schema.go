@@ -75,33 +75,33 @@ type ThinkingConfig struct {
 
 // MessageResponse is an Anthropic Messages API response.
 type MessageResponse struct {
-	ID           string         `json:"id"`
-	Type         string         `json:"type"`
-	Role         string         `json:"role"`
+	ID           string          `json:"id"`
+	Type         string          `json:"type"`
+	Role         string          `json:"role"`
 	Content      []ResponseBlock `json:"content"`
-	Model        string         `json:"model"`
-	StopReason   string         `json:"stop_reason,omitempty"`
-	StopSequence string         `json:"stop_sequence,omitempty"`
-	Usage        Usage          `json:"usage"`
+	Model        string          `json:"model"`
+	StopReason   string          `json:"stop_reason,omitempty"`
+	StopSequence string          `json:"stop_sequence,omitempty"`
+	Usage        Usage           `json:"usage"`
 }
 
 // ResponseBlock is a single content block in the response.
 type ResponseBlock struct {
-	Type  string `json:"type"`
-	Text  string `json:"text,omitempty"`
-	ID    string `json:"id,omitempty"`
-	Name  string `json:"name,omitempty"`
-	Input json.RawMessage `json:"input,omitempty"`
-	Thinking string `json:"thinking,omitempty"`
-	Signature string `json:"signature,omitempty"`
+	Type      string          `json:"type"`
+	Text      string          `json:"text,omitempty"`
+	ID        string          `json:"id,omitempty"`
+	Name      string          `json:"name,omitempty"`
+	Input     json.RawMessage `json:"input,omitempty"`
+	Thinking  string          `json:"thinking,omitempty"`
+	Signature string          `json:"signature,omitempty"`
 }
 
 // Usage represents token usage.
 type Usage struct {
-	InputTokens        int `json:"input_tokens"`
-	OutputTokens       int `json:"output_tokens"`
-	ThinkingTokens     int `json:"thinking_tokens,omitempty"`
-	CacheReadTokens    int `json:"cache_read_tokens,omitempty"`
+	InputTokens         int `json:"input_tokens"`
+	OutputTokens        int `json:"output_tokens"`
+	ThinkingTokens      int `json:"thinking_tokens,omitempty"`
+	CacheReadTokens     int `json:"cache_read_tokens,omitempty"`
 	CacheCreationTokens int `json:"cache_creation_tokens,omitempty"`
 }
 
@@ -109,22 +109,22 @@ type Usage struct {
 
 // StreamEvent is an SSE event sent during streaming.
 type StreamEvent struct {
-	Type  string          `json:"type"`
-	Index int             `json:"index,omitempty"`
-	ContentBlock *ResponseBlock `json:"content_block,omitempty"`
-	Delta         *StreamDelta  `json:"delta,omitempty"`
-	Message       *MessageResponse `json:"message,omitempty"`
-	Usage         *Usage        `json:"usage,omitempty"`
+	Type         string           `json:"type"`
+	Index        int              `json:"index,omitempty"`
+	ContentBlock *ResponseBlock   `json:"content_block,omitempty"`
+	Delta        *StreamDelta     `json:"delta,omitempty"`
+	Message      *MessageResponse `json:"message,omitempty"`
+	Usage        *Usage           `json:"usage,omitempty"`
 }
 
 // StreamDelta represents the delta in a stream event.
 type StreamDelta struct {
-	Type           string `json:"type"`
-	Text           string `json:"text,omitempty"`
-	Thinking       string `json:"thinking,omitempty"`
+	Type            string `json:"type"`
+	Text            string `json:"text,omitempty"`
+	Thinking        string `json:"thinking,omitempty"`
 	PartialThinking string `json:"partial_thinking,omitempty"`
-	StopReason     string `json:"stop_reason,omitempty"`
-	StopSequence   string `json:"stop_sequence,omitempty"`
+	StopReason      string `json:"stop_reason,omitempty"`
+	StopSequence    string `json:"stop_sequence,omitempty"`
 }
 
 // ErrorResponse is an Anthropic API error.

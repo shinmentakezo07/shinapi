@@ -15,22 +15,22 @@ import (
 
 // ModelInfo represents metadata about an available model.
 type ModelInfo struct {
-	ID                      string   `json:"id"`
-	Object                  string   `json:"object,omitempty"`
-	Created                 int64    `json:"created,omitempty"`
-	OwnedBy                 string   `json:"owned_by,omitempty"`
-	Type                    string   `json:"type,omitempty"`
-	DisplayName             string   `json:"display_name,omitempty"`
-	Name                    string   `json:"name,omitempty"`
-	Version                 string   `json:"version,omitempty"`
-	Description             string   `json:"description,omitempty"`
-	ContextLength           int      `json:"context_length,omitempty"`
-	MaxCompletionTokens     int      `json:"max_completion_tokens,omitempty"`
-	SupportedParameters     []string `json:"supported_parameters,omitempty"`
-	SupportedInputModalities  []string `json:"supported_input_modalities,omitempty"`
-	SupportedOutputModalities []string `json:"supported_output_modalities,omitempty"`
-	Thinking                *ThinkingSupport `json:"thinking,omitempty"`
-	UserDefined             bool     `json:"-"`
+	ID                        string           `json:"id"`
+	Object                    string           `json:"object,omitempty"`
+	Created                   int64            `json:"created,omitempty"`
+	OwnedBy                   string           `json:"owned_by,omitempty"`
+	Type                      string           `json:"type,omitempty"`
+	DisplayName               string           `json:"display_name,omitempty"`
+	Name                      string           `json:"name,omitempty"`
+	Version                   string           `json:"version,omitempty"`
+	Description               string           `json:"description,omitempty"`
+	ContextLength             int              `json:"context_length,omitempty"`
+	MaxCompletionTokens       int              `json:"max_completion_tokens,omitempty"`
+	SupportedParameters       []string         `json:"supported_parameters,omitempty"`
+	SupportedInputModalities  []string         `json:"supported_input_modalities,omitempty"`
+	SupportedOutputModalities []string         `json:"supported_output_modalities,omitempty"`
+	Thinking                  *ThinkingSupport `json:"thinking,omitempty"`
+	UserDefined               bool             `json:"-"`
 }
 
 // ThinkingSupport describes a model's reasoning/thinking capabilities.
@@ -61,12 +61,12 @@ type ModelRegistryHook interface {
 
 // ModelRegistry manages the global registry of available models.
 type ModelRegistry struct {
-	models          map[string]*ModelRegistration
-	clientModels    map[string][]string
+	models           map[string]*ModelRegistration
+	clientModels     map[string][]string
 	clientModelInfos map[string]map[string]*ModelInfo
-	clientProviders map[string]string
-	mutex           sync.RWMutex
-	hook            ModelRegistryHook
+	clientProviders  map[string]string
+	mutex            sync.RWMutex
+	hook             ModelRegistryHook
 }
 
 const modelQuotaExceededWindow = 5 * time.Minute
@@ -74,10 +74,10 @@ const modelQuotaExceededWindow = 5 * time.Minute
 // New creates a new ModelRegistry.
 func New() *ModelRegistry {
 	return &ModelRegistry{
-		models:          make(map[string]*ModelRegistration),
-		clientModels:    make(map[string][]string),
+		models:           make(map[string]*ModelRegistration),
+		clientModels:     make(map[string][]string),
 		clientModelInfos: make(map[string]map[string]*ModelInfo),
-		clientProviders: make(map[string]string),
+		clientProviders:  make(map[string]string),
 	}
 }
 
@@ -639,9 +639,9 @@ func (r *ModelRegistry) convertModelToMap(model *ModelInfo, handlerType string) 
 	switch handlerType {
 	case "openai":
 		result := map[string]any{
-			"id":        model.ID,
-			"object":    "model",
-			"owned_by":  model.OwnedBy,
+			"id":       model.ID,
+			"object":   "model",
+			"owned_by": model.OwnedBy,
 		}
 		if model.Created > 0 {
 			result["created"] = model.Created

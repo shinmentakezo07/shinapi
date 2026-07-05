@@ -61,15 +61,15 @@ type SecurityEvent struct {
 
 // Config configures the security guardrails.
 type Config struct {
-	EnablePromptInjection bool
-	EnableJailbreak       bool
-	EnablePIIDetection    bool
-	EnableSecretDetection bool
+	EnablePromptInjection  bool
+	EnableJailbreak        bool
+	EnablePIIDetection     bool
+	EnableSecretDetection  bool
 	EnableTopicRestriction bool
-	BlockOnDetection      bool     // true = block, false = log only
-	RestrictedTopics      []string // topics to block
-	CustomPatterns        []string // additional injection patterns
-	RedactPII             bool     // true = redact PII, false = block
+	BlockOnDetection       bool     // true = block, false = log only
+	RestrictedTopics       []string // topics to block
+	CustomPatterns         []string // additional injection patterns
+	RedactPII              bool     // true = redact PII, false = block
 }
 
 // DefaultConfig returns sensible defaults.

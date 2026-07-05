@@ -161,9 +161,9 @@ func contentBlockFromMap(b map[string]interface{}) llm.ContentBlock {
 func FromInternalResponse(resp *llm.ChatResponse) *MessageResponse {
 	if resp == nil {
 		return &MessageResponse{
-			ID:   GenerateID(),
-			Type: "message",
-			Role: "assistant",
+			ID:      GenerateID(),
+			Type:    "message",
+			Role:    "assistant",
 			Content: []ResponseBlock{{Type: "text", Text: ""}},
 		}
 	}

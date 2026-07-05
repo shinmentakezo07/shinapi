@@ -32,7 +32,9 @@ func (r *CreditsRepo) ByUser(ctx context.Context, userID string) (*domain.UserCr
 	row := r.db.QueryRow(ctx,
 		`SELECT id, user_id, balance, total_purchased, total_spent, monthly_budget, daily_budget, daily_spent, monthly_spent, budget_reset_at, updated_at FROM user_credits WHERE user_id = $1`, userID)
 	if err := row.Scan(&c.ID, &c.UserID, &c.Balance, &c.TotalPurchased, &c.TotalSpent, &c.MonthlyBudget, &c.DailyBudget, &c.DailySpent, &c.MonthlySpent, &c.BudgetResetAt, &c.UpdatedAt); err != nil {
-		if err == pgx.ErrNoRows { return nil, nil }
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
 		return nil, err
 	}
 	if r.cache != nil {
@@ -64,7 +66,9 @@ func (r *CreditsRepo) Deduct(ctx context.Context, userID string, amount int) (bo
 			updated_at = NOW()
 		WHERE user_id = $1 AND balance >= $2
 	`, userID, amount)
-	if err != nil { return false, err }
+	if err != nil {
+		return false, err
+	}
 	if r.cache != nil {
 		_ = r.cache.Delete(ctx, creditsCacheKey(userID))
 	}

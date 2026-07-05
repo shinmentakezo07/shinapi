@@ -545,7 +545,12 @@ class DraSDK {
           return res as unknown as T;
         }
 
-        const json = (await res.json()) as ApiResponse<T>;
+        let json: ApiResponse<T>;
+        try {
+          json = (await res.json()) as ApiResponse<T>;
+        } catch {
+          throw this.mapError(res.status, "Invalid JSON response");
+        }
 
         if (!res.ok || !json.success) {
           throw this.mapError(res.status, json.error || res.statusText);
@@ -818,6 +823,22 @@ class DraSDK {
           }
         }
       }
+      if (buffer) {
+        const line = buffer;
+        if (line.startsWith("data: ")) {
+          const payload = line.slice(6);
+          if (payload === "[DONE]") return;
+          try {
+            const parsed = JSON.parse(payload) as ChatCompletionChunk;
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) {
+              yield content;
+            }
+          } catch {
+            // Skip malformed JSON chunks
+          }
+        }
+      }
     } finally {
       reader.releaseLock();
     }
@@ -969,8 +990,15 @@ class DraSDK {
     content: string;
     description?: string;
     template?: boolean;
+    model?: string;
+    config?: Record<string, unknown>;
   }) {
-    return this.request<Prompt>("POST", "/api/prompts", data);
+    return this.request<Prompt>("POST", "/api/prompts", {
+      name: data.name,
+      template: data.content,
+      model: data.model ?? "",
+      config: data.config ?? {},
+    });
   }
 
   getPrompt(name: string) {
@@ -1153,14 +1181,25 @@ class DraSDK {
     if (name) {
       formData.append("name", name);
     }
-    formData.append("file", file);
+    formData.append("files", file, name ?? "upload");
     const res = await this.uploadFormData("/api/files/upload", formData);
     this.extractResponseHeaders(res);
-    const json = (await res.json()) as ApiResponse<FileInfo>;
+    let json: ApiResponse<FileInfo | { files?: FileInfo[] }>;
+    try {
+      json = (await res.json()) as ApiResponse<FileInfo | { files?: FileInfo[] }>;
+    } catch {
+      throw this.mapError(res.status, "Invalid JSON response");
+    }
     if (!res.ok || !json.success) {
       throw this.mapError(res.status, json.error || res.statusText);
     }
-    return json.data as FileInfo;
+    const data = json.data as FileInfo | { files?: FileInfo[] } | undefined;
+    if (data && "files" in data) {
+      const first = data.files?.[0];
+      if (!first) throw this.mapError(res.status, "No file uploaded");
+      return first;
+    }
+    return data as FileInfo;
   }
 
   listFiles() {
@@ -1224,6 +1263,18 @@ class DraSDK {
             } catch {
               // Skip malformed JSON
             }
+          }
+        }
+      }
+      if (buffer) {
+        const line = buffer;
+        if (line.startsWith("data: ")) {
+          const payload = line.slice(6);
+          try {
+            const parsed = JSON.parse(payload) as NotificationEvent;
+            yield parsed;
+          } catch {
+            // Skip malformed JSON
           }
         }
       }

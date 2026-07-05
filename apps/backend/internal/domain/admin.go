@@ -17,10 +17,10 @@ const (
 type ProviderStatus string
 
 const (
-	ProviderStatusActive       ProviderStatus = "active"
-	ProviderStatusInactive     ProviderStatus = "inactive"
-	ProviderStatusMaintenance  ProviderStatus = "maintenance"
-	ProviderStatusDeprecated   ProviderStatus = "deprecated"
+	ProviderStatusActive      ProviderStatus = "active"
+	ProviderStatusInactive    ProviderStatus = "inactive"
+	ProviderStatusMaintenance ProviderStatus = "maintenance"
+	ProviderStatusDeprecated  ProviderStatus = "deprecated"
 )
 
 type ProviderKeyStrategy string
@@ -34,12 +34,12 @@ const (
 type ModelStatus string
 
 const (
-	ModelStatusActive      ModelStatus = "active"
-	ModelStatusBeta        ModelStatus = "beta"
-	ModelStatusDeprecated  ModelStatus = "deprecated"
-	ModelStatusSunset      ModelStatus = "sunset"
-	ModelStatusPrivate     ModelStatus = "private"
-	ModelStatusDisabled    ModelStatus = "disabled"
+	ModelStatusActive     ModelStatus = "active"
+	ModelStatusBeta       ModelStatus = "beta"
+	ModelStatusDeprecated ModelStatus = "deprecated"
+	ModelStatusSunset     ModelStatus = "sunset"
+	ModelStatusPrivate    ModelStatus = "private"
+	ModelStatusDisabled   ModelStatus = "disabled"
 )
 
 type AuditAction string
@@ -130,26 +130,26 @@ type Provider struct {
 }
 
 type ProviderKey struct {
-	ID           string             `json:"id"`
-	ProviderID   string             `json:"providerId"`
-	Label        string             `json:"label"`
-	KeyPrefix    string             `json:"keyPrefix"`
-	KeyHash      string             `json:"-"`
-	KeyLastFour  string             `json:"keyLastFour"`
+	ID           string              `json:"id"`
+	ProviderID   string              `json:"providerId"`
+	Label        string              `json:"label"`
+	KeyPrefix    string              `json:"keyPrefix"`
+	KeyHash      string              `json:"-"`
+	KeyLastFour  string              `json:"keyLastFour"`
 	Strategy     ProviderKeyStrategy `json:"strategy"`
-	Weight       int                `json:"weight"`
-	SortOrder    int                `json:"sortOrder"`
-	FillCurrent  int                `json:"fillCurrent"`
-	RPMLimit     int                `json:"rpmLimit"`
-	TPMLimit     int                `json:"tpmLimit"`
-	MonthlyQuota int64              `json:"monthlyQuota"`
-	MonthlyUsed  int64              `json:"monthlyUsed"`
-	IsActive     bool               `json:"isActive"`
-	UsageCount   int64              `json:"usageCount"`
-	TotalTokens  int64              `json:"totalTokens"`
-	LastUsedAt   *time.Time         `json:"lastUsedAt,omitempty"`
-	ExpiresAt    *time.Time         `json:"expiresAt,omitempty"`
-	CreatedAt    time.Time          `json:"createdAt"`
+	Weight       int                 `json:"weight"`
+	SortOrder    int                 `json:"sortOrder"`
+	FillCurrent  int                 `json:"fillCurrent"`
+	RPMLimit     int                 `json:"rpmLimit"`
+	TPMLimit     int                 `json:"tpmLimit"`
+	MonthlyQuota int64               `json:"monthlyQuota"`
+	MonthlyUsed  int64               `json:"monthlyUsed"`
+	IsActive     bool                `json:"isActive"`
+	UsageCount   int64               `json:"usageCount"`
+	TotalTokens  int64               `json:"totalTokens"`
+	LastUsedAt   *time.Time          `json:"lastUsedAt,omitempty"`
+	ExpiresAt    *time.Time          `json:"expiresAt,omitempty"`
+	CreatedAt    time.Time           `json:"createdAt"`
 }
 
 type ProviderHealthCheck struct {
@@ -186,17 +186,17 @@ type ModelRegistry struct {
 }
 
 type ModelAlias struct {
-	ID                 string   `json:"id"`
-	Alias              string   `json:"alias"`
-	TargetModelID      string   `json:"targetModelId"`
-	PreferredProviderID *string `json:"preferredProviderId,omitempty"`
-	PreferredKeyID     *string  `json:"preferredKeyId,omitempty"`
-	RPMOverride        int      `json:"rpmOverride"`
-	TPMOverride        int      `json:"tpmOverride"`
-	MonthlyBudget      int64    `json:"monthlyBudget"`
-	AllowedUserIDs     []string `json:"allowedUserIds"`
-	IsActive           bool     `json:"isActive"`
-	CreatedAt          time.Time `json:"createdAt"`
+	ID                  string    `json:"id"`
+	Alias               string    `json:"alias"`
+	TargetModelID       string    `json:"targetModelId"`
+	PreferredProviderID *string   `json:"preferredProviderId,omitempty"`
+	PreferredKeyID      *string   `json:"preferredKeyId,omitempty"`
+	RPMOverride         int       `json:"rpmOverride"`
+	TPMOverride         int       `json:"tpmOverride"`
+	MonthlyBudget       int64     `json:"monthlyBudget"`
+	AllowedUserIDs      []string  `json:"allowedUserIds"`
+	IsActive            bool      `json:"isActive"`
+	CreatedAt           time.Time `json:"createdAt"`
 }
 
 type CredentialVault struct {
@@ -419,16 +419,16 @@ type UserGroup struct {
 }
 
 type ScheduledReport struct {
-	ID          string     `json:"id"`
-	Name        string     `json:"name"`
-	Frequency   string     `json:"frequency"`
-	Format      string     `json:"format"`
-	Sections    []string   `json:"sections"`
-	Recipients  []string   `json:"recipients"`
-	NextSendAt  *time.Time `json:"nextSendAt,omitempty"`
-	LastSentAt  *time.Time `json:"lastSentAt,omitempty"`
-	IsActive    bool       `json:"isActive"`
-	CreatedAt   time.Time  `json:"createdAt"`
+	ID         string     `json:"id"`
+	Name       string     `json:"name"`
+	Frequency  string     `json:"frequency"`
+	Format     string     `json:"format"`
+	Sections   []string   `json:"sections"`
+	Recipients []string   `json:"recipients"`
+	NextSendAt *time.Time `json:"nextSendAt,omitempty"`
+	LastSentAt *time.Time `json:"lastSentAt,omitempty"`
+	IsActive   bool       `json:"isActive"`
+	CreatedAt  time.Time  `json:"createdAt"`
 }
 
 type ChangelogEntry struct {
@@ -498,9 +498,9 @@ type DashboardStats struct {
 }
 
 type RateLimitOverrides struct {
-	RPM               *int `json:"rpm,omitempty"`
-	TPM               *int `json:"tpm,omitempty"`
-	RPD               *int `json:"rpd,omitempty"`
+	RPM                *int `json:"rpm,omitempty"`
+	TPM                *int `json:"tpm,omitempty"`
+	RPD                *int `json:"rpd,omitempty"`
 	ConcurrentRequests *int `json:"concurrentRequests,omitempty"`
 }
 
@@ -536,12 +536,12 @@ type UsageFilter struct {
 }
 
 type SuspiciousFilter struct {
-	Category string     `json:"category,omitempty"`
-	Severity string     `json:"severity,omitempty"`
-	Reviewed *bool      `json:"reviewed,omitempty"`
-	Resolved *bool      `json:"resolved,omitempty"`
-	Page     int        `json:"page"`
-	Limit    int        `json:"limit"`
+	Category string `json:"category,omitempty"`
+	Severity string `json:"severity,omitempty"`
+	Reviewed *bool  `json:"reviewed,omitempty"`
+	Resolved *bool  `json:"resolved,omitempty"`
+	Page     int    `json:"page"`
+	Limit    int    `json:"limit"`
 }
 
 type IPAccessLogFilter struct {

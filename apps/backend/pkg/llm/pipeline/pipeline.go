@@ -173,7 +173,7 @@ type ResponseInterceptor interface {
 // ChainPipeline extends Pipeline with middleware chain and interceptors.
 type ChainPipeline struct {
 	*Pipeline
-	interceptors       []RequestInterceptor
+	interceptors         []RequestInterceptor
 	responseInterceptors []ResponseInterceptor
 }
 
