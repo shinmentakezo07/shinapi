@@ -6,11 +6,11 @@ import "fmt"
 type ErrorCode string
 
 const (
-	ErrInvalidSuffix       ErrorCode = "INVALID_SUFFIX"
-	ErrUnknownLevel        ErrorCode = "UNKNOWN_LEVEL"
+	ErrInvalidSuffix        ErrorCode = "INVALID_SUFFIX"
+	ErrUnknownLevel         ErrorCode = "UNKNOWN_LEVEL"
 	ErrThinkingNotSupported ErrorCode = "THINKING_NOT_SUPPORTED"
-	ErrLevelNotSupported   ErrorCode = "LEVEL_NOT_SUPPORTED"
-	ErrBudgetOutOfRange    ErrorCode = "BUDGET_OUT_OF_RANGE"
+	ErrLevelNotSupported    ErrorCode = "LEVEL_NOT_SUPPORTED"
+	ErrBudgetOutOfRange     ErrorCode = "BUDGET_OUT_OF_RANGE"
 )
 
 // ThinkingError represents an error during thinking configuration processing.

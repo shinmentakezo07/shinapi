@@ -7,6 +7,8 @@ export const runtime = "nodejs";
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8080";
 
+const STREAM_TIMEOUT_MS = 300_000; // 5 minutes for streaming responses
+
 function encodeDataStream(text: string): string {
   // Vercel AI SDK Data Stream format: 0:"text"
   return `0:${JSON.stringify(text)}\n`;
@@ -81,10 +83,26 @@ export async function POST(request: Request) {
     }
   }
 
+  // Determine if the caller is an SDK/programmatic client (sends x-api-key)
+  // or a browser-based useChat client. SDK clients expect raw OpenAI SSE;
+  // useChat clients expect Vercel AI SDK Data Stream format.
+  const isSDKCall = !!apiKey;
+
+  // AbortController with a timeout for the backend fetch. The timeout is
+  // cleared once headers are received so long-running streams aren't killed.
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), STREAM_TIMEOUT_MS);
+
   const backendRes = await fetch(`${BACKEND_URL}/api/chat`, {
     method: "POST",
     headers,
     body: JSON.stringify(body),
+    signal: controller.signal,
+  }).then((res) => {
+    // Clear the connection timeout once we get headers back — the stream
+    // itself can run for much longer.
+    clearTimeout(timeoutId);
+    return res;
   });
 
   if (!backendRes.ok || !backendRes.body) {
@@ -98,6 +116,43 @@ export async function POST(request: Request) {
         headers: { "Content-Type": "application/json" },
       },
     );
+  }
+
+  // If this is an SDK/programmatic call (x-api-key present), proxy the raw
+  // OpenAI SSE stream without transformation.
+  if (isSDKCall) {
+    const stream = new ReadableStream({
+      start(controller) {
+        const reader = backendRes.body!.getReader();
+        function pump(): Promise<void> {
+          return reader
+            .read()
+            .then(({ done, value }) => {
+              if (done) {
+                controller.close();
+                return;
+              }
+              controller.enqueue(value);
+              return pump();
+            })
+            .catch((err) => {
+              controller.error(err);
+            });
+        }
+        return pump();
+      },
+      cancel() {
+        controller.abort();
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
   }
 
   // Convert OpenAI SSE from Go backend to Vercel AI SDK Data Stream
@@ -153,6 +208,7 @@ export async function POST(request: Request) {
 
     cancel() {
       reader.cancel();
+      controller.abort();
     },
   });
 

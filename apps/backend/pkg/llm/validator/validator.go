@@ -22,16 +22,16 @@ const (
 
 // Schema is a lightweight JSON Schema representation.
 type Schema struct {
-	Type       SchemaType        `json:"type,omitempty"`
+	Type       SchemaType         `json:"type,omitempty"`
 	Properties map[string]*Schema `json:"properties,omitempty"`
-	Required   []string          `json:"required,omitempty"`
-	Items      *Schema           `json:"items,omitempty"`
-	Enum       []interface{}     `json:"enum,omitempty"`
-	Pattern    string            `json:"pattern,omitempty"`
-	MinLength  *int              `json:"minLength,omitempty"`
-	MaxLength  *int              `json:"maxLength,omitempty"`
-	Minimum    *float64          `json:"minimum,omitempty"`
-	Maximum    *float64          `json:"maximum,omitempty"`
+	Required   []string           `json:"required,omitempty"`
+	Items      *Schema            `json:"items,omitempty"`
+	Enum       []interface{}      `json:"enum,omitempty"`
+	Pattern    string             `json:"pattern,omitempty"`
+	MinLength  *int               `json:"minLength,omitempty"`
+	MaxLength  *int               `json:"maxLength,omitempty"`
+	Minimum    *float64           `json:"minimum,omitempty"`
+	Maximum    *float64           `json:"maximum,omitempty"`
 }
 
 // ValidationError represents a schema validation error.

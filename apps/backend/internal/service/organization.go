@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"dra-platform/backend/internal/db"
 	"dra-platform/backend/internal/domain"
 	"dra-platform/backend/internal/repository"
 )
@@ -21,13 +22,18 @@ func (s *OrganizationService) Create(ctx context.Context, userID string, req dom
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
-	org, err := s.repo.Create(ctx, req.Name, userID, "free")
-	if err != nil {
+
+	var org *domain.Organization
+	if err := s.repo.DB().WithTx(ctx, func(q db.Querier) error {
+		org, dbErr := s.repo.CreateWithQuerier(ctx, q, req.Name, userID, "free")
+		if dbErr != nil {
+			return dbErr
+		}
+		// Owner becomes a member with admin role
+		_, dbErr = s.repo.AddMemberWithQuerier(ctx, q, org.ID, userID, "admin")
+		return dbErr
+	}); err != nil {
 		return nil, domain.Wrap(domain.ErrInternal, 500, "failed to create organization", err)
-	}
-	// Owner becomes a member with admin role
-	if _, err := s.repo.AddMember(ctx, org.ID, userID, "admin"); err != nil {
-		return nil, domain.Wrap(domain.ErrInternal, 500, "failed to add owner as member", err)
 	}
 	return org, nil
 }

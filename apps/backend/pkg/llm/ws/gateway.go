@@ -50,24 +50,24 @@ type Handler func(conn Conn, msg *Message) error
 
 // Gateway manages WebSocket connections.
 type Gateway struct {
-	mu          sync.RWMutex
-	connections map[string]*connectionState
-	handlers    map[string]Handler
-	maxConns    int
-	maxPerUser  int // Bug #47: per-user connection limit
+	mu           sync.RWMutex
+	connections  map[string]*connectionState
+	handlers     map[string]Handler
+	maxConns     int
+	maxPerUser   int // Bug #47: per-user connection limit
 	pingInterval time.Duration
 	pongTimeout  time.Duration
 	connCount    atomic.Int64
 }
 
 type connectionState struct {
-	conn      Conn
-	id        string
-	userID    string
-	keyID     string
+	conn          Conn
+	id            string
+	userID        string
+	keyID         string
 	subscriptions map[string]bool
-	lastPing  time.Time
-	createdAt time.Time
+	lastPing      time.Time
+	createdAt     time.Time
 }
 
 // NewGateway creates a new WebSocket gateway.

@@ -14,11 +14,13 @@ import {
   PanelLeftOpen,
   Plus,
   X,
+  Layers,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { z } from "zod";
+import { MotionConfig } from "framer-motion";
 import openRouterModels from "../models/openrouter-models-2026.json";
 import { getProviderLogo } from "@/lib/provider-logos";
 import {
@@ -356,7 +358,8 @@ export default function PlaygroundPage() {
   if (!isMounted) return null;
 
   return (
-    <div className="h-screen bg-[#020202] text-white relative overflow-hidden flex">
+    <MotionConfig reducedMotion="user">
+      <div className="h-screen bg-[#020202] text-white relative overflow-hidden flex">
       {/* Atmospheric Background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         {/* Base gradient */}
@@ -556,7 +559,9 @@ export default function PlaygroundPage() {
                         <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
                       </span>
                       <span className="text-[10px] font-medium uppercase tracking-wider text-gray-600 font-mono">
-                        Compare Models
+                        {sessions.length > 0
+                          ? `${sessions.length} model${sessions.length > 1 ? "s" : ""} live`
+                          : "Compare Models"}
                       </span>
                     </div>
                   </div>
@@ -620,6 +625,24 @@ export default function PlaygroundPage() {
                   </div>
                 )}
 
+                <AnimatePresence>
+                  {sharedMessages.length > 0 && (
+                    <motion.button
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      whileHover={{ scale: 1.04 }}
+                      whileTap={{ scale: 0.96 }}
+                      onClick={resetChat}
+                      className="p-2 rounded-xl border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/10 text-gray-500 hover:text-white/80 transition-all shrink-0"
+                      title="Clear conversation"
+                      aria-label="Clear conversation"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </motion.button>
+                  )}
+                </AnimatePresence>
+
                 <motion.button
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
@@ -627,7 +650,11 @@ export default function PlaygroundPage() {
                   className="relative px-3 sm:px-4 py-2 bg-gradient-to-r from-blue-600/90 to-violet-600/90 hover:from-blue-500 hover:to-violet-500 rounded-xl font-semibold text-sm flex items-center gap-2 shadow-[0_0_24px_rgba(59,130,246,0.12)] hover:shadow-[0_0_32px_rgba(59,130,246,0.25)] transition-all overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.08] to-transparent -translate-x-full hover:translate-x-full transition-transform duration-700" />
-                  <Plus className="w-4 h-4 relative z-10" />
+                  {selectedModels.length > 0 ? (
+                    <Plus className="w-4 h-4 relative z-10" />
+                  ) : (
+                    <Layers className="w-4 h-4 relative z-10" />
+                  )}
                   <span className="hidden sm:inline relative z-10">
                     {selectedModels.length > 0 ? "Manage Models" : "Add Models"}
                   </span>
@@ -668,6 +695,7 @@ export default function PlaygroundPage() {
         selectedModels={selectedModels}
         onConfirm={confirmModels}
       />
-    </div>
+      </div>
+    </MotionConfig>
   );
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { Users } from "lucide-react";
+
 import { useQuery } from "@tanstack/react-query";
 import { getAdminSDK } from "@/lib/api/admin-sdk";
 import AdminPageHeader from "../../AdminPageHeader";

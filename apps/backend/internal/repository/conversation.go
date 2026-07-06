@@ -58,36 +58,55 @@ func (r *ConversationRepo) GetConversation(ctx context.Context, id string) (*Con
 		`SELECT id, user_id, title, model, created_at, updated_at FROM conversations WHERE id = $1`, id)
 	var c Conversation
 	if err := row.Scan(&c.ID, &c.UserID, &c.Title, &c.Model, &c.CreatedAt, &c.UpdatedAt); err != nil {
-		if err == pgx.ErrNoRows { return nil, nil }
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return &c, nil
 }
 
-// ListConversations lists conversations for a user.
-func (r *ConversationRepo) ListConversations(ctx context.Context, userID string, limit, offset int) ([]Conversation, error) {
-	if limit <= 0 { limit = 20 }
+// ListConversations lists conversations for a user and returns the total count.
+func (r *ConversationRepo) ListConversations(ctx context.Context, userID string, limit, offset int) ([]Conversation, int, error) {
+	if limit <= 0 {
+		limit = 20
+	}
 	rows, err := r.db.Query(ctx,
 		`SELECT id, user_id, title, model, created_at, updated_at FROM conversations WHERE user_id = $1 ORDER BY updated_at DESC LIMIT $2 OFFSET $3`,
 		userID, limit, offset)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, 0, err
+	}
 	defer rows.Close()
 
 	var result []Conversation
 	for rows.Next() {
 		var c Conversation
 		if err := rows.Scan(&c.ID, &c.UserID, &c.Title, &c.Model, &c.CreatedAt, &c.UpdatedAt); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		result = append(result, c)
 	}
-	return result, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+
+	var total int
+	_ = r.db.QueryRow(ctx, `SELECT COUNT(*) FROM conversations WHERE user_id = $1`, userID).Scan(&total)
+	return result, total, nil
 }
 
 // DeleteConversation removes a conversation and its messages.
+// Returns domain.ErrConversationNotFound if the conversation does not exist.
 func (r *ConversationRepo) DeleteConversation(ctx context.Context, userID, id string) error {
-	_, err := r.db.Exec(ctx, `DELETE FROM conversations WHERE id = $1 AND user_id = $2`, id, userID)
-	return err
+	tag, err := r.db.Exec(ctx, `DELETE FROM conversations WHERE id = $1 AND user_id = $2`, id, userID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return domain.ErrConversationNotFound
+	}
+	return nil
 }
 
 // AddMessage inserts a message into a conversation.
@@ -109,11 +128,15 @@ func (r *ConversationRepo) AddMessage(ctx context.Context, convID, role, content
 
 // GetMessages retrieves messages for a conversation.
 func (r *ConversationRepo) GetMessages(ctx context.Context, convID string, limit, offset int) ([]ConversationMessage, error) {
-	if limit <= 0 { limit = 100 }
+	if limit <= 0 {
+		limit = 100
+	}
 	rows, err := r.db.Query(ctx,
 		`SELECT id, conversation_id, role, content, input_tokens, output_tokens, created_at FROM conversation_messages WHERE conversation_id = $1 ORDER BY created_at ASC LIMIT $2 OFFSET $3`,
 		convID, limit, offset)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	defer rows.Close()
 
 	var result []ConversationMessage

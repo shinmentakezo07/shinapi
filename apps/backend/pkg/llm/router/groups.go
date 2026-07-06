@@ -8,23 +8,29 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"dra-platform/backend/pkg/llm"
 )
 
+// rng is a package-level random source initialized with a seed to ensure
+// non-deterministic behavior across restarts (unlike the default math/rand
+// global source which may be seeded to a fixed value in some Go versions).
+var rng = rand.New(rand.NewSource(time.Now().UnixNano()))
+
 // ModelGroup represents a group of deployments for the same user-facing model.
 // E.g., "gpt-4o" can have OpenAI + Azure + self-hosted deployments.
 type ModelGroup struct {
-	Name         string
-	Deployments  []Deployment
+	Name        string
+	Deployments []Deployment
 }
 
 // Deployment is a single model deployment within a group.
 type Deployment struct {
-	ModelID       string  // Fully-qualified model ID (e.g., "openai/gpt-4o")
-	ProviderName  string  // Provider that hosts this deployment
-	Weight        int     // Routing weight (higher = more traffic)
-	Active        bool    // Whether this deployment is currently active
+	ModelID      string // Fully-qualified model ID (e.g., "openai/gpt-4o")
+	ProviderName string // Provider that hosts this deployment
+	Weight       int    // Routing weight (higher = more traffic)
+	Active       bool   // Whether this deployment is currently active
 }
 
 // FallbackChain defines a sequence of models to try on failure.
@@ -35,10 +41,10 @@ type FallbackChain struct {
 
 // GroupRouter routes requests through model groups with load balancing and fallbacks.
 type GroupRouter struct {
-	mu       sync.RWMutex
-	groups   map[string]*ModelGroup   // model_group_name -> deployments
+	mu        sync.RWMutex
+	groups    map[string]*ModelGroup    // model_group_name -> deployments
 	fallbacks map[string]*FallbackChain // model_id -> fallback chain
-	wildcards map[string]string        // provider_name -> wildcard pattern
+	wildcards map[string]string         // provider_name -> wildcard pattern
 }
 
 // NewGroupRouter creates a new group router.
@@ -133,7 +139,7 @@ func (gr *GroupRouter) pickDeployment(group *ModelGroup) *Deployment {
 	}
 
 	// Weighted random selection
-	r := rand.Intn(totalWeight)
+	r := rng.Intn(totalWeight)
 	cumulative := 0
 	for i := range active {
 		cumulative += active[i].Weight
@@ -168,11 +174,11 @@ func (gr *GroupRouter) GroupStats() map[string]interface{} {
 // BuildGroupsFromModels builds model groups from a flat list of model registry entries.
 // Models with the same model_group value are grouped together.
 func BuildGroupsFromModels(models []struct {
-	ModelID      string
-	ModelGroup   string
-	ProviderName string
+	ModelID       string
+	ModelGroup    string
+	ProviderName  string
 	RoutingWeight int
-	Status       string
+	Status        string
 }) map[string]*ModelGroup {
 	groups := make(map[string]*ModelGroup)
 	for _, m := range models {
@@ -236,7 +242,7 @@ func ExpandModelGroup(modelID string, groups map[string]*ModelGroup) string {
 		if len(active) == 0 {
 			return modelID
 		}
-		r := rand.Intn(totalWeight)
+		r := rng.Intn(totalWeight)
 		cumulative := 0
 		for _, d := range active {
 			cumulative += d.Weight

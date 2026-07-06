@@ -10,7 +10,7 @@ import (
 )
 
 type validateRequest struct {
-	Data   json.RawMessage `json:"data"`
+	Data   json.RawMessage   `json:"data"`
 	Schema *validator.Schema `json:"schema"`
 }
 

@@ -560,7 +560,7 @@ func TestFromInternalResponse_ToolCallsWithContentBlocks(t *testing.T) {
 		Choices: []llm.Choice{
 			{
 				Message: llm.Message{
-					Role:         llm.RoleAssistant,
+					Role: llm.RoleAssistant,
 					ContentBlocks: []llm.ContentBlock{
 						{Type: llm.ContentTypeText, Text: "here:"},
 						{Type: llm.ContentTypeToolUse, ToolUse: &llm.ToolUse{ID: "tu1", Name: "search", Input: args}},

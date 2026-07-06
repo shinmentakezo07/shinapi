@@ -24,11 +24,11 @@ func (t *OpenAIToAnthropicTranslator) Direction() Direction {
 }
 
 // TranslateRequest converts an OpenAI-style request to Anthropic format.
-func (t *OpenAIToAnthropicTranslator)TranslateRequest(req *llm.ChatRequest) (map[string]interface{}, error) {
+func (t *OpenAIToAnthropicTranslator) TranslateRequest(req *llm.ChatRequest) (map[string]interface{}, error) {
 	body := map[string]interface{}{
-		"model":  req.Model,
+		"model":    req.Model,
 		"messages": t.BuildAnthropicMessages(req.Messages),
-		"stream": req.Stream,
+		"stream":   req.Stream,
 	}
 
 	// Anthropic requires max_tokens
@@ -59,7 +59,7 @@ func (t *OpenAIToAnthropicTranslator)TranslateRequest(req *llm.ChatRequest) (map
 	// Handle thinking config
 	if req.Thinking != nil && req.Thinking.Enabled {
 		body["thinking"] = map[string]interface{}{
-			"type":         "enabled",
+			"type":          "enabled",
 			"budget_tokens": req.Thinking.BudgetTokens,
 		}
 		if req.Thinking.BudgetTokens == 0 {
@@ -72,8 +72,8 @@ func (t *OpenAIToAnthropicTranslator)TranslateRequest(req *llm.ChatRequest) (map
 		tools := make([]map[string]interface{}, len(req.Tools))
 		for i, tool := range req.Tools {
 			tools[i] = map[string]interface{}{
-				"name":        tool.Function.Name,
-				"description": tool.Function.Description,
+				"name":         tool.Function.Name,
+				"description":  tool.Function.Description,
 				"input_schema": rawMessageToInterface(tool.Function.Parameters),
 			}
 		}
@@ -97,7 +97,7 @@ func (t *OpenAIToAnthropicTranslator)TranslateRequest(req *llm.ChatRequest) (map
 }
 
 // TranslateResponse converts an Anthropic response to unified format.
-func (t *OpenAIToAnthropicTranslator)TranslateResponse(body []byte, model, provider string) (*llm.ChatResponse, error) {
+func (t *OpenAIToAnthropicTranslator) TranslateResponse(body []byte, model, provider string) (*llm.ChatResponse, error) {
 	content, thinking, usage, finishReason, err := t.ExtractAnthropicContent(body)
 	if err != nil {
 		return nil, err
@@ -116,8 +116,8 @@ func (t *OpenAIToAnthropicTranslator)TranslateResponse(body []byte, model, provi
 			Input    json.RawMessage `json:"input"`
 		} `json:"content"`
 		Usage struct {
-			InputTokens  int `json:"input_tokens"`
-			OutputTokens int `json:"output_tokens"`
+			InputTokens    int `json:"input_tokens"`
+			OutputTokens   int `json:"output_tokens"`
 			ThinkingTokens int `json:"thinking_tokens,omitempty"`
 		} `json:"usage"`
 		StopReason string `json:"stop_reason"`
@@ -176,16 +176,16 @@ func (t *OpenAIToAnthropicTranslator)TranslateResponse(body []byte, model, provi
 }
 
 // TranslateStreamChunk converts an Anthropic stream chunk to unified format.
-func (t *OpenAIToAnthropicTranslator)TranslateStreamChunk(data []byte, model, provider string) (*llm.StreamChunk, error) {
+func (t *OpenAIToAnthropicTranslator) TranslateStreamChunk(data []byte, model, provider string) (*llm.StreamChunk, error) {
 	var chunk struct {
-		Type    string `json:"type"`
-		Index   int    `json:"index"`
-		Delta   struct {
-			Type           string `json:"type"`
-			Text           string `json:"text"`
-			Thinking       string `json:"thinking"`
+		Type  string `json:"type"`
+		Index int    `json:"index"`
+		Delta struct {
+			Type            string `json:"type"`
+			Text            string `json:"text"`
+			Thinking        string `json:"thinking"`
 			PartialThinking string `json:"partial_thinking"`
-			StopReason     string `json:"stop_reason"`
+			StopReason      string `json:"stop_reason"`
 		} `json:"delta"`
 		ContentBlock struct {
 			Type string `json:"type"`
@@ -193,14 +193,14 @@ func (t *OpenAIToAnthropicTranslator)TranslateStreamChunk(data []byte, model, pr
 		} `json:"content_block"`
 		Message struct {
 			Usage struct {
-				InputTokens  int `json:"input_tokens"`
-				OutputTokens int `json:"output_tokens"`
+				InputTokens    int `json:"input_tokens"`
+				OutputTokens   int `json:"output_tokens"`
 				ThinkingTokens int `json:"thinking_tokens,omitempty"`
 			} `json:"usage"`
 		} `json:"message"`
 		Usage struct {
-			InputTokens  int `json:"input_tokens"`
-			OutputTokens int `json:"output_tokens"`
+			InputTokens    int `json:"input_tokens"`
+			OutputTokens   int `json:"output_tokens"`
 			ThinkingTokens int `json:"thinking_tokens,omitempty"`
 		} `json:"usage"`
 	}
@@ -211,11 +211,15 @@ func (t *OpenAIToAnthropicTranslator)TranslateStreamChunk(data []byte, model, pr
 	// Handle different event types
 	switch chunk.Type {
 	case "message_start":
+		usage := &llm.Usage{
+			PromptTokens: chunk.Message.Usage.InputTokens,
+		}
 		return &llm.StreamChunk{
 			Object:   "chat.completion.chunk",
 			Created:  time.Now().Unix(),
 			Model:    model,
 			Provider: provider,
+			Usage:    usage,
 		}, nil
 	case "content_block_start":
 		content := ""
@@ -263,12 +267,16 @@ func (t *OpenAIToAnthropicTranslator)TranslateStreamChunk(data []byte, model, pr
 			fr := llm.FinishReason(chunk.Delta.StopReason)
 			finishReason = &fr
 		}
+		usage := &llm.Usage{
+			CompletionTokens: chunk.Usage.OutputTokens,
+		}
 		return &llm.StreamChunk{
 			Object:       "chat.completion.chunk",
 			Created:      time.Now().Unix(),
 			Model:        model,
 			Provider:     provider,
 			FinishReason: finishReason,
+			Usage:        usage,
 		}, nil
 	case "message_stop":
 		return &llm.StreamChunk{
@@ -283,6 +291,6 @@ func (t *OpenAIToAnthropicTranslator)TranslateStreamChunk(data []byte, model, pr
 }
 
 // ExtractAnthropicContent extracts content from an Anthropic-style response.
-func (t *OpenAIToAnthropicTranslator)ExtractAnthropicContent(body []byte) (string, string, llm.Usage, llm.FinishReason, error) {
+func (t *OpenAIToAnthropicTranslator) ExtractAnthropicContent(body []byte) (string, string, llm.Usage, llm.FinishReason, error) {
 	return t.BaseTranslator.ExtractAnthropicContent(body)
 }

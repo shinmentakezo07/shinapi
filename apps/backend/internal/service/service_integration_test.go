@@ -506,7 +506,7 @@ func TestPromptRepo(t *testing.T) {
 	ctx := context.Background()
 	promptRepo := repository.NewPromptRepo(testDB)
 
-	prompt, err := promptRepo.CreatePrompt(ctx, "Test Prompt", "Hello, {{name}}!", "gpt-4o", nil)
+	prompt, err := promptRepo.CreatePrompt(ctx, "test-user", "Test Prompt", "Hello, {{name}}!", "gpt-4o", nil)
 	if err != nil {
 		t.Fatalf("CreatePrompt error: %v", err)
 	}
@@ -514,7 +514,7 @@ func TestPromptRepo(t *testing.T) {
 		t.Errorf("Name = %q, want Test Prompt", prompt.Name)
 	}
 
-	prompts, err := promptRepo.ListPrompts(ctx, 10, 0)
+	prompts, _, err := promptRepo.ListPrompts(ctx, "test-user", 10, 0)
 	if err != nil {
 		t.Fatalf("ListPrompts error: %v", err)
 	}
@@ -522,7 +522,7 @@ func TestPromptRepo(t *testing.T) {
 		t.Errorf("got %d prompts, want 1", len(prompts))
 	}
 
-	found, err := promptRepo.GetPrompt(ctx, "Test Prompt")
+	found, err := promptRepo.GetPrompt(ctx, "test-user", "Test Prompt")
 	if err != nil {
 		t.Fatalf("GetPrompt error: %v", err)
 	}
@@ -530,12 +530,12 @@ func TestPromptRepo(t *testing.T) {
 		t.Errorf("Template = %q, want Hello, {{name}}!", found.Template)
 	}
 
-	err = promptRepo.DeletePrompt(ctx, "Test Prompt")
+	err = promptRepo.DeletePrompt(ctx, "test-user", "Test Prompt")
 	if err != nil {
 		t.Fatalf("DeletePrompt error: %v", err)
 	}
 
-	prompts, _ = promptRepo.ListPrompts(ctx, 10, 0)
+	prompts, _, _ = promptRepo.ListPrompts(ctx, "test-user", 10, 0)
 	if len(prompts) != 0 {
 		t.Errorf("got %d prompts after delete, want 0", len(prompts))
 	}
@@ -567,7 +567,7 @@ func TestConversationRepo(t *testing.T) {
 		t.Errorf("Title = %q, want Test Conversation", conv.Title)
 	}
 
-	convs, err := convRepo.ListConversations(ctx, userID, 10, 0)
+	convs, _, err := convRepo.ListConversations(ctx, userID, 10, 0)
 	if err != nil {
 		t.Fatalf("ListConversations error: %v", err)
 	}
@@ -593,7 +593,7 @@ func TestConversationRepo(t *testing.T) {
 		t.Fatalf("DeleteConversation error: %v", err)
 	}
 
-	convs, _ = convRepo.ListConversations(ctx, userID, 10, 0)
+	convs, _, _ = convRepo.ListConversations(ctx, userID, 10, 0)
 	if len(convs) != 0 {
 		t.Errorf("got %d conversations after delete, want 0", len(convs))
 	}

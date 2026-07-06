@@ -26,7 +26,7 @@ func TestBudgetRouter_FindAffordableModel(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("returns same model when affordable", func(t *testing.T) {
-		model, routed := br.FindAffordableModel(ctx, "test/expensive", 100000, 100, 100)
+		model, routed := br.FindAffordableModel(ctx, "test/expensive", 100000, 100, 100, nil)
 		if routed {
 			t.Fatalf("expected no routing, got %s", model)
 		}
@@ -36,7 +36,7 @@ func TestBudgetRouter_FindAffordableModel(t *testing.T) {
 	})
 
 	t.Run("downgrades to cheaper model when unaffordable", func(t *testing.T) {
-		model, routed := br.FindAffordableModel(ctx, "test/expensive", 0, 100, 100)
+		model, routed := br.FindAffordableModel(ctx, "test/expensive", 0, 100, 100, nil)
 		if !routed {
 			t.Fatal("expected routing to cheaper model")
 		}
@@ -46,7 +46,7 @@ func TestBudgetRouter_FindAffordableModel(t *testing.T) {
 	})
 
 	t.Run("preserves vision capability", func(t *testing.T) {
-		model, routed := br.FindAffordableModel(ctx, "test/expensive", 0, 100, 100)
+		model, routed := br.FindAffordableModel(ctx, "test/expensive", 0, 100, 100, nil)
 		if !routed {
 			t.Fatal("expected routing")
 		}
@@ -56,7 +56,7 @@ func TestBudgetRouter_FindAffordableModel(t *testing.T) {
 	})
 
 	t.Run("preserves tool capability", func(t *testing.T) {
-		model, routed := br.FindAffordableModel(ctx, "test/mid", 0, 100, 100)
+		model, routed := br.FindAffordableModel(ctx, "test/mid", 0, 100, 100, nil)
 		if !routed {
 			t.Fatal("expected routing")
 		}

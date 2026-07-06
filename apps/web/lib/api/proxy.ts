@@ -9,6 +9,10 @@ export async function proxyToBackend(
   path: string,
 ): Promise<Response> {
   const url = new URL(path, BACKEND_URL);
+  const incomingUrl = new URL(request.url);
+  if (incomingUrl.search) {
+    url.search = incomingUrl.search;
+  }
 
   const headers = new Headers();
   request.headers.forEach((value, key) => {
@@ -71,20 +75,40 @@ export async function proxyToBackend(
     );
   }
 
-  const body =
-    request.method !== "GET" && request.method !== "HEAD"
-      ? await request.arrayBuffer()
-      : undefined;
+  let body: ArrayBuffer | undefined;
+  try {
+    body =
+      request.method !== "GET" && request.method !== "HEAD"
+        ? await request.arrayBuffer()
+        : undefined;
+    if (body && body.byteLength > MAX_BODY_SIZE) {
+      return Response.json(
+        { success: false, error: "Request body too large" },
+        { status: 413 },
+      );
+    }
+  } catch (err) {
+    if (process.env.NODE_ENV === "development") {
+      console.error("[proxyToBackend] body read failed", err);
+    }
+    return Response.json(
+      { success: false, error: "Failed to read request body" },
+      { status: 400 },
+    );
+  }
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30_000);
     const response = await fetch(url.toString(), {
       method: request.method,
       headers,
       body,
       credentials: "include",
-      // duplex is required for streaming fetch but not in standard types
-      duplex: "half",
-    });
+      signal: controller.signal,
+      // duplex is required for streaming fetch but not in standard RequestInit types
+      ...({ duplex: "half" } as RequestInit),
+    }).finally(() => clearTimeout(timeout));
 
     return new Response(response.body, {
       status: response.status,

@@ -5,14 +5,14 @@ import "fmt"
 type ErrorCode string
 
 const (
-	ErrUnauthorized     ErrorCode = "UNAUTHORIZED"
-	ErrForbidden        ErrorCode = "FORBIDDEN"
-	ErrBadRequest       ErrorCode = "BAD_REQUEST"
-	ErrNotFound         ErrorCode = "NOT_FOUND"
-	ErrConflict         ErrorCode = "CONFLICT"
-	ErrRateLimited      ErrorCode = "RATE_LIMITED"
-	ErrPaymentRequired  ErrorCode = "PAYMENT_REQUIRED"
-	ErrInternal         ErrorCode = "INTERNAL_ERROR"
+	ErrUnauthorized       ErrorCode = "UNAUTHORIZED"
+	ErrForbidden          ErrorCode = "FORBIDDEN"
+	ErrBadRequest         ErrorCode = "BAD_REQUEST"
+	ErrNotFound           ErrorCode = "NOT_FOUND"
+	ErrConflict           ErrorCode = "CONFLICT"
+	ErrRateLimited        ErrorCode = "RATE_LIMITED"
+	ErrPaymentRequired    ErrorCode = "PAYMENT_REQUIRED"
+	ErrInternal           ErrorCode = "INTERNAL_ERROR"
 	ErrServiceUnavailable ErrorCode = "SERVICE_UNAVAILABLE"
 )
 

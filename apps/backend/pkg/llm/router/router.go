@@ -62,8 +62,8 @@ type Router struct {
 }
 
 type latencyTracker struct {
-	mu       sync.RWMutex
-	samples  []time.Duration
+	mu         sync.RWMutex
+	samples    []time.Duration
 	maxSamples int
 }
 
@@ -112,7 +112,9 @@ func (et *errorTracker) errorRate() float64 {
 	et.mu.RLock()
 	defer et.mu.RUnlock()
 	if et.total == 0 {
-		return 0
+		// No data means unknown reliability; return a moderate default
+		// so providers with actual data are preferred over untested ones.
+		return 0.5
 	}
 	return float64(et.failures) / float64(et.total)
 }
@@ -122,9 +124,9 @@ func New(strategy Strategy) *Router {
 	return &Router{
 		strategy:   strategy,
 		latencies:  make(map[string]*latencyTracker),
-		errors:      make(map[string]*errorTracker),
-		modelCache:  make(map[string]*modelCacheEntry),
-		modelTTL:    5 * time.Minute,
+		errors:     make(map[string]*errorTracker),
+		modelCache: make(map[string]*modelCacheEntry),
+		modelTTL:   5 * time.Minute,
 	}
 }
 
@@ -223,6 +225,17 @@ var toolCapableProviders = map[string]bool{
 }
 
 func supportsTools(p llm.Provider) bool {
+	if tp, ok := p.(interface{ SupportsTools() bool }); ok {
+		return tp.SupportsTools()
+	}
+	models, err := p.ListModels(context.Background())
+	if err == nil {
+		for _, m := range models {
+			if m.SupportsTools {
+				return true
+			}
+		}
+	}
 	name := strings.ToLower(p.Name())
 	for prefix := range toolCapableProviders {
 		if strings.Contains(name, prefix) {

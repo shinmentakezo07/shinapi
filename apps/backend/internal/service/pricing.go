@@ -16,7 +16,7 @@ type ModelPricing struct {
 
 // PricingService provides model pricing lookups from the DB.
 type PricingService struct {
-	mu       sync.RWMutex
+	mu        sync.RWMutex
 	modelRepo ModelPricingRepo
 	cache     map[string]*ModelPricing
 }

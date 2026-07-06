@@ -65,13 +65,13 @@ func (h *Handler) AdminListOptimizations(w http.ResponseWriter, r *http.Request)
 	}
 	defer rows.Close()
 	type opt struct {
-		ID              int64     `json:"id"`
-		Type            string    `json:"type"`
-		Title           string    `json:"title"`
-		EstimatedSavings int64    `json:"estimatedSavingsCents"`
-		UserID          string    `json:"userId,omitempty"`
-		Applied         bool      `json:"applied"`
-		CreatedAt       time.Time `json:"createdAt"`
+		ID               int64     `json:"id"`
+		Type             string    `json:"type"`
+		Title            string    `json:"title"`
+		EstimatedSavings int64     `json:"estimatedSavingsCents"`
+		UserID           string    `json:"userId,omitempty"`
+		Applied          bool      `json:"applied"`
+		CreatedAt        time.Time `json:"createdAt"`
 	}
 	var opts []opt
 	for rows.Next() {
@@ -100,37 +100,38 @@ func (h *Handler) AdminGetForecast(w http.ResponseWriter, r *http.Request) {
 	rows, err := h.db.Query(ctx, `
 		SELECT DATE(created_at) as d, COALESCE(SUM(cost),0)
 		FROM usage_records WHERE created_at >= $1 GROUP BY d ORDER BY d`, monthStart.AddDate(0, -2, 0))
-	if err == nil {
-		defer rows.Close()
-		var trends []trend
-		var total float64
-		var count int
-		for rows.Next() {
-			var t trend
-			if err := rows.Scan(&t.Date, &t.Cost); err != nil {
-				continue
-			}
-			trends = append(trends, t)
-			total += t.Cost
-			count++
-		}
-		avgDaily := 0.0
-		if count > 0 {
-			avgDaily = total / float64(count)
-		}
-		daysRemaining := 30 - now.Day()
-		forecast := currentMonthCost + avgDaily*float64(daysRemaining)
+	if err != nil {
 		response.OK(w, map[string]interface{}{
-			"forecast":     forecast,
+			"forecast":     currentMonthCost * 1.5,
 			"currentSpend": currentMonthCost,
-			"avgDailyCost": avgDaily,
-			"trend":        trends,
 		})
 		return
 	}
+	defer rows.Close()
+	var trends []trend
+	var total float64
+	var count int
+	for rows.Next() {
+		var t trend
+		if err := rows.Scan(&t.Date, &t.Cost); err != nil {
+			continue
+		}
+		trends = append(trends, t)
+		total += t.Cost
+		count++
+	}
+	avgDaily := 0.0
+	if count > 0 {
+		avgDaily = total / float64(count)
+	}
+	daysInMonth := time.Date(now.Year(), now.Month()+1, 0, 0, 0, 0, 0, now.Location()).Day()
+	daysRemaining := daysInMonth - now.Day()
+	forecast := currentMonthCost + avgDaily*float64(daysRemaining)
 	response.OK(w, map[string]interface{}{
-		"forecast":     currentMonthCost * 1.5,
+		"forecast":     forecast,
 		"currentSpend": currentMonthCost,
+		"avgDailyCost": avgDaily,
+		"trend":        trends,
 	})
 }
 
@@ -148,9 +149,9 @@ func (h *Handler) AdminCostBreakdown(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 	type breakdownItem struct {
-		Name    string `json:"name"`
-		Count   int    `json:"count"`
-		Total   int64  `json:"totalCents"`
+		Name  string `json:"name"`
+		Count int    `json:"count"`
+		Total int64  `json:"totalCents"`
 	}
 	var byModel []breakdownItem
 	for rows.Next() {

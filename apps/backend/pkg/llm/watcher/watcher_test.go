@@ -231,9 +231,12 @@ func TestCircuitBreaker_Recovery(t *testing.T) {
 		t.Fatal("Allow() = false after timeout, want true (half-open)")
 	}
 
-	cb.RecordSuccess()
+	// Need successThreshold (3 by default) consecutive successes to close
+	for i := 0; i < cb.successThreshold; i++ {
+		cb.RecordSuccess()
+	}
 	if cb.State() != StateClosed {
-		t.Errorf("state after success = %v, want %v", cb.State(), StateClosed)
+		t.Errorf("state after %d successes = %v, want %v", cb.successThreshold, cb.State(), StateClosed)
 	}
 }
 

@@ -28,6 +28,9 @@ import {
   ChevronRight,
   ArrowUpRight,
   Globe,
+  Network,
+  Wrench,
+  BookOpen,
 } from "lucide-react";
 import { ScrollProgress } from "@/components/docs/ScrollProgress";
 import { SearchModal } from "@/components/docs/SearchModal";
@@ -57,6 +60,7 @@ const navGroups: NavGroup[] = [
       { id: "quickstart", label: "Quick Start", icon: Zap },
       { id: "authentication", label: "Authentication", icon: Key },
       { id: "api-reference", label: "API Reference", icon: Code2 },
+      { id: "sdk", label: "SDK Reference", icon: BookOpen },
       { id: "self-hosting", label: "Self-Hosting", icon: Globe },
     ],
   },
@@ -64,14 +68,17 @@ const navGroups: NavGroup[] = [
     label: "Core Features",
     items: [
       { id: "chat", label: "Chat & Streaming", icon: MessageSquare },
+      { id: "anthropic", label: "Anthropic Messages", icon: MessageSquare },
       { id: "embeddings", label: "Embeddings", icon: Database },
       { id: "conversations", label: "Conversations", icon: Boxes },
       { id: "prompts", label: "Prompt Templates", icon: FileText },
+      { id: "function-calling", label: "Function Calling", icon: Wrench },
     ],
   },
   {
     label: "Platform",
     items: [
+      { id: "gateway", label: "LLM Gateway", icon: Network },
       { id: "batch", label: "Batch API", icon: Layers },
       { id: "files", label: "File Upload", icon: UploadCloud },
       { id: "webhooks", label: "Webhooks", icon: Webhook },
@@ -86,7 +93,8 @@ const navGroups: NavGroup[] = [
       { id: "models", label: "Available Models", icon: Cpu },
       { id: "pricing", label: "Pricing & Credits", icon: TrendingUp },
       { id: "dashboard", label: "Dashboard", icon: BarChart3 },
-      { id: "security", label: "Security", icon: Lock },
+      { id: "admin", label: "Admin API", icon: Lock },
+      { id: "security", label: "Security", icon: Shield },
       { id: "examples", label: "Code Examples", icon: Terminal },
     ],
   },

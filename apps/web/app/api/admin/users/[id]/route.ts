@@ -1,6 +1,26 @@
 import { proxyToBackend } from "@/lib/api/proxy";
 import { requireAdmin } from "@/lib/api/require-auth";
 
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const authError = await requireAdmin(request);
+  if (authError) return authError;
+  const { id } = await params;
+  return proxyToBackend(request, `/api/admin/users/${encodeURIComponent(id)}`);
+}
+
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const authError = await requireAdmin(request);
+  if (authError) return authError;
+  const { id } = await params;
+  return proxyToBackend(request, `/api/admin/users/${encodeURIComponent(id)}`);
+}
+
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> },

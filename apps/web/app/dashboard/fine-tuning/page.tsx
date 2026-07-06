@@ -253,7 +253,7 @@ export default function FineTuningPage() {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-medium text-white font-mono">
-                        {job.model}
+                        {job.baseModel}
                       </span>
                       {statusBadge(job.status)}
                     </div>
@@ -279,10 +279,10 @@ export default function FineTuningPage() {
                     </div>
                   )}
 
-                  {job.status === "failed" && job.error && (
+                  {job.status === "failed" && (
                     <div className="mt-2 flex items-center gap-2 text-xs text-red-400">
                       <AlertTriangle className="w-3 h-3" />
-                      {job.error}
+                      Job failed. See server logs for details.
                     </div>
                   )}
 
@@ -305,9 +305,9 @@ export default function FineTuningPage() {
                     </div>
                   )}
 
-                  {job.datasetFileId && (
+                  {job.datasetId && (
                     <div className="mt-1 text-xs text-gray-600">
-                      Dataset: {job.datasetFileId}
+                      Dataset: {job.datasetId}
                     </div>
                   )}
                 </div>

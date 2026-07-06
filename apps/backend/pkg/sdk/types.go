@@ -321,23 +321,23 @@ type RateLimitInfo struct {
 
 // BudgetAlert represents a budget alert threshold.
 type BudgetAlert struct {
-	ID              string    `json:"id"`
-	UserID          string    `json:"userId"`
-	ThresholdPercent int      `json:"thresholdPercent"`
-	AlertType       string    `json:"alertType"`
-	IsActive        bool      `json:"isActive"`
-	CreatedAt       time.Time `json:"createdAt"`
+	ID               string    `json:"id"`
+	UserID           string    `json:"userId"`
+	ThresholdPercent int       `json:"thresholdPercent"`
+	AlertType        string    `json:"alertType"`
+	IsActive         bool      `json:"isActive"`
+	CreatedAt        time.Time `json:"createdAt"`
 }
 
 // BudgetCap represents a budget spending cap.
 type BudgetCap struct {
-	ID           string    `json:"id"`
-	UserID       string    `json:"userId"`
-	HardLimit    int       `json:"hardLimit"`
-	SoftLimit    int       `json:"softLimit,omitempty"`
-	ActionOnExceed string  `json:"actionOnExceed"`
-	IsActive     bool      `json:"isActive"`
-	CreatedAt    time.Time `json:"createdAt"`
+	ID             string    `json:"id"`
+	UserID         string    `json:"userId"`
+	HardLimit      int       `json:"hardLimit"`
+	SoftLimit      int       `json:"softLimit,omitempty"`
+	ActionOnExceed string    `json:"actionOnExceed"`
+	IsActive       bool      `json:"isActive"`
+	CreatedAt      time.Time `json:"createdAt"`
 }
 
 // WebhookDelivery represents a webhook delivery attempt.
@@ -357,33 +357,33 @@ type WebhookDelivery struct {
 
 // Comparison represents a model comparison.
 type Comparison struct {
-	ID       string  `json:"id"`
-	UserID   string  `json:"userId"`
-	ModelA   string  `json:"modelA"`
-	ModelB   string  `json:"modelB"`
-	Prompt   string  `json:"prompt"`
-	ResultA  string  `json:"resultA,omitempty"`
-	ResultB  string  `json:"resultB,omitempty"`
-	LatencyA float64 `json:"latencyA,omitempty"`
-	LatencyB float64 `json:"latencyB,omitempty"`
-	CostA    float64 `json:"costA,omitempty"`
-	CostB    float64 `json:"costB,omitempty"`
-	TokensA  int     `json:"tokensA,omitempty"`
-	TokensB  int     `json:"tokensB,omitempty"`
-	Status   string  `json:"status"`
+	ID        string    `json:"id"`
+	UserID    string    `json:"userId"`
+	ModelA    string    `json:"modelA"`
+	ModelB    string    `json:"modelB"`
+	Prompt    string    `json:"prompt"`
+	ResultA   string    `json:"resultA,omitempty"`
+	ResultB   string    `json:"resultB,omitempty"`
+	LatencyA  float64   `json:"latencyA,omitempty"`
+	LatencyB  float64   `json:"latencyB,omitempty"`
+	CostA     float64   `json:"costA,omitempty"`
+	CostB     float64   `json:"costB,omitempty"`
+	TokensA   int       `json:"tokensA,omitempty"`
+	TokensB   int       `json:"tokensB,omitempty"`
+	Status    string    `json:"status"`
 	CreatedAt time.Time `json:"createdAt"`
 }
 
 // FineTuningJob represents a fine-tuning job.
 type FineTuningJob struct {
-	ID            string    `json:"id"`
-	UserID        string    `json:"userId"`
-	BaseModel     string    `json:"baseModel"`
-	DatasetID     string    `json:"datasetId,omitempty"`
-	Status        string    `json:"status"`
-	ResultModelID string   `json:"resultModelId,omitempty"`
-	Progress      float64   `json:"progress"`
-	CreatedAt     time.Time `json:"createdAt"`
+	ID            string     `json:"id"`
+	UserID        string     `json:"userId"`
+	BaseModel     string     `json:"baseModel"`
+	DatasetID     string     `json:"datasetId,omitempty"`
+	Status        string     `json:"status"`
+	ResultModelID string     `json:"resultModelId,omitempty"`
+	Progress      float64    `json:"progress"`
+	CreatedAt     time.Time  `json:"createdAt"`
 	StartedAt     *time.Time `json:"startedAt,omitempty"`
 	FinishedAt    *time.Time `json:"finishedAt,omitempty"`
 }
@@ -414,17 +414,17 @@ type ExportJob struct {
 
 // AdminMessage represents an admin broadcast message.
 type AdminMessage struct {
-	ID         string    `json:"id"`
-	Title      string    `json:"title"`
-	Body       string    `json:"body"`
-	Priority   string    `json:"priority"`
-	TargetType string    `json:"targetType"`
-	TargetIDs  []string  `json:"targetIds"`
-	SentBy     string    `json:"sentBy"`
-	SentAt     time.Time `json:"sentAt"`
+	ID         string     `json:"id"`
+	Title      string     `json:"title"`
+	Body       string     `json:"body"`
+	Priority   string     `json:"priority"`
+	TargetType string     `json:"targetType"`
+	TargetIDs  []string   `json:"targetIds"`
+	SentBy     string     `json:"sentBy"`
+	SentAt     time.Time  `json:"sentAt"`
 	ExpiresAt  *time.Time `json:"expiresAt,omitempty"`
-	CreatedAt  time.Time `json:"createdAt"`
-	ReadCount  int       `json:"readCount"`
+	CreatedAt  time.Time  `json:"createdAt"`
+	ReadCount  int        `json:"readCount"`
 }
 
 // UserMessage represents a user-facing message.

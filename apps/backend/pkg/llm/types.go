@@ -21,10 +21,10 @@ const (
 type ContentType string
 
 const (
-	ContentTypeText     ContentType = "text"
-	ContentTypeThinking ContentType = "thinking"
-	ContentTypeImage    ContentType = "image"
-	ContentTypeToolUse  ContentType = "tool_use"
+	ContentTypeText       ContentType = "text"
+	ContentTypeThinking   ContentType = "thinking"
+	ContentTypeImage      ContentType = "image"
+	ContentTypeToolUse    ContentType = "tool_use"
 	ContentTypeToolResult ContentType = "tool_result"
 )
 
@@ -41,22 +41,22 @@ const (
 
 // Message represents a unified chat message.
 type Message struct {
-	Role       Role           `json:"role"`
-	Content    string         `json:"content,omitempty"`
+	Role          Role           `json:"role"`
+	Content       string         `json:"content,omitempty"`
 	ContentBlocks []ContentBlock `json:"content_blocks,omitempty"`
-	ToolCalls  []ToolCall     `json:"tool_calls,omitempty"`
-	ToolCallID string         `json:"tool_call_id,omitempty"`
-	Name       string         `json:"name,omitempty"`
-	Metadata   map[string]any `json:"metadata,omitempty"`
+	ToolCalls     []ToolCall     `json:"tool_calls,omitempty"`
+	ToolCallID    string         `json:"tool_call_id,omitempty"`
+	Name          string         `json:"name,omitempty"`
+	Metadata      map[string]any `json:"metadata,omitempty"`
 }
 
 // ContentBlock represents a structured content block.
 type ContentBlock struct {
-	Type     ContentType `json:"type"`
-	Text     string      `json:"text,omitempty"`
-	Thinking string      `json:"thinking,omitempty"`
-	ImageURL *ImageURL   `json:"image_url,omitempty"`
-	ToolUse  *ToolUse    `json:"tool_use,omitempty"`
+	Type       ContentType `json:"type"`
+	Text       string      `json:"text,omitempty"`
+	Thinking   string      `json:"thinking,omitempty"`
+	ImageURL   *ImageURL   `json:"image_url,omitempty"`
+	ToolUse    *ToolUse    `json:"tool_use,omitempty"`
 	ToolResult *ToolResult `json:"tool_result,omitempty"`
 }
 
@@ -82,8 +82,8 @@ type ToolResult struct {
 
 // ToolCall represents a tool call in a message.
 type ToolCall struct {
-	ID       string          `json:"id"`
-	Type     string          `json:"type"`
+	ID       string           `json:"id"`
+	Type     string           `json:"type"`
 	Function ToolCallFunction `json:"function"`
 }
 
@@ -95,7 +95,7 @@ type ToolCallFunction struct {
 
 // ToolDefinition defines a tool available to the model.
 type ToolDefinition struct {
-	Type     string      `json:"type"`
+	Type     string       `json:"type"`
 	Function ToolFunction `json:"function,omitempty"`
 }
 
@@ -108,27 +108,27 @@ type ToolFunction struct {
 
 // ThinkingConfig configures reasoning/thinking behavior.
 type ThinkingConfig struct {
-	Enabled         bool   `json:"enabled"`
-	BudgetTokens    int    `json:"budget_tokens,omitempty"`
-	ShowThinking    bool   `json:"show_thinking,omitempty"`
+	Enabled      bool `json:"enabled"`
+	BudgetTokens int  `json:"budget_tokens,omitempty"`
+	ShowThinking bool `json:"show_thinking,omitempty"`
 }
 
 // ChatRequest is the unified chat completion request.
 type ChatRequest struct {
-	Model           string           `json:"model"`
-	Messages        []Message        `json:"messages"`
-	Temperature     *float64         `json:"temperature,omitempty"`
-	MaxTokens       *int             `json:"max_tokens,omitempty"`
-	TopP            *float64         `json:"top_p,omitempty"`
-	TopK            *int             `json:"top_k,omitempty"`
-	Stream          bool             `json:"stream"`
-	System          string           `json:"system,omitempty"`
-	Tools           []ToolDefinition `json:"tools,omitempty"`
-	ToolChoice      string           `json:"tool_choice,omitempty"`
-	ResponseFormat  *ResponseFormat  `json:"response_format,omitempty"`
-	Thinking        *ThinkingConfig  `json:"thinking,omitempty"`
-	StopSequences   []string         `json:"stop,omitempty"`
-	Metadata        map[string]string `json:"metadata,omitempty"`
+	Model          string            `json:"model"`
+	Messages       []Message         `json:"messages"`
+	Temperature    *float64          `json:"temperature,omitempty"`
+	MaxTokens      *int              `json:"max_tokens,omitempty"`
+	TopP           *float64          `json:"top_p,omitempty"`
+	TopK           *int              `json:"top_k,omitempty"`
+	Stream         bool              `json:"stream"`
+	System         string            `json:"system,omitempty"`
+	Tools          []ToolDefinition  `json:"tools,omitempty"`
+	ToolChoice     string            `json:"tool_choice,omitempty"`
+	ResponseFormat *ResponseFormat   `json:"response_format,omitempty"`
+	Thinking       *ThinkingConfig   `json:"thinking,omitempty"`
+	StopSequences  []string          `json:"stop,omitempty"`
+	Metadata       map[string]string `json:"metadata,omitempty"`
 }
 
 // ResponseFormat configures structured output.
@@ -168,16 +168,16 @@ type Choice struct {
 
 // StreamChunk is a single chunk from a streaming response.
 type StreamChunk struct {
-	ID           string       `json:"id"`
-	Object       string       `json:"object"`
-	Created      int64        `json:"created"`
-	Model        string       `json:"model"`
-	Provider     string       `json:"provider"`
-	Index        int          `json:"index"`
-	Delta        Message      `json:"delta"`
+	ID           string        `json:"id"`
+	Object       string        `json:"object"`
+	Created      int64         `json:"created"`
+	Model        string        `json:"model"`
+	Provider     string        `json:"provider"`
+	Index        int           `json:"index"`
+	Delta        Message       `json:"delta"`
 	FinishReason *FinishReason `json:"finish_reason,omitempty"`
-	Usage        *Usage       `json:"usage,omitempty"`
-	Thinking     string       `json:"thinking,omitempty"`
+	Usage        *Usage        `json:"usage,omitempty"`
+	Thinking     string        `json:"thinking,omitempty"`
 }
 
 // ModelInfo describes an available model.

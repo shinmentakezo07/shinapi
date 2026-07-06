@@ -2,9 +2,10 @@ package middleware
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"dra-platform/backend/internal/pkg/logger"
@@ -44,10 +45,11 @@ func (rl *RedisRateLimiter) Allow(ctx context.Context, key string) bool {
 	now := time.Now().UnixMilli()
 	windowStart := now - rl.window.Milliseconds()
 	redisKey := rl.prefix + key
+	member := fmt.Sprintf("%d:%s", now, randomRateLimitMember())
 
 	pipe := rl.client.Pipeline()
 	pipe.ZRemRangeByScore(timeoutCtx, redisKey, "0", fmt.Sprintf("%d", windowStart))
-	pipe.ZAdd(timeoutCtx, redisKey, redis.Z{Score: float64(now), Member: now})
+	pipe.ZAdd(timeoutCtx, redisKey, redis.Z{Score: float64(now), Member: member})
 	pipe.ZCard(timeoutCtx, redisKey)
 	pipe.Expire(timeoutCtx, redisKey, rl.window+time.Second)
 
@@ -68,18 +70,19 @@ func (rl *RedisRateLimiter) Allow(ctx context.Context, key string) bool {
 	return count <= rl.max
 }
 
+func randomRateLimitMember() string {
+	var b [8]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		return fmt.Sprintf("fallback:%d", time.Now().UnixNano())
+	}
+	return hex.EncodeToString(b[:])
+}
+
 // RedisRateLimit returns middleware that uses the Redis rate limiter.
 func RedisRateLimit(rl *RedisRateLimiter) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			key := r.RemoteAddr
-			if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-				if idx := strings.Index(xff, ","); idx > 0 {
-					key = strings.TrimSpace(xff[:idx])
-				} else {
-					key = strings.TrimSpace(xff)
-				}
-			}
+			key := clientIP(r)
 			if u := GetUser(r); u != nil {
 				key = u.ID
 			}

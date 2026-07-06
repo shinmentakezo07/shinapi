@@ -260,10 +260,10 @@ func TestClampBudget(t *testing.T) {
 		value int
 		want  int
 	}{
-		{0, 0},         // ZeroAllowed
-		{-1, -1},       // Auto passes through
-		{500, 1024},    // Below min
-		{5000, 5000},   // In range
+		{0, 0},          // ZeroAllowed
+		{-1, -1},        // Auto passes through
+		{500, 1024},     // Below min
+		{5000, 5000},    // In range
 		{100000, 50000}, // Above max
 	}
 
@@ -277,9 +277,9 @@ func TestClampBudget(t *testing.T) {
 
 func TestStripConfig(t *testing.T) {
 	body := map[string]interface{}{
-		"model":           "gpt-4o",
+		"model":            "gpt-4o",
 		"reasoning_effort": "high",
-		"messages":        []interface{}{},
+		"messages":         []interface{}{},
 	}
 
 	result := StripConfig(body, "openai")
@@ -330,9 +330,9 @@ func TestApplyThinkingOpenAI(t *testing.T) {
 
 	// Without suffix, with body config
 	body2 := map[string]interface{}{
-		"model":           "gpt-4o",
+		"model":            "gpt-4o",
 		"reasoning_effort": "medium",
-		"messages":        []interface{}{},
+		"messages":         []interface{}{},
 	}
 	result2, err := ApplyThinking(body2, "gpt-4o", "openai", support)
 	if err != nil {

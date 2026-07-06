@@ -54,12 +54,12 @@ type CircuitBreaker struct {
 	provider llm.Provider
 	config   Config
 
-	mu                sync.RWMutex
-	state             State
-	failures          int
-	successes         int
-	lastFailureTime   time.Time
-	halfOpenCalls     int
+	mu              sync.RWMutex
+	state           State
+	failures        int
+	successes       int
+	lastFailureTime time.Time
+	halfOpenCalls   int
 }
 
 // New creates a circuit breaker around a provider.

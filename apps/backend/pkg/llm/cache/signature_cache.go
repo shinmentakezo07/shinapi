@@ -36,10 +36,10 @@ type groupCache struct {
 // SignatureCache stores thinking signatures by model group -> textHash -> SignatureEntry.
 // Used for Claude models that require signed thinking blocks in multi-turn conversations.
 type SignatureCache struct {
-	cache         sync.Map
-	cleanupOnce   sync.Once
-	enabled       atomic.Bool
-	bypassStrict  atomic.Bool
+	cache        sync.Map
+	cleanupOnce  sync.Once
+	enabled      atomic.Bool
+	bypassStrict atomic.Bool
 }
 
 // NewSignatureCache creates a new signature cache.

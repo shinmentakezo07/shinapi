@@ -51,6 +51,8 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [connected, setConnected] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMountedRef = useRef(true);
 
   const connectStream = useCallback(async () => {
     if (abortRef.current) {
@@ -67,6 +69,7 @@ export default function NotificationsPage() {
 
       for await (const event of stream) {
         if (controller.signal.aborted) break;
+        if (!isMountedRef.current) break;
 
         // Skip heartbeat and connection events
         if (SKIP_TYPES.has(event.type)) continue;
@@ -94,14 +97,26 @@ export default function NotificationsPage() {
     } catch (err) {
       if (controller.signal.aborted) return;
       setConnected(false);
-      setTimeout(() => connectStream(), 5000);
+      if (isMountedRef.current) {
+        reconnectTimeoutRef.current = setTimeout(() => {
+          if (isMountedRef.current) {
+            connectStream();
+          }
+        }, 5000);
+      }
     }
   }, []);
 
   useEffect(() => {
+    isMountedRef.current = true;
     connectStream();
     return () => {
+      isMountedRef.current = false;
       abortRef.current?.abort();
+      if (reconnectTimeoutRef.current !== null) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
     };
   }, [connectStream]);
 

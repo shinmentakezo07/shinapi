@@ -43,7 +43,8 @@ func (h *Handler) CreateWebhook(w http.ResponseWriter, r *http.Request) {
 		response.JSON(w, err.Status, response.Body{Success: false, Error: err.Message})
 		return
 	}
-	response.Created(w, wh)
+	// Return the webhook with its secret only at creation time.
+	response.Created(w, wh.ToPublic())
 }
 
 // GetWebhook retrieves a single webhook.

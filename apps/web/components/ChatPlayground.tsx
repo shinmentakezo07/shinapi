@@ -1,6 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport, type UIMessage } from "ai";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -32,6 +33,26 @@ interface StoredMessage {
   content: string;
   createdAt?: number;
   [key: string]: unknown;
+}
+
+// Convert ai-sdk v5 UIMessage (parts-based) to StoredMessage (content-based) for localStorage.
+function uiMessageToStored(msg: UIMessage): StoredMessage {
+  const textPart = msg.parts?.find((p) => p.type === "text");
+  return {
+    id: msg.id,
+    role: msg.role,
+    content: textPart?.text ?? "",
+    createdAt: Date.now(),
+  };
+}
+
+// Convert StoredMessage (content-based) to ai-sdk v5 UIMessage (parts-based) for restoring sessions.
+function storedMessageToUIMessage(msg: StoredMessage): UIMessage {
+  return {
+    id: msg.id,
+    role: msg.role as "user" | "assistant" | "system",
+    parts: msg.content ? [{ type: "text", text: msg.content }] : [],
+  };
 }
 
 type ChatSession = {
@@ -75,7 +96,7 @@ function deriveTitle(messages: StoredMessage[]): string {
 
 export default function ChatPlayground() {
   const { messages, status, sendMessage, stop, setMessages } = useChat({
-    api: "/api/chat",
+    transport: new DefaultChatTransport({ api: "/api/chat" }),
   });
 
   const isLoading = status === "submitted" || status === "streaming";
@@ -134,7 +155,7 @@ export default function ChatPlayground() {
     setActiveSessionId(pick);
 
     const initialMessages = loaded.find((s) => s.id === pick)?.messages ?? [];
-    setMessages(initialMessages);
+    setMessages(initialMessages.map(storedMessageToUIMessage));
   }, [setMessages]);
 
   // Persist active session id
@@ -153,7 +174,7 @@ export default function ChatPlayground() {
     setSessions((prev) => {
       const next = prev.map((s) => {
         if (s.id !== activeSessionId) return s;
-        const updatedMessages = messages as StoredMessage[];
+        const updatedMessages = messages.map(uiMessageToStored);
         const nextTitle = deriveTitle(updatedMessages);
         return {
           ...s,
@@ -211,7 +232,7 @@ export default function ChatPlayground() {
     const text = input;
     setInput("");
 
-    await sendMessage({ role: "user", content: text });
+    await sendMessage({ text });
   };
 
   const handleClearChat = () => {
@@ -221,6 +242,7 @@ export default function ChatPlayground() {
   };
 
   const handleNewChat = () => {
+    isSwitchingRef.current = true;
     const session: ChatSession = {
       id: newId(),
       title: "New Chat",
@@ -238,7 +260,10 @@ export default function ChatPlayground() {
     setActiveSessionId(session.id);
     setMessages([]);
     setInput("");
-    requestAnimationFrame(() => textareaRef.current?.focus());
+    requestAnimationFrame(() => {
+      isSwitchingRef.current = false;
+      textareaRef.current?.focus();
+    });
   };
 
   const handleDeleteChat = (id: string) => {
@@ -263,7 +288,7 @@ export default function ChatPlayground() {
       if (id === activeSessionId) {
         const newActive = safeNext[0].id;
         setActiveSessionId(newActive);
-        setMessages(safeNext[0].messages);
+        setMessages(safeNext[0].messages.map(storedMessageToUIMessage));
       }
 
       return safeNext;
@@ -275,7 +300,7 @@ export default function ChatPlayground() {
     isSwitchingRef.current = true;
     const session = sessions.find((s) => s.id === id);
     setActiveSessionId(id);
-    setMessages(session?.messages ?? []);
+    setMessages((session?.messages ?? []).map(storedMessageToUIMessage));
     setInput("");
     requestAnimationFrame(() => {
       scrollToBottom("auto");
@@ -525,8 +550,14 @@ export default function ChatPlayground() {
           )}
 
           <AnimatePresence initial={false}>
-            {messages.map((mRaw: any) => {
-              const m = mRaw;
+            {messages.map((mRaw: UIMessage) => {
+              const m = {
+                ...mRaw,
+                get content() {
+                  const textPart = mRaw.parts?.find((p) => p.type === "text");
+                  return textPart?.text ?? "";
+                },
+              };
               return (
                 <motion.div
                   key={m.id}

@@ -20,11 +20,11 @@ type EmbeddingRequest struct {
 
 // EmbeddingResponse is the unified embedding response.
 type EmbeddingResponse struct {
-	Object    string      `json:"object"`
-	Data      []Embedding `json:"data"`
-	Model     string      `json:"model"`
-	Provider  string      `json:"provider"`
-	TotalTokens int       `json:"total_tokens"`
+	Object      string      `json:"object"`
+	Data        []Embedding `json:"data"`
+	Model       string      `json:"model"`
+	Provider    string      `json:"provider"`
+	TotalTokens int         `json:"total_tokens"`
 }
 
 // Provider is the interface for embedding backends.

@@ -36,12 +36,12 @@ export default function AdminDashboardClient() {
     refetch: refetchStats,
   } = useAdminStats();
   const {
-    data: health,
+    data: health = [],
     isLoading: healthLoading,
     refetch: refetchHealth,
   } = useProviderHealth();
   const {
-    data: circuitBreakers,
+    data: circuitBreakers = [],
     isLoading: cbLoading,
     refetch: refetchCB,
   } = useCircuitBreakers();
@@ -52,9 +52,8 @@ export default function AdminDashboardClient() {
   } = useAdminUsers(userPage, userLimit);
   const deleteUser = useAdminDeleteUser();
 
-  const users = (usersData as any)?.data ?? [];
-  const userTotal =
-    (usersData as any)?.meta?.total ?? (usersData as any)?.total ?? 0;
+  const users = usersData?.data ?? [];
+  const userTotal = usersData?.total ?? 0;
 
   const handleDelete = async (userId: string) => {
     setError(null);
@@ -149,13 +148,13 @@ export default function AdminDashboardClient() {
                     <span className="text-gray-300 font-medium">
                       {h.provider}
                     </span>
-                    {h.latency_ms !== undefined && (
+                    {h.latency > 0 && (
                       <span className="text-gray-500 text-xs ml-2">
-                        {h.latency_ms}ms
+                        {h.latency}ms
                       </span>
                     )}
                   </div>
-                  <StatusBadge status={h.status} />
+                  <StatusBadge status={h.healthy ? "healthy" : "unhealthy"} />
                 </div>
               ))}
             </div>
@@ -222,7 +221,7 @@ export default function AdminDashboardClient() {
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   <AnimatePresence>
-                    {users.map((u) => (
+                    {users.map((u: { id: string; name: string; email: string; role: string }) => (
                       <motion.tr
                         key={u.id}
                         initial={{ opacity: 0 }}

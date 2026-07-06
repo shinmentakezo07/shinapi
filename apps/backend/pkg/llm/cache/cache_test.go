@@ -245,7 +245,7 @@ func TestKeyBuilder_WithTools(t *testing.T) {
 	req := &llm.ChatRequest{
 		Model:    "gpt-4",
 		Messages: []llm.Message{{Role: "user", Content: "hi"}},
-		Tools:     []llm.ToolDefinition{{Type: "function", Function: llm.ToolFunction{Name: "search", Description: "search the web"}}},
+		Tools:    []llm.ToolDefinition{{Type: "function", Function: llm.ToolFunction{Name: "search", Description: "search the web"}}},
 	}
 
 	key := kb.Build(req)

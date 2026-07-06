@@ -42,18 +42,18 @@ func (h *Handler) AdminListMessages(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close()
 
 	type msg struct {
-		ID          string    `json:"id"`
-		Title       string    `json:"title"`
-		Body        string    `json:"body"`
-		Priority    string    `json:"priority"`
-		TargetType  string    `json:"targetType"`
-		TargetIds   []string  `json:"targetIds"`
-		SentBy      string    `json:"sentBy"`
-		SenderEmail string    `json:"senderEmail"`
-		SentAt      time.Time `json:"sentAt"`
+		ID          string     `json:"id"`
+		Title       string     `json:"title"`
+		Body        string     `json:"body"`
+		Priority    string     `json:"priority"`
+		TargetType  string     `json:"targetType"`
+		TargetIds   []string   `json:"targetIds"`
+		SentBy      string     `json:"sentBy"`
+		SenderEmail string     `json:"senderEmail"`
+		SentAt      time.Time  `json:"sentAt"`
 		ExpiresAt   *time.Time `json:"expiresAt,omitempty"`
-		CreatedAt   time.Time `json:"createdAt"`
-		ReadCount   int64     `json:"readCount"`
+		CreatedAt   time.Time  `json:"createdAt"`
+		ReadCount   int64      `json:"readCount"`
 	}
 
 	var messages []msg
@@ -154,8 +154,8 @@ func (h *Handler) AdminCreateMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.Created(w, map[string]interface{}{
-		"id":       id,
-		"sentAt":   sentAt,
+		"id":         id,
+		"sentAt":     sentAt,
 		"targetType": req.TargetType,
 	})
 
@@ -227,8 +227,38 @@ func (h *Handler) AdminGetMessageStats(w http.ResponseWriter, r *http.Request) {
 
 // --- User-facing endpoints ---
 
+func (h *Handler) userMessageAudience(ctx context.Context, userID string) (string, []string) {
+	var userTier string
+	_ = h.db.QueryRow(ctx, `
+		SELECT COALESCE(rlt.name, '') FROM users u
+		LEFT JOIN rate_limit_tiers rlt ON rlt.id = u.rate_limit_tier_id
+		WHERE u.id = $1`, userID).Scan(&userTier)
+
+	userGroups := []string{}
+	groupRows, err := h.db.Query(ctx, `
+		SELECT ug.name FROM user_groups ug
+		JOIN user_group_members ugm ON ugm.group_id = ug.id
+		WHERE ugm.user_id = $1`, userID)
+	if err == nil {
+		defer groupRows.Close()
+		for groupRows.Next() {
+			var g string
+			if err := groupRows.Scan(&g); err == nil {
+				userGroups = append(userGroups, g)
+			}
+		}
+	}
+	return userTier, userGroups
+}
+
 func (h *Handler) GetUserAnnouncements(w http.ResponseWriter, r *http.Request) {
+	u := middleware.GetUser(r)
+	if u == nil {
+		response.Error(w, 401, "not authenticated")
+		return
+	}
 	ctx := r.Context()
+	userTier, userGroups := h.userMessageAudience(ctx, u.ID)
 
 	rows, err := h.db.Query(ctx, `
 		SELECT id, title, body, priority, target_type, starts_at, ends_at, created_at
@@ -236,8 +266,14 @@ func (h *Handler) GetUserAnnouncements(w http.ResponseWriter, r *http.Request) {
 		WHERE show_in_app = true
 		  AND (starts_at IS NULL OR starts_at <= NOW())
 		  AND (ends_at IS NULL OR ends_at >= NOW())
+		  AND (
+			target_type = 'all'
+			OR (target_type = 'user' AND $1 = ANY(target_ids))
+			OR (target_type = 'tier' AND $2 != '' AND $2 = ANY(target_ids))
+			OR (target_type = 'group' AND $3::text[] && target_ids)
+		  )
 		ORDER BY created_at DESC
-		LIMIT 50`)
+		LIMIT 50`, u.ID, userTier, userGroups)
 	if err != nil {
 		response.Error(w, 500, "failed to fetch announcements")
 		return
@@ -278,27 +314,7 @@ func (h *Handler) GetUserMessages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-
-	var userTier string
-	_ = h.db.QueryRow(ctx, `
-		SELECT COALESCE(rlt.name, '') FROM users u
-		LEFT JOIN rate_limit_tiers rlt ON rlt.id = u.rate_limit_tier_id
-		WHERE u.id = $1`, u.ID).Scan(&userTier)
-
-	var userGroups []string
-	groupRows, err := h.db.Query(ctx, `
-		SELECT ug.name FROM user_groups ug
-		JOIN user_group_members ugm ON ugm.group_id = ug.id
-		WHERE ugm.user_id = $1`, u.ID)
-	if err == nil {
-		defer groupRows.Close()
-		for groupRows.Next() {
-			var g string
-			if err := groupRows.Scan(&g); err == nil {
-				userGroups = append(userGroups, g)
-			}
-		}
-	}
+	userTier, userGroups := h.userMessageAudience(ctx, u.ID)
 
 	rows, err := h.db.Query(ctx, `
 		SELECT am.id, am.title, am.body, am.priority, am.target_type, am.target_ids,
@@ -361,11 +377,26 @@ func (h *Handler) MarkMessageRead(w http.ResponseWriter, r *http.Request) {
 	}
 
 	messageID := chi.URLParam(r, "id")
-	_, err := h.db.Exec(r.Context(), `
+	ctx := r.Context()
+	userTier, userGroups := h.userMessageAudience(ctx, u.ID)
+	result, err := h.db.Exec(ctx, `
 		INSERT INTO admin_message_reads (message_id, user_id)
-		VALUES ($1, $2) ON CONFLICT DO NOTHING`, messageID, u.ID)
+		SELECT am.id, $1 FROM admin_messages am
+		WHERE am.id = $2
+		AND (
+			am.target_type = 'all'
+			OR (am.target_type = 'user' AND $1 = ANY(am.target_ids))
+			OR (am.target_type = 'tier' AND $3 != '' AND $3 = ANY(am.target_ids))
+			OR (am.target_type = 'group' AND $4::text[] && am.target_ids)
+		)
+		AND (am.expires_at IS NULL OR am.expires_at > NOW())
+		ON CONFLICT DO NOTHING`, u.ID, messageID, userTier, userGroups)
 	if err != nil {
 		response.Error(w, 500, "failed to mark as read")
+		return
+	}
+	if result.RowsAffected() == 0 {
+		response.Error(w, 404, "message not found")
 		return
 	}
 	response.OK(w, map[string]bool{"marked": true})

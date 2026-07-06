@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"dra-platform/backend/pkg/llm"
 )
@@ -173,7 +174,7 @@ type ResponseInterceptor interface {
 // ChainPipeline extends Pipeline with middleware chain and interceptors.
 type ChainPipeline struct {
 	*Pipeline
-	interceptors       []RequestInterceptor
+	interceptors         []RequestInterceptor
 	responseInterceptors []ResponseInterceptor
 }
 
@@ -232,9 +233,17 @@ func (cp *ChainPipeline) Execute(ctx context.Context, req *llm.ChatRequest, hand
 	}
 
 	// 3. Execute handler
+	start := time.Now()
 	resp, err := handler(ctx, req)
 	if err != nil {
 		return nil, err
+	}
+
+	// 3b. Record telemetry duration for any TelemetryInterceptor
+	for _, ri := range cp.responseInterceptors {
+		if ti, ok := ri.(*TelemetryInterceptor); ok {
+			RecordTelemetry(ti, req, resp, start)
+		}
 	}
 
 	// 4. Response interceptors
@@ -312,7 +321,19 @@ func (i *TelemetryInterceptor) Name() string { return "telemetry" }
 
 func (i *TelemetryInterceptor) Intercept(ctx context.Context, req *llm.ChatRequest, resp *llm.ChatResponse) (*llm.ChatResponse, error) {
 	if i.Record != nil {
-		i.Record(req.Model, resp.Provider, resp.Usage, 0)
+		start := time.Now()
+		if req.Metadata == nil {
+			req.Metadata = make(map[string]string)
+		}
+		req.Metadata["_telemetry_start"] = start.Format(time.RFC3339Nano)
 	}
 	return resp, nil
+}
+
+// RecordTelemetry is a helper to compute and record telemetry after a handler completes.
+func RecordTelemetry(i *TelemetryInterceptor, req *llm.ChatRequest, resp *llm.ChatResponse, start time.Time) {
+	if i.Record != nil && req != nil && resp != nil {
+		duration := time.Since(start).Milliseconds()
+		i.Record(req.Model, resp.Provider, resp.Usage, duration)
+	}
 }

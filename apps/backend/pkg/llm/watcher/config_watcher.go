@@ -24,13 +24,13 @@ type ConfigChangeHandler func(ctx context.Context, change ConfigChange)
 // ConfigWatcher monitors configuration files for changes with debounced reload.
 // Inspired by CLIProxyAPI's watcher pattern with fsnotify-based file monitoring.
 type ConfigWatcher struct {
-	mu              sync.RWMutex
-	paths           map[string]string // path -> last hash
-	handlers        []ConfigChangeHandler
-	debounce        time.Duration
-	pollInterval    time.Duration
-	stopped         chan struct{}
-	debounceTimers  map[string]*time.Timer
+	mu             sync.RWMutex
+	paths          map[string]string // path -> last hash
+	handlers       []ConfigChangeHandler
+	debounce       time.Duration
+	pollInterval   time.Duration
+	stopped        chan struct{}
+	debounceTimers map[string]*time.Timer
 }
 
 // Option configures a ConfigWatcher.

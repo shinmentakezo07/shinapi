@@ -276,14 +276,14 @@ func (s *AdminService) CreateProviderFull(ctx context.Context, p *domain.Provide
 	if apiKey != "" {
 		prefix, lastFour, hash := deriveKeyParts(apiKey)
 		k := &domain.ProviderKey{
-			ID:         domain.NewID(),
-			ProviderID: p.ID,
-			Label:      "primary",
-			KeyPrefix:  prefix,
-			KeyHash:    hash,
+			ID:          domain.NewID(),
+			ProviderID:  p.ID,
+			Label:       "primary",
+			KeyPrefix:   prefix,
+			KeyHash:     hash,
 			KeyLastFour: lastFour,
-			IsActive:   true,
-			Strategy:   domain.KeyStrategyRoundRobin,
+			IsActive:    true,
+			Strategy:    domain.KeyStrategyRoundRobin,
 		}
 		if err := s.providerRepo.CreateKey(ctx, k); err != nil {
 			return fmt.Errorf("store api key: %w", err)

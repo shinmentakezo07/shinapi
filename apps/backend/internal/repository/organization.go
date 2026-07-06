@@ -19,9 +19,18 @@ type OrganizationRepo struct {
 
 func NewOrganizationRepo(d *db.DB) *OrganizationRepo { return &OrganizationRepo{db: d} }
 
+// DB returns the underlying DB, needed by the service layer for transactions.
+func (r *OrganizationRepo) DB() *db.DB { return r.db }
+
 func (r *OrganizationRepo) Create(ctx context.Context, name, ownerID, plan string) (*domain.Organization, error) {
+	return r.CreateWithQuerier(ctx, r.db, name, ownerID, plan)
+}
+
+// CreateWithQuerier inserts a new organization using the supplied Querier
+// (typically a transaction) so the caller can wrap multiple operations atomically.
+func (r *OrganizationRepo) CreateWithQuerier(ctx context.Context, q db.Querier, name, ownerID, plan string) (*domain.Organization, error) {
 	id := domain.NewID()
-	row := r.db.QueryRow(ctx,
+	row := q.QueryRow(ctx,
 		`INSERT INTO organizations (id, name, owner_id, plan, created_at)
 		VALUES ($1, $2, $3, $4, NOW())
 		RETURNING id, name, owner_id, plan, created_at`,
@@ -83,8 +92,14 @@ func (r *OrganizationRepo) Delete(ctx context.Context, id string) error {
 }
 
 func (r *OrganizationRepo) AddMember(ctx context.Context, orgID, userID, role string) (*domain.OrgMember, error) {
+	return r.AddMemberWithQuerier(ctx, r.db, orgID, userID, role)
+}
+
+// AddMemberWithQuerier inserts a member using the supplied Querier
+// (typically a transaction) so the caller can wrap multiple operations atomically.
+func (r *OrganizationRepo) AddMemberWithQuerier(ctx context.Context, q db.Querier, orgID, userID, role string) (*domain.OrgMember, error) {
 	id := domain.NewID()
-	row := r.db.QueryRow(ctx,
+	row := q.QueryRow(ctx,
 		`INSERT INTO org_members (id, org_id, user_id, role, joined_at)
 		VALUES ($1, $2, $3, $4, NOW())
 		RETURNING id, org_id, user_id, role, joined_at`,

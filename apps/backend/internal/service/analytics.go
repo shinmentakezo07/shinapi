@@ -99,10 +99,10 @@ func (s *AnalyticsService) PlatformStats(ctx context.Context) (map[string]interf
 	}
 
 	return map[string]interface{}{
-		"users":    map[string]int{"total": userCount},
-		"apiKeys":  map[string]int{"total": keyCount},
-		"logs":     map[string]int{"total": logCount, "success": successCount, "error": errorCount},
-		"credits":  map[string]int64{"totalBalance": balance, "totalPurchased": purchased, "totalSpent": spent},
+		"users":          map[string]int{"total": userCount},
+		"apiKeys":        map[string]int{"total": keyCount},
+		"logs":           map[string]int{"total": logCount, "success": successCount, "error": errorCount},
+		"credits":        map[string]int64{"totalBalance": balance, "totalPurchased": purchased, "totalSpent": spent},
 		"recentActivity": recent,
 	}, nil
 }

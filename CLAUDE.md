@@ -94,7 +94,7 @@ docker-compose --profile mongo up -d  # Start Postgres + Mongo profile
 
 ### Frontend architecture
 
-- **Next.js 16 canary is NOT your training data.** Read `node_modules/next/dist/docs/` before writing code. `"use cache"` replaces old `revalidate`/`dynamic` — implicit caching is gone. `fetch()` is no longer cached by default.
+- **Next.js 16 canary is NOT your training data.** Breaking changes from v14/15 — APIs, conventions, and file structure differ. Read `node_modules/next/dist/docs/` before writing any code and heed deprecation notices. `"use cache"` replaces old `revalidate`/`dynamic` — implicit caching is gone. `fetch()` is no longer cached by default.
 - **App Router routes**: `app/dashboard/` (protected), `app/playground/`, `app/pricing/`, `app/models/`, `app/gateway/`, `app/admin/`, `app/login/`, `app/signup/`, `app/docs/`, `app/forgot-password/`. API routes in `app/api/*` proxy to Go backend through `lib/api/proxy.ts`.
 - **Auth**: NextAuth v5 in `auth.ts`/`auth.config.ts`. JWT HS256 secrets must match the backend. OAuth: GitHub + Google. Fallback: `AUTH_SECRET || NEXTAUTH_SECRET`.
 - **Proxy middleware** (`proxy.ts`): redirects unauthenticated `/dashboard/*` to login, authenticated `/login`/`/signup` to dashboard.
@@ -102,6 +102,7 @@ docker-compose --profile mongo up -d  # Start Postgres + Mongo profile
 - **Data fetching**: `lib/api/hooks.ts` wraps the SDK with React Query. Prefer the SDK and hooks layer over direct `fetch()` from UI components.
 - **Drizzle** schema in `db/schema.ts`. Uses `@neondatabase/serverless` against both cloud Neon and local Postgres.
 - **`next.config.ts` has `typescript: { ignoreBuildErrors: true }`** — `next build` will NOT catch type errors. Use `tsc --noEmit` or the LSP for type checking.
+- **Admin panel** (`app/admin/`) uses a separate auth flow from the main NextAuth dashboard. The first-time admin bootstrap is handled by `internal/handler/setup.go` (exposes `GET /api/setup/status` and `POST /api/setup/bootstrap` when no admin exists).
 - **Styling**: Tailwind CSS v4 — CSS-first config (`globals.css @theme`), NOT `tailwind.config.ts`. Uses `cva` + `tailwind-merge` for variants.
 - **Charts**: Recharts. **Animations**: Framer Motion (components) + GSAP (scroll-triggered).
 - **Frontend API layer** (`lib/api/`): `sdk.ts` (~1700 lines, typed client), `admin-sdk.ts` (admin endpoints), `hooks.ts` (~800 lines, React Query wrappers), `errors.ts`, `proxy.ts`, `types.ts`, `key-auth.ts`, `rate-limit.ts`, `require-auth.ts`.
@@ -174,7 +175,7 @@ docker-compose --profile mongo up -d  # Start Postgres + Mongo profile
 ```
 
 - **No `as any` or `@ts-ignore`** in TypeScript — enforced at review
-- **No mock data** in dashboard components — must use `getSDK()`. Enforced by `tests/wiring-verification.test.ts` and `scripts/smoke-test.sh`
+- **No mock data** in dashboard components — must use `getSDK()`. Enforced by `tests/wiring-verification.test.ts` and `scripts/smoke-test.sh`.
 - **Zod v4** — breaking changes from v3. Do not use v3 patterns
 - **Tailwind CSS v4** — PostCSS plugin `@tailwindcss/postcss`, not v3 CLI. Config is CSS-first (`globals.css @theme`), NOT `tailwind.config.ts`
 - **Go 1.25** — features may differ from training data (`iter.Seq`, `unique`, `slog` improvements). Run `go vet ./...` before committing
@@ -247,6 +248,7 @@ bash scripts/smoke-test.sh  # Wiring verification after significant changes
 - **`opencode.json`** configures the project to use its own Yapapa instance as the LLM provider.
 - **Package overrides** in root `package.json`: dompurify, esbuild, postcss, uuid — pinned across all workspaces.
 - **Frontend dual DB driver**: Uses `@neondatabase/serverless` for cloud Neon databases, `pg` for local Postgres. Check `DATABASE_URL` for `neon.tech` to determine which driver is active.
+- **Docker entrypoint** is `start.sh` with supervisord. In production, the backend binary is `/app/backend/server` and the frontend runs `apps/web/server.js` in standalone `output: 'standalone'` mode.
 - **API Sandbox Mode**: Send `X-Sandbox: true` header on `/v1/chat/completions` to disable quota, cost tracking, and logging. Useful for testing — never ship with it enabled.
 
 ## Files Worth Checking Before Non-Trivial Changes

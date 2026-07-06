@@ -17,9 +17,9 @@ import (
 // allowedTables whitelists table names for paginated queries to prevent SQL injection.
 var allowedTables = map[string]bool{
 	"suspicious_activities": true,
-	"ip_access_logs":       true,
-	"users u":              true,
-	"users":                true,
+	"ip_access_logs":        true,
+	"users u":               true,
+	"users":                 true,
 }
 
 // validIdentifier validates that a string is a safe SQL identifier or function call (letters, digits, underscores, dots, spaces, parens, quotes for COALESCE/etc).
@@ -49,22 +49,32 @@ func (r *AdminSecurityRepo) ListIPEntries(ctx context.Context, action string) ([
 	} else {
 		rows, err = r.db.Query(ctx, q)
 	}
-	if err != nil { return nil, fmt.Errorf("list ips: %w", err) }
+	if err != nil {
+		return nil, fmt.Errorf("list ips: %w", err)
+	}
 	defer rows.Close()
 	var entries []domain.IPList
 	for rows.Next() {
 		var e domain.IPList
-		if err := rows.Scan(&e.ID, &e.IPOrCIDR, &e.Action, &e.Scope, &e.ScopeID, &e.Reason, &e.ExpiresAt, &e.CreatedAt); err != nil { return nil, fmt.Errorf("scan ip: %w", err) }
+		if err := rows.Scan(&e.ID, &e.IPOrCIDR, &e.Action, &e.Scope, &e.ScopeID, &e.Reason, &e.ExpiresAt, &e.CreatedAt); err != nil {
+			return nil, fmt.Errorf("scan ip: %w", err)
+		}
 		entries = append(entries, e)
 	}
-	if err := rows.Err(); err != nil { return nil, fmt.Errorf("iterate ip rows: %w", err) }
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate ip rows: %w", err)
+	}
 	return entries, nil
 }
 
 func (r *AdminSecurityRepo) RemoveIPEntry(ctx context.Context, id string) error {
 	tag, err := r.db.Exec(ctx, `DELETE FROM ip_lists WHERE id=$1`, id)
-	if err != nil { return fmt.Errorf("remove ip: %w", err) }
-	if tag.RowsAffected() == 0 { return fmt.Errorf("ip not found: %s", id) }
+	if err != nil {
+		return fmt.Errorf("remove ip: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("ip not found: %s", id)
+	}
 	return nil
 }
 
@@ -106,42 +116,71 @@ func validateColumns(cols string) error {
 	return nil
 }
 
-func paginatedQuery(selectCols, from, where string, n int) (string, int) {
+func paginatedQuery(selectCols, from, where string, n int) (string, int, error) {
 	if err := validateTableName(from); err != nil {
-		panic(err)
+		return "", 0, err
 	}
 	if err := validateColumns(selectCols); err != nil {
-		panic(err)
+		return "", 0, err
 	}
 	q := fmt.Sprintf("SELECT %s FROM %s %s ORDER BY created_at DESC LIMIT $%d OFFSET $%d", selectCols, from, where, n, n+1)
-	return q, n + 2
+	return q, n + 2, nil
 }
 
-func countQuery(from, where string) string {
+func countQuery(from, where string) (string, error) {
 	if err := validateTableName(from); err != nil {
-		panic(err)
+		return "", err
 	}
-	return fmt.Sprintf("SELECT COUNT(*) FROM %s %s", from, where)
+	return fmt.Sprintf("SELECT COUNT(*) FROM %s %s", from, where), nil
 }
 
 func (r *AdminSecurityRepo) ListSuspicious(ctx context.Context, f domain.SuspiciousFilter) ([]domain.SuspiciousActivity, int, error) {
 	offset := (f.Page - 1) * f.Limit
-	if offset < 0 { offset = 0 }
-	w := "WHERE 1=1"; args := []interface{}{}; n := 1
-	if f.Category != "" { w += fmt.Sprintf(" AND category=$%d", n); args = append(args, f.Category); n++ }
-	if f.Severity != "" { w += fmt.Sprintf(" AND severity=$%d", n); args = append(args, f.Severity); n++ }
-	if f.Reviewed != nil { w += fmt.Sprintf(" AND reviewed=$%d", n); args = append(args, *f.Reviewed); n++ }
+	if offset < 0 {
+		offset = 0
+	}
+	w := "WHERE 1=1"
+	args := []interface{}{}
+	n := 1
+	if f.Category != "" {
+		w += fmt.Sprintf(" AND category=$%d", n)
+		args = append(args, f.Category)
+		n++
+	}
+	if f.Severity != "" {
+		w += fmt.Sprintf(" AND severity=$%d", n)
+		args = append(args, f.Severity)
+		n++
+	}
+	if f.Reviewed != nil {
+		w += fmt.Sprintf(" AND reviewed=$%d", n)
+		args = append(args, *f.Reviewed)
+		n++
+	}
+	cq, err := countQuery("suspicious_activities", w)
+	if err != nil {
+		return nil, 0, fmt.Errorf("count query: %w", err)
+	}
 	var total int
-	r.db.QueryRow(ctx, countQuery("suspicious_activities", w), args...).Scan(&total)
+	if err := r.db.QueryRow(ctx, cq, args...).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("count suspicious: %w", err)
+	}
 	cols := "id,category,severity,COALESCE(user_id,''),COALESCE(api_key_id,''),COALESCE(ip,''),details,auto_blocked,reviewed,resolved,created_at"
-	q, _ := paginatedQuery(cols, "suspicious_activities", w, n)
+	q, _, err := paginatedQuery(cols, "suspicious_activities", w, n)
+	if err != nil {
+		return nil, 0, fmt.Errorf("paginated query: %w", err)
+	}
 	rows, err := r.db.Query(ctx, q, append(args, f.Limit, offset)...)
-	if err != nil { return nil, 0, fmt.Errorf("list suspicious: %w", err) }
+	if err != nil {
+		return nil, 0, fmt.Errorf("list suspicious: %w", err)
+	}
 	defer rows.Close()
 	var acts []domain.SuspiciousActivity
 	for rows.Next() {
 		var a domain.SuspiciousActivity
-		if err := rows.Scan(&a.ID, &a.Category, &a.Severity, &a.UserID, &a.APIKeyID, &a.IP, &a.Details, &a.AutoBlocked, &a.Reviewed, &a.Resolved, &a.CreatedAt); err != nil { return nil, 0, fmt.Errorf("scan: %w", err) }
+		if err := rows.Scan(&a.ID, &a.Category, &a.Severity, &a.UserID, &a.APIKeyID, &a.IP, &a.Details, &a.AutoBlocked, &a.Reviewed, &a.Resolved, &a.CreatedAt); err != nil {
+			return nil, 0, fmt.Errorf("scan: %w", err)
+		}
 		acts = append(acts, a)
 	}
 	return acts, total, nil
@@ -166,29 +205,62 @@ func (r *AdminSecurityRepo) StartImpersonation(ctx context.Context, adminID, use
 
 func (r *AdminSecurityRepo) EndImpersonation(ctx context.Context, id string) error {
 	tag, err := r.db.Exec(ctx, `UPDATE admin_impersonations SET ended_at=NOW() WHERE id=$1 AND ended_at IS NULL`, id)
-	if err != nil { return fmt.Errorf("end impersonation: %w", err) }
-	if tag.RowsAffected() == 0 { return fmt.Errorf("impersonation not found: %s", id) }
+	if err != nil {
+		return fmt.Errorf("end impersonation: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("impersonation not found: %s", id)
+	}
 	return nil
 }
 
 func (r *AdminSecurityRepo) ListIPAccessLogs(ctx context.Context, f domain.IPAccessLogFilter) ([]domain.IPAccessLog, int, error) {
 	offset := (f.Page - 1) * f.Limit
-	if offset < 0 { offset = 0 }
-	w := "WHERE 1=1"; args := []interface{}{}; n := 1
-	if f.IPAddress != "" { w += fmt.Sprintf(" AND ip_address=$%d", n); args = append(args, f.IPAddress); n++ }
-	if f.UserID != "" { w += fmt.Sprintf(" AND user_id=$%d", n); args = append(args, f.UserID); n++ }
-	if f.Blocked != nil { w += fmt.Sprintf(" AND blocked=$%d", n); args = append(args, *f.Blocked); n++ }
+	if offset < 0 {
+		offset = 0
+	}
+	w := "WHERE 1=1"
+	args := []interface{}{}
+	n := 1
+	if f.IPAddress != "" {
+		w += fmt.Sprintf(" AND ip_address=$%d", n)
+		args = append(args, f.IPAddress)
+		n++
+	}
+	if f.UserID != "" {
+		w += fmt.Sprintf(" AND user_id=$%d", n)
+		args = append(args, f.UserID)
+		n++
+	}
+	if f.Blocked != nil {
+		w += fmt.Sprintf(" AND blocked=$%d", n)
+		args = append(args, *f.Blocked)
+		n++
+	}
+	cq, err := countQuery("ip_access_logs", w)
+	if err != nil {
+		return nil, 0, fmt.Errorf("count query: %w", err)
+	}
 	var total int
-	r.db.QueryRow(ctx, countQuery("ip_access_logs", w), args...).Scan(&total)
+	if err := r.db.QueryRow(ctx, cq, args...).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("count ip access: %w", err)
+	}
 	cols := "id,ip_address,COALESCE(user_id,''),COALESCE(api_key_id,''),method,path,COALESCE(user_agent,''),COALESCE(country,''),is_proxy,blocked,rate_limited,created_at"
-	q, _ := paginatedQuery(cols, "ip_access_logs", w, n)
+	q, _, err := paginatedQuery(cols, "ip_access_logs", w, n)
+	if err != nil {
+		return nil, 0, fmt.Errorf("paginated query: %w", err)
+	}
 	rows, err := r.db.Query(ctx, q, append(args, f.Limit, offset)...)
-	if err != nil { return nil, 0, fmt.Errorf("list ip access: %w", err) }
+	if err != nil {
+		return nil, 0, fmt.Errorf("list ip access: %w", err)
+	}
 	defer rows.Close()
 	var logs []domain.IPAccessLog
 	for rows.Next() {
 		var l domain.IPAccessLog
-		if err := rows.Scan(&l.ID, &l.IPAddress, &l.UserID, &l.APIKeyID, &l.Method, &l.Path, &l.UserAgent, &l.Country, &l.IsProxy, &l.Blocked, &l.RateLimited, &l.CreatedAt); err != nil { return nil, 0, fmt.Errorf("scan: %w", err) }
+		if err := rows.Scan(&l.ID, &l.IPAddress, &l.UserID, &l.APIKeyID, &l.Method, &l.Path, &l.UserAgent, &l.Country, &l.IsProxy, &l.Blocked, &l.RateLimited, &l.CreatedAt); err != nil {
+			return nil, 0, fmt.Errorf("scan: %w", err)
+		}
 		logs = append(logs, l)
 	}
 	return logs, total, nil

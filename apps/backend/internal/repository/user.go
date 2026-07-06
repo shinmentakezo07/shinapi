@@ -33,7 +33,9 @@ func (r *UserRepo) ByEmail(ctx context.Context, email string) (*domain.User, err
 	row := r.db.QueryRow(ctx,
 		`SELECT id, name, email, password, role, created_at FROM users WHERE email = $1`, email)
 	if err := row.Scan(&u.ID, &u.Name, &u.Email, &u.Password, &u.Role, &u.CreatedAt); err != nil {
-		if err == pgx.ErrNoRows { return nil, nil }
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
 		return nil, err
 	}
 	if r.cache != nil {
@@ -52,7 +54,9 @@ func (r *UserRepo) ByID(ctx context.Context, id string) (*domain.User, error) {
 	row := r.db.QueryRow(ctx,
 		`SELECT id, name, email, password, role, created_at FROM users WHERE id = $1`, id)
 	if err := row.Scan(&u.ID, &u.Name, &u.Email, &u.Password, &u.Role, &u.CreatedAt); err != nil {
-		if err == pgx.ErrNoRows { return nil, nil }
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
 		return nil, err
 	}
 	if r.cache != nil {
@@ -114,7 +118,9 @@ func (r *UserRepo) List(ctx context.Context, page, limit int) ([]domain.User, in
 	offset := (page - 1) * limit
 	rows, err := r.db.Query(ctx,
 		`SELECT id, name, email, password, role, created_at FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2`, limit, offset)
-	if err != nil { return nil, 0, err }
+	if err != nil {
+		return nil, 0, err
+	}
 	defer rows.Close()
 
 	var users []domain.User

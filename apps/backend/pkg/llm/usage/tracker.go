@@ -34,11 +34,11 @@ type Record struct {
 
 // Pricing represents model pricing.
 type Pricing struct {
-	Model                   string
-	Provider                string
-	InputCostPerMillion     int64 // cents per 1M input tokens
-	OutputCostPerMillion    int64 // cents per 1M output tokens
-	ThinkingCostPerMillion  int64 // cents per 1M thinking tokens
+	Model                  string
+	Provider               string
+	InputCostPerMillion    int64 // cents per 1M input tokens
+	OutputCostPerMillion   int64 // cents per 1M output tokens
+	ThinkingCostPerMillion int64 // cents per 1M thinking tokens
 }
 
 // Store is the interface for usage record persistence.
@@ -64,33 +64,33 @@ type PricingStore interface {
 
 // Aggregate represents aggregated usage metrics.
 type Aggregate struct {
-	TotalRequests    int64
-	TotalTokens      int64
-	TotalInputTokens int64
-	TotalOutputTokens int64
+	TotalRequests       int64
+	TotalTokens         int64
+	TotalInputTokens    int64
+	TotalOutputTokens   int64
 	TotalThinkingTokens int64
-	TotalCostCents   int64
-	AvgLatencyMs     float64
-	ErrorCount       int64
-	UniqueModels     int
-	UniqueUsers      int
+	TotalCostCents      int64
+	AvgLatencyMs        float64
+	ErrorCount          int64
+	UniqueModels        int
+	UniqueUsers         int
 }
 
 // Tracker tracks usage across requests.
 type Tracker struct {
-	store        Store
-	pricingStore PricingStore
-	mu           sync.RWMutex
-	cache        map[string]*Pricing
+	store          Store
+	pricingStore   PricingStore
+	mu             sync.RWMutex
+	cache          map[string]*Pricing
 	defaultPricing map[string]*Pricing
 }
 
 // NewTracker creates a new usage tracker.
 func NewTracker(store Store, pricingStore PricingStore) *Tracker {
 	t := &Tracker{
-		store:        store,
-		pricingStore: pricingStore,
-		cache:        make(map[string]*Pricing),
+		store:          store,
+		pricingStore:   pricingStore,
+		cache:          make(map[string]*Pricing),
 		defaultPricing: defaultPricingMap(),
 	}
 	return t
@@ -230,21 +230,21 @@ func pricingKey(model, provider string) string {
 
 func defaultPricingMap() map[string]*Pricing {
 	return map[string]*Pricing{
-		"gpt-4o":              {Model: "gpt-4o", InputCostPerMillion: 250, OutputCostPerMillion: 1000},
-		"gpt-4o-mini":         {Model: "gpt-4o-mini", InputCostPerMillion: 15, OutputCostPerMillion: 60},
-		"gpt-4-turbo":         {Model: "gpt-4-turbo", InputCostPerMillion: 1000, OutputCostPerMillion: 3000},
-		"gpt-4":               {Model: "gpt-4", InputCostPerMillion: 3000, OutputCostPerMillion: 6000},
-		"gpt-3.5-turbo":       {Model: "gpt-3.5-turbo", InputCostPerMillion: 50, OutputCostPerMillion: 150},
-		"claude-3.5-sonnet":   {Model: "claude-3.5-sonnet", InputCostPerMillion: 300, OutputCostPerMillion: 1500},
-		"claude-3.5-haiku":    {Model: "claude-3.5-haiku", InputCostPerMillion: 100, OutputCostPerMillion: 500},
-		"claude-3-opus":       {Model: "claude-3-opus", InputCostPerMillion: 1500, OutputCostPerMillion: 7500},
-		"claude-3-sonnet":     {Model: "claude-3-sonnet", InputCostPerMillion: 300, OutputCostPerMillion: 1500},
-		"claude-3-haiku":      {Model: "claude-3-haiku", InputCostPerMillion: 25, OutputCostPerMillion: 125},
-		"gemini-2.0-flash":    {Model: "gemini-2.0-flash", InputCostPerMillion: 10, OutputCostPerMillion: 40},
-		"gemini-1.5-pro":      {Model: "gemini-1.5-pro", InputCostPerMillion: 125, OutputCostPerMillion: 500},
-		"gemini-1.5-flash":    {Model: "gemini-1.5-flash", InputCostPerMillion: 7, OutputCostPerMillion: 30},
-		"llama-3.1-70b":       {Model: "llama-3.1-70b", InputCostPerMillion: 80, OutputCostPerMillion: 80},
-		"llama-3.1-8b":        {Model: "llama-3.1-8b", InputCostPerMillion: 20, OutputCostPerMillion: 20},
-		"mixtral-8x7b":        {Model: "mixtral-8x7b", InputCostPerMillion: 50, OutputCostPerMillion: 50},
+		"gpt-4o":            {Model: "gpt-4o", InputCostPerMillion: 250, OutputCostPerMillion: 1000},
+		"gpt-4o-mini":       {Model: "gpt-4o-mini", InputCostPerMillion: 15, OutputCostPerMillion: 60},
+		"gpt-4-turbo":       {Model: "gpt-4-turbo", InputCostPerMillion: 1000, OutputCostPerMillion: 3000},
+		"gpt-4":             {Model: "gpt-4", InputCostPerMillion: 3000, OutputCostPerMillion: 6000},
+		"gpt-3.5-turbo":     {Model: "gpt-3.5-turbo", InputCostPerMillion: 50, OutputCostPerMillion: 150},
+		"claude-3.5-sonnet": {Model: "claude-3.5-sonnet", InputCostPerMillion: 300, OutputCostPerMillion: 1500},
+		"claude-3.5-haiku":  {Model: "claude-3.5-haiku", InputCostPerMillion: 100, OutputCostPerMillion: 500},
+		"claude-3-opus":     {Model: "claude-3-opus", InputCostPerMillion: 1500, OutputCostPerMillion: 7500},
+		"claude-3-sonnet":   {Model: "claude-3-sonnet", InputCostPerMillion: 300, OutputCostPerMillion: 1500},
+		"claude-3-haiku":    {Model: "claude-3-haiku", InputCostPerMillion: 25, OutputCostPerMillion: 125},
+		"gemini-2.0-flash":  {Model: "gemini-2.0-flash", InputCostPerMillion: 10, OutputCostPerMillion: 40},
+		"gemini-1.5-pro":    {Model: "gemini-1.5-pro", InputCostPerMillion: 125, OutputCostPerMillion: 500},
+		"gemini-1.5-flash":  {Model: "gemini-1.5-flash", InputCostPerMillion: 7, OutputCostPerMillion: 30},
+		"llama-3.1-70b":     {Model: "llama-3.1-70b", InputCostPerMillion: 80, OutputCostPerMillion: 80},
+		"llama-3.1-8b":      {Model: "llama-3.1-8b", InputCostPerMillion: 20, OutputCostPerMillion: 20},
+		"mixtral-8x7b":      {Model: "mixtral-8x7b", InputCostPerMillion: 50, OutputCostPerMillion: 50},
 	}
 }

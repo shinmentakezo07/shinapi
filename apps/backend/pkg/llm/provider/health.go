@@ -42,14 +42,14 @@ type ProviderHealth struct {
 
 // HealthChecker periodically checks provider health.
 type HealthChecker struct {
-	mu        sync.RWMutex
-	statuses  map[string]*ProviderHealth
-	checkers  map[string]HealthCheckFunc
-	interval  time.Duration
-	timeout   time.Duration
-	ctx       context.Context
-	stopCh    chan struct{}
-	wg        sync.WaitGroup
+	mu       sync.RWMutex
+	statuses map[string]*ProviderHealth
+	checkers map[string]HealthCheckFunc
+	interval time.Duration
+	timeout  time.Duration
+	ctx      context.Context
+	stopCh   chan struct{}
+	wg       sync.WaitGroup
 }
 
 // HealthCheckFunc checks if a provider is healthy.

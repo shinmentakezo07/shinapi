@@ -63,7 +63,7 @@ func TestChat_ClosedState(t *testing.T) {
 	cb := New(provider, DefaultConfig())
 
 	req := &llm.ChatRequest{
-		Model: "gpt-4o",
+		Model:    "gpt-4o",
 		Messages: []llm.Message{{Role: llm.RoleUser, Content: "hello"}},
 	}
 
@@ -84,7 +84,7 @@ func TestChatStream_ClosedState(t *testing.T) {
 	cb := New(provider, DefaultConfig())
 
 	req := &llm.ChatRequest{
-		Model: "gpt-4o",
+		Model:    "gpt-4o",
 		Messages: []llm.Message{{Role: llm.RoleUser, Content: "hello"}},
 	}
 
@@ -116,7 +116,7 @@ func TestCircuitBreaker_OpenAfterFailures(t *testing.T) {
 	cb := New(provider, cfg)
 
 	req := &llm.ChatRequest{
-		Model: "gpt-4o",
+		Model:    "gpt-4o",
 		Messages: []llm.Message{{Role: llm.RoleUser, Content: "test"}},
 	}
 
@@ -181,15 +181,15 @@ type counterFailProvider struct {
 	maxFails *int
 }
 
-func (f *counterFailProvider) Name() string                          { return "counter-fail" }
-func (f *counterFailProvider) SupportsThinking() bool                { return false }
+func (f *counterFailProvider) Name() string           { return "counter-fail" }
+func (f *counterFailProvider) SupportsThinking() bool { return false }
 func (f *counterFailProvider) Chat(ctx context.Context, req *llm.ChatRequest) (*llm.ChatResponse, error) {
 	if f.maxFails != nil && *f.maxFails > 0 {
 		*f.maxFails--
 		return nil, fmt.Errorf("provider error")
 	}
 	return &llm.ChatResponse{
-		ID:      "ok", Object: "chat.completion", Created: 0, Model: req.Model,
+		ID: "ok", Object: "chat.completion", Created: 0, Model: req.Model,
 		Choices: []llm.Choice{{Index: 0, Message: llm.Message{Role: llm.RoleAssistant, Content: "ok"}, FinishReason: llm.FinishReasonStop}},
 	}, nil
 }
@@ -213,7 +213,7 @@ func TestCircuitBreaker_HalfOpenLimitsCalls(t *testing.T) {
 	cb := New(provider, cfg)
 
 	req := &llm.ChatRequest{
-		Model: "gpt-4o",
+		Model:    "gpt-4o",
 		Messages: []llm.Message{{Role: llm.RoleUser, Content: "test"}},
 	}
 
@@ -244,7 +244,7 @@ func TestCircuitBreaker_ClosesOnSuccess(t *testing.T) {
 	cb := New(provider, cfg)
 
 	req := &llm.ChatRequest{
-		Model: "gpt-4o",
+		Model:    "gpt-4o",
 		Messages: []llm.Message{{Role: llm.RoleUser, Content: "test"}},
 	}
 
@@ -275,7 +275,7 @@ func TestCircuitBreaker_ResetsFailuresOnSuccess(t *testing.T) {
 	cb := New(provider, cfg)
 
 	req := &llm.ChatRequest{
-		Model: "gpt-4o",
+		Model:    "gpt-4o",
 		Messages: []llm.Message{{Role: llm.RoleUser, Content: "test"}},
 	}
 
@@ -311,8 +311,8 @@ func TestListModels(t *testing.T) {
 
 type failingProvider struct{}
 
-func (f *failingProvider) Name() string                          { return "failing" }
-func (f *failingProvider) SupportsThinking() bool                { return false }
+func (f *failingProvider) Name() string           { return "failing" }
+func (f *failingProvider) SupportsThinking() bool { return false }
 func (f *failingProvider) Chat(ctx context.Context, req *llm.ChatRequest) (*llm.ChatResponse, error) {
 	return nil, fmt.Errorf("provider error")
 }

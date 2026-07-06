@@ -11,9 +11,9 @@ import (
 
 // Result holds moderation analysis for a piece of content.
 type Result struct {
-	Flagged   bool     `json:"flagged"`
+	Flagged    bool     `json:"flagged"`
 	Categories []string `json:"categories"`
-	Score     float64  `json:"score"`
+	Score      float64  `json:"score"`
 }
 
 // Moderator analyzes content for policy violations.
@@ -105,9 +105,9 @@ type LocalModerator struct {
 func NewLocalModerator() *LocalModerator {
 	return &LocalModerator{
 		piiPatterns: []*regexp.Regexp{
-			regexp.MustCompile(`\b\d{3}-\d{2}-\d{4}\b`),                    // SSN
+			regexp.MustCompile(`\b\d{3}-\d{2}-\d{4}\b`),                              // SSN
 			regexp.MustCompile(`\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b`), // Email
-			regexp.MustCompile(`\b(?:\d[ -]*?){13,16}\b`),                  // Credit card-ish
+			regexp.MustCompile(`\b(?:\d[ -]*?){13,16}\b`),                            // Credit card-ish
 		},
 	}
 }

@@ -16,7 +16,7 @@ import (
 
 // StripeWebhook handles Stripe webhook events.
 func (h *Handler) StripeWebhook(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
 	if err != nil {
 		response.Error(w, 400, "Failed to read body")
 		return

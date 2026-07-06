@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
 	"dra-platform/backend/internal/domain"
@@ -30,6 +31,7 @@ type WebhookService struct {
 	sem        chan struct{}
 	ctx        context.Context
 	cancel     context.CancelFunc
+	wg         sync.WaitGroup
 }
 
 func NewWebhookService(repo *repository.WebhookRepo) *WebhookService {
@@ -50,6 +52,17 @@ func (s *WebhookService) Start(ctx context.Context) {
 
 func (s *WebhookService) Stop() {
 	s.cancel()
+	// Wait for in-flight dispatch goroutines to finish with a timeout.
+	done := make(chan struct{})
+	go func() {
+		s.wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(30 * time.Second):
+		logger.Warn("webhook_stop_timeout", "message", "some goroutines did not finish in 30s")
+	}
 }
 
 func (s *WebhookService) Create(ctx context.Context, userID string, req domain.CreateWebhookRequest) (*domain.Webhook, *domain.AppError) {
@@ -149,8 +162,10 @@ func (s *WebhookService) Dispatch(ctx context.Context, userID string, event webh
 			Headers:  w.Headers,
 			RetryMax: webhookMaxAttempts,
 		}
+		s.wg.Add(1)
 		go func(webhookID string, c webhook.Config, e webhook.Event) {
 			defer func() {
+				s.wg.Done()
 				if r := recover(); r != nil {
 					logger.Error("webhook_dispatch_panic", "webhook_id", webhookID, "recover", r)
 				}

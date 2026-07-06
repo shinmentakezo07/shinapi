@@ -16,10 +16,10 @@ type Action string
 
 const (
 	// Key actions
-	ActionKeyCreated    Action = "api_key.created"
-	ActionKeyRotated    Action = "api_key.rotated"
-	ActionKeyRevoked    Action = "api_key.revoked"
-	ActionKeyUsed       Action = "api_key.used"
+	ActionKeyCreated     Action = "api_key.created"
+	ActionKeyRotated     Action = "api_key.rotated"
+	ActionKeyRevoked     Action = "api_key.revoked"
+	ActionKeyUsed        Action = "api_key.used"
 	ActionKeyDeactivated Action = "api_key.deactivated"
 
 	// Model actions
@@ -27,9 +27,9 @@ const (
 	ActionModelDenied   Action = "model.denied"
 
 	// Budget actions
-	ActionBudgetExceeded  Action = "budget.exceeded"
-	ActionBudgetAlert     Action = "budget.alert"
-	ActionBudgetReset     Action = "budget.reset"
+	ActionBudgetExceeded Action = "budget.exceeded"
+	ActionBudgetAlert    Action = "budget.alert"
+	ActionBudgetReset    Action = "budget.reset"
 
 	// Security actions
 	ActionInjectionBlocked Action = "security.injection_blocked"
@@ -38,21 +38,21 @@ const (
 	ActionSecretDetected   Action = "security.secret_detected"
 
 	// Credential actions
-	ActionCredentialCreated  Action = "credential.created"
-	ActionCredentialRotated  Action = "credential.rotated"
-	ActionCredentialDeleted  Action = "credential.deleted"
-	ActionCredentialFailed   Action = "credential.failed"
+	ActionCredentialCreated Action = "credential.created"
+	ActionCredentialRotated Action = "credential.rotated"
+	ActionCredentialDeleted Action = "credential.deleted"
+	ActionCredentialFailed  Action = "credential.failed"
 
 	// Admin actions
-	ActionAdminLogin      Action = "admin.login"
-	ActionAdminLogout     Action = "admin.logout"
+	ActionAdminLogin        Action = "admin.login"
+	ActionAdminLogout       Action = "admin.logout"
 	ActionAdminConfigChange Action = "admin.config_change"
-	ActionAdminUserAction  Action = "admin.user_action"
+	ActionAdminUserAction   Action = "admin.user_action"
 
 	// Team actions
-	ActionTeamCreated  Action = "team.created"
-	ActionTeamUpdated  Action = "team.updated"
-	ActionTeamDeleted  Action = "team.deleted"
+	ActionTeamCreated       Action = "team.created"
+	ActionTeamUpdated       Action = "team.updated"
+	ActionTeamDeleted       Action = "team.deleted"
 	ActionTeamMemberAdded   Action = "team.member_added"
 	ActionTeamMemberRemoved Action = "team.member_removed"
 
@@ -118,9 +118,9 @@ type Logger struct {
 // NewLogger creates a new audit logger.
 func NewLogger(store Store) *Logger {
 	l := &Logger{
-		store:   store,
-		buffer:  1000,
-		stopCh:  make(chan struct{}),
+		store:  store,
+		buffer: 1000,
+		stopCh: make(chan struct{}),
 	}
 	return l
 }
@@ -225,9 +225,9 @@ func (l *Logger) LogBudgetEvent(ctx context.Context, action Action, targetType, 
 		ResourceID:   targetID,
 		Severity:     SeverityWarning,
 		Details: map[string]any{
-			"target_type":   targetType,
-			"used_cents":    usedCents,
-			"limit_cents":   limitCents,
+			"target_type": targetType,
+			"used_cents":  usedCents,
+			"limit_cents": limitCents,
 		},
 	})
 }

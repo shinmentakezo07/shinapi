@@ -5,6 +5,7 @@ import { Lock, Shield, Activity, Globe, Key, FileCode } from "lucide-react";
 import { Section } from "@/components/docs/Section";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 import { TipBox } from "@/components/docs/TipBox";
+import { DocsCard, DocsIconTile, DocsSubhead } from "@/components/docs/DocsCard";
 
 export default function SecurityPage() {
   return (
@@ -23,7 +24,7 @@ export default function SecurityPage() {
           storage — the raw key is never persisted.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-6">
           {[
             {
               title: "Encryption in Transit",
@@ -46,26 +47,22 @@ export default function SecurityPage() {
               icon: Globe,
             },
           ].map((item) => (
-            <div
-              key={item.title}
-              className="flex items-start gap-3 p-4 rounded-xl bg-white/[0.02] border border-white/[0.07]"
-            >
-              <item.icon className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
-              <div>
-                <h3 className="text-white font-semibold text-sm">
-                  {item.title}
-                </h3>
-                <p className="text-xs text-white/40 mt-0.5">{item.desc}</p>
+            <DocsCard key={item.title} interactive={false} className="p-5">
+              <div className="relative flex items-start gap-3.5">
+                <DocsIconTile icon={item.icon} size="sm" />
+                <div>
+                  <h3 className="text-white font-semibold text-sm">
+                    {item.title}
+                  </h3>
+                  <p className="text-xs text-white/40 mt-1 leading-[1.6]">{item.desc}</p>
+                </div>
               </div>
-            </div>
+            </DocsCard>
           ))}
         </div>
 
         <div className="mt-10">
-          <h3 className="text-white/95 font-semibold text-sm mb-4 flex items-center gap-2.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60" />
-            API Key Hashing
-          </h3>
+          <DocsSubhead>API Key Hashing</DocsSubhead>
           <p className="text-sm text-white/50 mb-4">
             API keys are hashed using HMAC-SHA256 with a server-side pepper (
             <code className="px-1.5 py-0.5 rounded-md bg-white/[0.05] text-white/70 font-mono text-xs">
@@ -90,10 +87,7 @@ const storedHash = hashAPIKey(providedKey, AUTH_SECRET);`}
         </div>
 
         <div className="mt-10">
-          <h3 className="text-white/95 font-semibold text-sm mb-4 flex items-center gap-2.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60" />
-            JWT Authentication
-          </h3>
+          <DocsSubhead>JWT Authentication</DocsSubhead>
           <p className="text-sm text-white/50 mb-4">
             The platform uses HS256 JWTs for session-based authentication.
             Tokens include user ID, email, role, and an expiration timestamp.
@@ -136,10 +130,7 @@ const storedHash = hashAPIKey(providedKey, AUTH_SECRET);`}
         </div>
 
         <div className="mt-10">
-          <h3 className="text-white/95 font-semibold text-sm mb-4 flex items-center gap-2.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60" />
-            Security Headers
-          </h3>
+          <DocsSubhead>Security Headers</DocsSubhead>
           <p className="text-sm text-white/50 mb-4">
             The platform sets security headers on all responses to protect
             against common web vulnerabilities.
@@ -155,62 +146,67 @@ Permissions-Policy: camera=(), microphone=(), geolocation=()`}
         </div>
 
         <div className="mt-10">
-          <h3 className="text-white/95 font-semibold text-sm mb-4 flex items-center gap-2.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60" />
-            Additional Security Measures
-          </h3>
+          <DocsSubhead>Additional Security Measures</DocsSubhead>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="flex items-start gap-3 p-4 rounded-xl bg-white/[0.01] border border-white/[0.07]">
-              <FileCode className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
-              <div>
-                <h4 className="text-white font-semibold text-xs">
-                  Body Size Limits
-                </h4>
-                <p className="text-xs text-white/35 leading-relaxed">
-                  10MB limit on proxy endpoints, 1MB on API endpoints. Prevents
-                  oversized payload attacks.
-                </p>
+            <DocsCard interactive={false} className="p-4">
+              <div className="relative flex items-start gap-3">
+                <DocsIconTile icon={FileCode} size="sm" />
+                <div>
+                  <h4 className="text-white font-semibold text-xs">
+                    Body Size Limits
+                  </h4>
+                  <p className="text-xs text-white/35 leading-relaxed mt-1">
+                    10MB limit on proxy endpoints, 1MB on API endpoints. Prevents
+                    oversized payload attacks.
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-start gap-3 p-4 rounded-xl bg-white/[0.01] border border-white/[0.07]">
-              <Shield className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
-              <div>
-                <h4 className="text-white font-semibold text-xs">
-                  Webhook Signatures
-                </h4>
-                <p className="text-xs text-white/35 leading-relaxed">
-                  All webhook payloads include HMAC-SHA256 signatures via{" "}
-                  <code className="px-1 py-0.5 rounded bg-white/[0.04] text-white/[0.55] font-mono text-xs">
-                    X-Webhook-Signature
-                  </code>{" "}
-                  header for authenticity verification.
-                </p>
+            </DocsCard>
+            <DocsCard interactive={false} className="p-4">
+              <div className="relative flex items-start gap-3">
+                <DocsIconTile icon={Shield} size="sm" />
+                <div>
+                  <h4 className="text-white font-semibold text-xs">
+                    Webhook Signatures
+                  </h4>
+                  <p className="text-xs text-white/35 leading-relaxed mt-1">
+                    All webhook payloads include HMAC-SHA256 signatures via{" "}
+                    <code className="px-1 py-0.5 rounded bg-white/[0.04] text-white/[0.55] font-mono text-xs">
+                      X-Webhook-Signature
+                    </code>{" "}
+                    header for authenticity verification.
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-start gap-3 p-4 rounded-xl bg-white/[0.01] border border-white/[0.07]">
-              <Globe className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
-              <div>
-                <h4 className="text-white font-semibold text-xs">
-                  Token Blacklist
-                </h4>
-                <p className="text-xs text-white/35 leading-relaxed">
-                  JWT tokens can be blacklisted on logout, preventing reuse of
-                  expired-but-valid tokens.
-                </p>
+            </DocsCard>
+            <DocsCard interactive={false} className="p-4">
+              <div className="relative flex items-start gap-3">
+                <DocsIconTile icon={Globe} size="sm" />
+                <div>
+                  <h4 className="text-white font-semibold text-xs">
+                    Token Blacklist
+                  </h4>
+                  <p className="text-xs text-white/35 leading-relaxed mt-1">
+                    JWT tokens can be blacklisted on logout, preventing reuse of
+                    expired-but-valid tokens.
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-start gap-3 p-4 rounded-xl bg-white/[0.01] border border-white/[0.07]">
-              <Activity className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
-              <div>
-                <h4 className="text-white font-semibold text-xs">
-                  Audit Logging
-                </h4>
-                <p className="text-xs text-white/35 leading-relaxed">
-                  All admin actions are logged with user context for
-                  accountability and incident investigation.
-                </p>
+            </DocsCard>
+            <DocsCard interactive={false} className="p-4">
+              <div className="relative flex items-start gap-3">
+                <DocsIconTile icon={Activity} size="sm" />
+                <div>
+                  <h4 className="text-white font-semibold text-xs">
+                    Audit Logging
+                  </h4>
+                  <p className="text-xs text-white/35 leading-relaxed mt-1">
+                    All admin actions are logged with user context for
+                    accountability and incident investigation.
+                  </p>
+                </div>
               </div>
-            </div>
+            </DocsCard>
           </div>
         </div>
 

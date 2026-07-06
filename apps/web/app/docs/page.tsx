@@ -39,6 +39,12 @@ import {
 } from "lucide-react";
 import type { NavItem } from "@/components/docs/types";
 import { cn } from "@/lib/utils";
+import {
+  DocsCard,
+  DocsIconTile,
+  DocsTag,
+  DocsGrid,
+} from "@/components/docs/DocsCard";
 
 interface DocSection extends NavItem {
   desc: string;
@@ -72,6 +78,14 @@ const sections: DocSection[] = [
     href: "/docs/api-reference",
   },
   {
+    id: "sdk",
+    label: "SDK Reference",
+    icon: BookOpen,
+    desc: "TypeScript SDK, Go SDK, and React Query hooks.",
+    category: "Getting Started",
+    href: "/docs/sdk",
+  },
+  {
     id: "self-hosting",
     label: "Self-Hosting",
     icon: Globe,
@@ -86,6 +100,14 @@ const sections: DocSection[] = [
     desc: "SSE streaming and standard chat.",
     category: "Core Features",
     href: "/docs/chat",
+  },
+  {
+    id: "anthropic",
+    label: "Anthropic Messages",
+    icon: MessageSquare,
+    desc: "Full Anthropic Messages API compatibility.",
+    category: "Core Features",
+    href: "/docs/anthropic",
   },
   {
     id: "embeddings",
@@ -110,6 +132,22 @@ const sections: DocSection[] = [
     desc: "Reusable prompt templates.",
     category: "Core Features",
     href: "/docs/prompts",
+  },
+  {
+    id: "function-calling",
+    label: "Function Calling",
+    icon: Terminal,
+    desc: "Tool use and structured outputs.",
+    category: "Core Features",
+    href: "/docs/function-calling",
+  },
+  {
+    id: "gateway",
+    label: "LLM Gateway",
+    icon: Cpu,
+    desc: "10-stage pipeline, routing, and circuit breaker.",
+    category: "Platform",
+    href: "/docs/gateway",
   },
   {
     id: "batch",
@@ -184,9 +222,17 @@ const sections: DocSection[] = [
     href: "/docs/dashboard",
   },
   {
+    id: "admin",
+    label: "Admin API",
+    icon: Lock,
+    desc: "Platform management and RBAC.",
+    category: "Reference",
+    href: "/docs/admin",
+  },
+  {
     id: "security",
     label: "Security",
-    icon: Lock,
+    icon: Shield,
     desc: "Encryption, hashing, and CORS.",
     category: "Reference",
     href: "/docs/security",
@@ -372,60 +418,29 @@ function ParallaxCard({
 function SectionCard({ section, idx }: { section: DocSection; idx: number }) {
   return (
     <motion.div variants={fadeUp} custom={idx}>
-      <Link
-        href={section.href}
-        className={cn(
-          "group relative block p-5 rounded-2xl overflow-hidden",
-          "border border-white/[0.06] bg-gradient-to-br from-white/[0.02] via-white/[0.01] to-transparent",
-          "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]",
-          "hover:border-indigo-500/25 hover:from-indigo-500/[0.04] hover:to-transparent",
-          "hover:shadow-[0_8px_32px_-12px_rgba(99,102,241,0.2),inset_0_1px_0_0_rgba(255,255,255,0.06)]",
-          "transition-all duration-300 cursor-pointer",
-        )}
-      >
-        {/* Top accent line */}
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      <DocsCard interactive className="h-full">
+        <Link
+          href={section.href}
+          className="group relative block p-5 cursor-pointer h-full"
+        >
+          <div className="relative flex items-center gap-4">
+            <DocsIconTile icon={section.icon} size="lg" className="!w-11 !h-11" />
 
-        {/* Conic gradient hover orb */}
-        <div
-          className="absolute -top-12 -right-12 w-32 h-32 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
-          style={{
-            background:
-              "conic-gradient(from 220deg, rgba(99,102,241,0.18), transparent 30%, transparent 70%, rgba(99,102,241,0.12))",
-            filter: "blur(24px)",
-          }}
-        />
+            <div className="min-w-0 flex-1">
+              <p className="text-[14px] font-semibold text-white/70 group-hover:text-white transition-colors duration-200 truncate tracking-[-0.01em]">
+                {section.label}
+              </p>
+              <p className="text-[11.5px] text-white/30 truncate mt-0.5 group-hover:text-white/45 transition-colors leading-relaxed">
+                {section.desc}
+              </p>
+            </div>
 
-        <div className="relative flex items-center gap-4">
-          {/* Glass icon */}
-          <div
-            className={cn(
-              "w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 border border-white/[0.06] bg-white/[0.02] relative overflow-hidden",
-              "group-hover:border-indigo-500/25 group-hover:bg-indigo-500/[0.06]",
-              "transition-all duration-300",
-            )}
-          >
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <section.icon
-              className="w-[18px] h-[18px] text-white/45 group-hover:text-indigo-200 transition-colors duration-300"
-              style={{ transform: "translateZ(20px)" }}
+            <ArrowRight
+              className="w-3.5 h-3.5 text-white/[0.1] group-hover:text-indigo-200 group-hover:translate-x-0.5 transition-all duration-200 flex-shrink-0"
             />
           </div>
-
-          <div className="min-w-0 flex-1">
-            <p className="text-[14px] font-semibold text-white/70 group-hover:text-white transition-colors duration-200 truncate tracking-[-0.01em]">
-              {section.label}
-            </p>
-            <p className="text-[11.5px] text-white/30 truncate mt-0.5 group-hover:text-white/45 transition-colors leading-relaxed">
-              {section.desc}
-            </p>
-          </div>
-
-          <ArrowRight
-            className="w-3.5 h-3.5 text-white/[0.1] group-hover:text-indigo-200 group-hover:translate-x-0.5 transition-all duration-200 flex-shrink-0"
-          />
-        </div>
-      </Link>
+        </Link>
+      </DocsCard>
     </motion.div>
   );
 }
@@ -665,8 +680,7 @@ export default function DocsIndexPage() {
           ═══════════════════════════════════════════ */}
       <section className="relative mb-24 sm:mb-32 grid grid-cols-1 lg:grid-cols-5 gap-3">
         {/* Popular pages */}
-        <div className="lg:col-span-3 relative overflow-hidden rounded-2xl border border-white/[0.07] bg-gradient-to-br from-white/[0.025] to-transparent p-6 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]">
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+        <DocsCard className="lg:col-span-3 p-6">
           <div className="flex items-center gap-2.5 mb-5">
             <Sparkles className="w-3.5 h-3.5 text-indigo-200" />
             <span className="text-[9px] font-mono font-semibold uppercase tracking-[0.2em] text-indigo-200/70">
@@ -693,11 +707,10 @@ export default function DocsIndexPage() {
               </Link>
             ))}
           </div>
-        </div>
+        </DocsCard>
 
         {/* Recent updates */}
-        <div className="lg:col-span-2 relative overflow-hidden rounded-2xl border border-white/[0.07] bg-gradient-to-br from-white/[0.025] to-transparent p-6 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]">
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+        <DocsCard className="lg:col-span-2 p-6">
           <div className="flex items-center gap-2.5 mb-5">
             <Activity className="w-3.5 h-3.5 text-indigo-200" />
             <span className="text-[9px] font-mono font-semibold uppercase tracking-[0.2em] text-indigo-200/70">
@@ -723,7 +736,7 @@ export default function DocsIndexPage() {
               </Link>
             ))}
           </div>
-        </div>
+        </DocsCard>
       </section>
 
       {/* ═══════════════════════════════════════════
@@ -815,44 +828,25 @@ export default function DocsIndexPage() {
               variants={fadeUp}
               custom={idx}
             >
-              <Link
-                href={res.href}
-                className={cn(
-                  "group relative block p-5 rounded-2xl overflow-hidden h-full",
-                  "border border-white/[0.06] bg-gradient-to-br from-white/[0.02] via-white/[0.01] to-transparent",
-                  "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]",
-                  "hover:border-indigo-500/25 hover:from-indigo-500/[0.04] hover:to-transparent",
-                  "hover:shadow-[0_8px_32px_-12px_rgba(99,102,241,0.2),inset_0_1px_0_0_rgba(255,255,255,0.06)]",
-                  "transition-all duration-300 cursor-pointer",
-                )}
-              >
-                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-                <div className="relative flex items-start gap-3.5">
-                  <div
-                    className={cn(
-                      "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border border-white/[0.06] bg-white/[0.02] relative overflow-hidden",
-                      "group-hover:border-indigo-500/25 group-hover:bg-indigo-500/[0.06]",
-                      "transition-all duration-300",
-                    )}
-                  >
-                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <res.icon
-                      className="w-4 h-4 text-white/45 group-hover:text-indigo-200 transition-colors"
-                      style={{ transform: "translateZ(20px)" }}
-                    />
+              <DocsCard interactive className="h-full">
+                <Link
+                  href={res.href}
+                  className="group relative block p-5 cursor-pointer h-full"
+                >
+                  <div className="relative flex items-start gap-3.5">
+                    <DocsIconTile icon={res.icon} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[14px] font-semibold text-white/70 group-hover:text-white transition-colors tracking-[-0.01em] flex items-center gap-1.5">
+                        {res.label}
+                        <ArrowUpRight className="w-3 h-3 text-white/0 group-hover:text-indigo-200 transition-all duration-200" />
+                      </p>
+                      <p className="text-[11.5px] text-white/35 mt-1 leading-[1.6] group-hover:text-white/50 transition-colors">
+                        {res.desc}
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[14px] font-semibold text-white/70 group-hover:text-white transition-colors tracking-[-0.01em] flex items-center gap-1.5">
-                      {res.label}
-                      <ArrowUpRight className="w-3 h-3 text-white/0 group-hover:text-indigo-200 transition-all duration-200" />
-                    </p>
-                    <p className="text-[11.5px] text-white/35 mt-1 leading-[1.6] group-hover:text-white/50 transition-colors">
-                      {res.desc}
-                    </p>
-                  </div>
-                </div>
-              </Link>
+                </Link>
+              </DocsCard>
             </motion.div>
           ))}
         </motion.div>

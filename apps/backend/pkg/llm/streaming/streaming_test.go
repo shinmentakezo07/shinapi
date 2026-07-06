@@ -152,7 +152,7 @@ func TestOpenAIStreamWriter_ToolCall(t *testing.T) {
 	w := NewOpenAIStreamWriter(&buf, "gpt-4o")
 
 	tc := &llm.ToolCall{ID: "call_1", Type: "function", Function: llm.ToolCallFunction{Name: "get_weather"}}
-	if err := w.WriteToolCallStart(tc); err != nil {
+	if err := w.WriteToolCallStart(0, tc); err != nil {
 		t.Fatal(err)
 	}
 	if err := w.WriteToolCallDelta(0, `{"location":"SF"}`); err != nil {
@@ -243,7 +243,7 @@ func TestAnthropicStreamWriter_ToolCall(t *testing.T) {
 	w.WriteChunk(&llm.StreamChunk{Delta: llm.Message{Content: "Let me check"}})
 
 	tc := &llm.ToolCall{ID: "tu_1", Type: "function", Function: llm.ToolCallFunction{Name: "get_weather"}}
-	if err := w.WriteToolCallStart(tc); err != nil {
+	if err := w.WriteToolCallStart(0, tc); err != nil {
 		t.Fatal(err)
 	}
 	if err := w.WriteToolCallDelta(0, `{"location":"NYC"}`); err != nil {
@@ -374,6 +374,9 @@ func TestStreamPump_OpenAI(t *testing.T) {
 	output := buf.String()
 	if !strings.Contains(output, "[DONE]") {
 		t.Error("missing [DONE]")
+	}
+	if count := strings.Count(output, "[DONE]"); count != 1 {
+		t.Errorf("[DONE] count = %d, want 1", count)
 	}
 }
 

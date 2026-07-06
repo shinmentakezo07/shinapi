@@ -51,12 +51,12 @@ func (h *Handler) ListConversations(w http.ResponseWriter, r *http.Request) {
 	}
 
 	page, limit := parsePagination(r)
-	convs, appErr := h.conversationSvc.ListConversations(r.Context(), u.ID, page, limit)
+	convs, total, appErr := h.conversationSvc.ListConversations(r.Context(), u.ID, page, limit)
 	if appErr != nil {
 		response.Error(w, appErr.Status, appErr.Message)
 		return
 	}
-	response.OK(w, convs)
+	response.Paginated(w, convs, total, page, limit)
 }
 
 func (h *Handler) GetConversation(w http.ResponseWriter, r *http.Request) {

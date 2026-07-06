@@ -17,6 +17,7 @@ import (
 	"dra-platform/backend/internal/pkg/response"
 	"dra-platform/backend/internal/repository"
 	"dra-platform/backend/internal/service"
+	"dra-platform/backend/pkg/email"
 	"dra-platform/backend/pkg/llm"
 	"dra-platform/backend/pkg/llm/audit"
 	"dra-platform/backend/pkg/llm/budget"
@@ -32,7 +33,6 @@ import (
 	"dra-platform/backend/pkg/llm/virtualkeys"
 	"dra-platform/backend/pkg/llm/ws"
 	"dra-platform/backend/pkg/webhook"
-	"dra-platform/backend/pkg/email"
 
 	"golang.org/x/sync/errgroup"
 
@@ -40,96 +40,96 @@ import (
 )
 
 type Handler struct {
-	cfg             *config.Config
-	db              *db.DB
-	userSvc         *service.UserService
-	keySvc          *service.APIKeyService
-	creditSvc       *service.CreditService
-	analyticsSvc    *service.AnalyticsService
-	logSvc          *service.LogService
-	providerSvc     *service.ProviderService
-	webhookSvc      *service.WebhookService
-	batchSvc        *service.BatchService
-	orgSvc          *service.OrganizationService
-	conversationSvc   *service.ConversationService
-	promptSvc         *service.PromptService
-	fileSvc           *service.FileService
-	adminSvc          *service.AdminService
-	adminSessionRepo  *repository.AdminSessionRepo
-	rbacSvc           *service.RBACService
-	rateLimitSvc      *service.RateLimitService
-	budgetSvc         *service.BudgetService
-	comparisonSvc     *service.ComparisonService
-	fineTuningSvc     *service.FineTuningService
-	providerPluginSvc *service.ProviderPluginService
-	exportSvc         *service.ExportService
+	cfg                *config.Config
+	db                 *db.DB
+	userSvc            *service.UserService
+	keySvc             *service.APIKeyService
+	creditSvc          *service.CreditService
+	analyticsSvc       *service.AnalyticsService
+	logSvc             *service.LogService
+	providerSvc        *service.ProviderService
+	webhookSvc         *service.WebhookService
+	batchSvc           *service.BatchService
+	orgSvc             *service.OrganizationService
+	conversationSvc    *service.ConversationService
+	promptSvc          *service.PromptService
+	fileSvc            *service.FileService
+	adminSvc           *service.AdminService
+	adminSessionRepo   *repository.AdminSessionRepo
+	rbacSvc            *service.RBACService
+	rateLimitSvc       *service.RateLimitService
+	budgetSvc          *service.BudgetService
+	comparisonSvc      *service.ComparisonService
+	fineTuningSvc      *service.FineTuningService
+	providerPluginSvc  *service.ProviderPluginService
+	exportSvc          *service.ExportService
 	tokenBlacklistRepo *repository.TokenBlacklistRepo
-	moderator       moderation.Moderator
-	notificationHub *NotificationHub
-	modelRouter     *router.Router
-	budgetRouter    *router.BudgetRouter
-	llmCache        cache.Cache
-	abRouter        *router.ABRouter
-	emailSender     email.Sender
-	stripeSvc       *service.StripeService
-	embeddingRegistry *embeddings.Registry
-	pricingSvc      *service.PricingService
+	moderator          moderation.Moderator
+	notificationHub    *NotificationHub
+	modelRouter        *router.Router
+	budgetRouter       *router.BudgetRouter
+	llmCache           cache.Cache
+	abRouter           *router.ABRouter
+	emailSender        email.Sender
+	stripeSvc          *service.StripeService
+	embeddingRegistry  *embeddings.Registry
+	pricingSvc         *service.PricingService
 	// Enterprise features
-	credVault       *credentials.Vault
-	vkeyManager     *virtualkeys.Manager
-	budgetMgr       *budget.Manager
-	securityGuard   *security.Guard
-	usageTracker    *usage.Tracker
-	auditLogger     *audit.Logger
-	loadBalancer    *loadbalancer.Balancer
-	otelProvider    *otel.Provider
-	wsGateway       *ws.Gateway
+	credVault     *credentials.Vault
+	vkeyManager   *virtualkeys.Manager
+	budgetMgr     *budget.Manager
+	securityGuard *security.Guard
+	usageTracker  *usage.Tracker
+	auditLogger   *audit.Logger
+	loadBalancer  *loadbalancer.Balancer
+	otelProvider  *otel.Provider
+	wsGateway     *ws.Gateway
 }
 
 func New(cfg *config.Config, database *db.DB, u *service.UserService, k *service.APIKeyService, c *service.CreditService, a *service.AnalyticsService, l *service.LogService, p *service.ProviderService, w *service.WebhookService, b *service.BatchService, o *service.OrganizationService) *Handler {
 	return &Handler{
 		cfg: cfg, db: database, userSvc: u, keySvc: k, creditSvc: c, analyticsSvc: a,
 		logSvc: l, providerSvc: p, webhookSvc: w, batchSvc: b, orgSvc: o,
-		adminSvc:          service.NewAdminService(repository.NewAdminUserRepo(database), repository.NewAdminProviderRepo(database), repository.NewAdminModelRepo(database), repository.NewAdminBillingRepo(database), repository.NewAdminSettingsRepo(database), repository.NewAdminAuditRepo(database), repository.NewAdminSecurityRepo(database), repository.NewAdminFeaturesRepo(database), nil),
-		adminSessionRepo:  repository.NewAdminSessionRepo(database),
-		conversationSvc:   service.NewConversationService(repository.NewConversationRepo(database)),
-		promptSvc:         service.NewPromptService(repository.NewPromptRepo(database)),
-		fileSvc:           service.NewFileService(repository.NewFileRepo(database)),
-		rbacSvc:           service.NewRBACService(repository.NewRBACRepo(database)),
-		rateLimitSvc:      service.NewRateLimitService(repository.NewRateLimitRepo(database)),
-		budgetSvc:         service.NewBudgetService(repository.NewBudgetRepo(database)),
-		comparisonSvc:     service.NewComparisonService(repository.NewComparisonRepo(database)),
-		fineTuningSvc:     service.NewFineTuningService(repository.NewFineTuningRepo(database)),
-		providerPluginSvc: service.NewProviderPluginService(repository.NewProviderPluginRepo(database)),
-		exportSvc:         service.NewExportService(repository.NewExportRepo(database), repository.NewLogRepo(database), repository.NewAdminAuditRepo(database)),
+		adminSvc:           service.NewAdminService(repository.NewAdminUserRepo(database), repository.NewAdminProviderRepo(database), repository.NewAdminModelRepo(database), repository.NewAdminBillingRepo(database), repository.NewAdminSettingsRepo(database), repository.NewAdminAuditRepo(database), repository.NewAdminSecurityRepo(database), repository.NewAdminFeaturesRepo(database), nil),
+		adminSessionRepo:   repository.NewAdminSessionRepo(database),
+		conversationSvc:    service.NewConversationService(repository.NewConversationRepo(database)),
+		promptSvc:          service.NewPromptService(repository.NewPromptRepo(database)),
+		fileSvc:            service.NewFileService(repository.NewFileRepo(database)),
+		rbacSvc:            service.NewRBACService(repository.NewRBACRepo(database)),
+		rateLimitSvc:       service.NewRateLimitService(repository.NewRateLimitRepo(database)),
+		budgetSvc:          service.NewBudgetService(repository.NewBudgetRepo(database)),
+		comparisonSvc:      service.NewComparisonService(repository.NewComparisonRepo(database)),
+		fineTuningSvc:      service.NewFineTuningService(repository.NewFineTuningRepo(database)),
+		providerPluginSvc:  service.NewProviderPluginService(repository.NewProviderPluginRepo(database)),
+		exportSvc:          service.NewExportService(repository.NewExportRepo(database), repository.NewLogRepo(database), repository.NewAdminAuditRepo(database)),
 		tokenBlacklistRepo: repository.NewTokenBlacklistRepo(database),
-		moderator:         moderation.NewLocalModerator(),
-		notificationHub:   NewNotificationHub(),
+		moderator:          moderation.NewLocalModerator(),
+		notificationHub:    NewNotificationHub(),
 	}
 }
 
-func (h *Handler) UserService() *service.UserService           { return h.userSvc }
-func (h *Handler) SetModelRouter(r *router.Router)            { h.modelRouter = r }
-func (h *Handler) SetBudgetRouter(r *router.BudgetRouter)     { h.budgetRouter = r }
-func (h *Handler) SetBatchService(b *service.BatchService)    { h.batchSvc = b }
-func (h *Handler) SetFineTuningService(s *service.FineTuningService) { h.fineTuningSvc = s }
-func (h *Handler) SetABRouter(ab *router.ABRouter)           { h.abRouter = ab }
-func (h *Handler) SetLLMCache(c cache.Cache)                 { h.llmCache = c }
-func (h *Handler) SetAdminService(s *service.AdminService)   { h.adminSvc = s }
+func (h *Handler) UserService() *service.UserService                  { return h.userSvc }
+func (h *Handler) SetModelRouter(r *router.Router)                    { h.modelRouter = r }
+func (h *Handler) SetBudgetRouter(r *router.BudgetRouter)             { h.budgetRouter = r }
+func (h *Handler) SetBatchService(b *service.BatchService)            { h.batchSvc = b }
+func (h *Handler) SetFineTuningService(s *service.FineTuningService)  { h.fineTuningSvc = s }
+func (h *Handler) SetABRouter(ab *router.ABRouter)                    { h.abRouter = ab }
+func (h *Handler) SetLLMCache(c cache.Cache)                          { h.llmCache = c }
+func (h *Handler) SetAdminService(s *service.AdminService)            { h.adminSvc = s }
 func (h *Handler) SetAdminSessionRepo(r *repository.AdminSessionRepo) { h.adminSessionRepo = r }
-func (h *Handler) SetEmailSender(s email.Sender)             { h.emailSender = s }
-func (h *Handler) SetStripeService(s *service.StripeService) { h.stripeSvc = s }
-func (h *Handler) SetEmbeddingRegistry(r *embeddings.Registry) { h.embeddingRegistry = r }
-func (h *Handler) SetPricingService(s *service.PricingService) { h.pricingSvc = s }
-func (h *Handler) SetCredentialVault(v *credentials.Vault)     { h.credVault = v }
-func (h *Handler) SetVirtualKeyManager(m *virtualkeys.Manager) { h.vkeyManager = m }
-func (h *Handler) SetBudgetManager(m *budget.Manager)          { h.budgetMgr = m }
-func (h *Handler) SetSecurityGuard(g *security.Guard)          { h.securityGuard = g }
-func (h *Handler) SetUsageTracker(t *usage.Tracker)            { h.usageTracker = t }
-func (h *Handler) SetAuditLogger(l *audit.Logger)              { h.auditLogger = l }
-func (h *Handler) SetLoadBalancer(b *loadbalancer.Balancer)    { h.loadBalancer = b }
-func (h *Handler) SetOtelProvider(p *otel.Provider)            { h.otelProvider = p }
-func (h *Handler) SetWSGateway(g *ws.Gateway)                 { h.wsGateway = g }
+func (h *Handler) SetEmailSender(s email.Sender)                      { h.emailSender = s }
+func (h *Handler) SetStripeService(s *service.StripeService)          { h.stripeSvc = s }
+func (h *Handler) SetEmbeddingRegistry(r *embeddings.Registry)        { h.embeddingRegistry = r }
+func (h *Handler) SetPricingService(s *service.PricingService)        { h.pricingSvc = s }
+func (h *Handler) SetCredentialVault(v *credentials.Vault)            { h.credVault = v }
+func (h *Handler) SetVirtualKeyManager(m *virtualkeys.Manager)        { h.vkeyManager = m }
+func (h *Handler) SetBudgetManager(m *budget.Manager)                 { h.budgetMgr = m }
+func (h *Handler) SetSecurityGuard(g *security.Guard)                 { h.securityGuard = g }
+func (h *Handler) SetUsageTracker(t *usage.Tracker)                   { h.usageTracker = t }
+func (h *Handler) SetAuditLogger(l *audit.Logger)                     { h.auditLogger = l }
+func (h *Handler) SetLoadBalancer(b *loadbalancer.Balancer)           { h.loadBalancer = b }
+func (h *Handler) SetOtelProvider(p *otel.Provider)                   { h.otelProvider = p }
+func (h *Handler) SetWSGateway(g *ws.Gateway)                         { h.wsGateway = g }
 
 func (h *Handler) ChatFnForBatch() func(ctx context.Context, req *llm.ChatRequest) (*llm.ChatResponse, error) {
 	return func(ctx context.Context, req *llm.ChatRequest) (*llm.ChatResponse, error) {
@@ -571,6 +571,7 @@ FINISH:
 		defer cancel()
 		if _, logErr := h.creditSvc.LogAndDeduct(ctx, userID, akID, model, inputTokens, outputTokens, cost, latency); logErr != nil {
 			logger.Error("post_chat_billing_failed", "error", logErr.Error(), "user_id", userID)
+			return logErr
 		}
 		return nil
 	})
@@ -596,4 +597,3 @@ FINISH:
 	})
 	go eg.Wait()
 }
-

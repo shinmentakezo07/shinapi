@@ -24,9 +24,9 @@ type ABTestConfig struct {
 
 // ABTestRouter routes traffic between A and B variants.
 type ABTestRouter struct {
-	mu      sync.RWMutex
-	tests   map[string]*ABTestConfig
-	counts  map[string]*ABTestCounts
+	mu     sync.RWMutex
+	tests  map[string]*ABTestConfig
+	counts map[string]*ABTestCounts
 }
 
 // ABTestCounts tracks traffic distribution.
@@ -133,7 +133,7 @@ type CanaryConfig struct {
 	CanaryProvider  string
 	CanaryPercent   float64 // 0-100
 	IsActive        bool
-	MaxCanaryErrors int     // Disable canary after this many errors
+	MaxCanaryErrors int // Disable canary after this many errors
 }
 
 // CanaryRouter routes traffic for canary deployments.

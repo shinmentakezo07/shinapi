@@ -184,14 +184,17 @@ func (bt *BaseTranslator) BuildAnthropicMessages(messages []llm.Message) []map[s
 			}
 			for _, tc := range m.ToolCalls {
 				content = append(content, map[string]interface{}{
-					"type": "tool_use",
-					"id":   tc.ID,
-					"name": tc.Function.Name,
+					"type":  "tool_use",
+					"id":    tc.ID,
+					"name":  tc.Function.Name,
 					"input": rawMessageToInterface(tc.Function.Arguments),
 				})
 			}
 			msg["content"] = content
 		} else if m.ToolCallID != "" {
+			// Anthropic requires tool results to have role "user" with tool_result content blocks,
+			// not role "tool" as in OpenAI format.
+			msg["role"] = "user"
 			msg["content"] = []map[string]interface{}{
 				{
 					"type":        "tool_result",
@@ -214,9 +217,9 @@ func (bt *BaseTranslator) ExtractOpenAIContent(body []byte) (string, llm.Usage, 
 	var resp struct {
 		Choices []struct {
 			Message struct {
-				Role       string `json:"role"`
-				Content    string `json:"content"`
-				ToolCalls  []struct {
+				Role      string `json:"role"`
+				Content   string `json:"content"`
+				ToolCalls []struct {
 					ID       string `json:"id"`
 					Type     string `json:"type"`
 					Function struct {
@@ -271,14 +274,14 @@ func rawMessageToInterface(raw json.RawMessage) interface{} {
 func (bt *BaseTranslator) ExtractAnthropicContent(body []byte) (string, string, llm.Usage, llm.FinishReason, error) {
 	var resp struct {
 		Content []struct {
-			Type           string          `json:"type"`
-			Text           string          `json:"text"`
-			Thinking       string          `json:"thinking"`
-			PartialThinking string         `json:"partial_thinking"`
-			Signature      string          `json:"signature"`
-			Id             string          `json:"id"`
-			Name           string          `json:"name"`
-			Input          json.RawMessage `json:"input"`
+			Type            string          `json:"type"`
+			Text            string          `json:"text"`
+			Thinking        string          `json:"thinking"`
+			PartialThinking string          `json:"partial_thinking"`
+			Signature       string          `json:"signature"`
+			Id              string          `json:"id"`
+			Name            string          `json:"name"`
+			Input           json.RawMessage `json:"input"`
 		} `json:"content"`
 		Usage struct {
 			InputTokens        int `json:"input_tokens"`
