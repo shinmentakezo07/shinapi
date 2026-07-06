@@ -124,7 +124,8 @@ func (h *Handler) AdminGetForecast(w http.ResponseWriter, r *http.Request) {
 	if count > 0 {
 		avgDaily = total / float64(count)
 	}
-	daysRemaining := 30 - now.Day()
+	daysInMonth := time.Date(now.Year(), now.Month()+1, 0, 0, 0, 0, 0, now.Location()).Day()
+	daysRemaining := daysInMonth - now.Day()
 	forecast := currentMonthCost + avgDaily*float64(daysRemaining)
 	response.OK(w, map[string]interface{}{
 		"forecast":     forecast,

@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Database } from "lucide-react";
 import { Section } from "@/components/docs/Section";
+import { DocsSubhead } from "@/components/docs/DocsCard";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 import { TipBox } from "@/components/docs/TipBox";
 
@@ -38,10 +39,9 @@ export default function EmbeddingsPage() {
         </div>
 
         <div className="mt-8">
-          <h3 className="text-white/95 font-semibold text-sm mb-4 flex items-center gap-2.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60" />
+          <DocsSubhead>
             Request
-          </h3>
+          </DocsSubhead>
           <CodeBlock
             examples={{
               curl: `curl ${BASE_URL}/api/embeddings \\
@@ -103,10 +103,9 @@ fmt.Printf("%+v\\n", embeddings)`,
         </div>
 
         <div className="mt-8">
-          <h3 className="text-white/95 font-semibold text-sm mb-4 flex items-center gap-2.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60" />
+          <DocsSubhead>
             Response format
-          </h3>
+          </DocsSubhead>
           <CodeBlock
             language="json"
             code={`{
@@ -124,10 +123,9 @@ fmt.Printf("%+v\\n", embeddings)`,
         </div>
 
         <div className="mt-8">
-          <h3 className="text-white/95 font-semibold text-sm mb-4 flex items-center gap-2.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60" />
+          <DocsSubhead>
             OpenAI-compatible endpoint
-          </h3>
+          </DocsSubhead>
           <p className="text-sm text-white/50 mb-4">
             For OpenAI SDK compatibility, use the{" "}
             <code className="px-1.5 py-0.5 rounded-md bg-white/[0.05] text-white/70 font-mono text-xs">
@@ -156,10 +154,9 @@ fmt.Printf("%+v\\n", embeddings)`,
         </div>
 
         <div className="mt-8">
-          <h3 className="text-white/95 font-semibold text-sm mb-4 flex items-center gap-2.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60" />
+          <DocsSubhead>
             Use cases
-          </h3>
+          </DocsSubhead>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="p-4 rounded-xl bg-white/[0.01] border border-white/[0.08] hover:border-white/[0.14] transition-colors duration-200">
               <h4 className="text-white/90 font-semibold text-xs mb-1.5">

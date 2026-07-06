@@ -327,18 +327,18 @@ func TestClientListPrompts(t *testing.T) {
 	mux.HandleFunc("/api/prompts", func(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(envelope{Success: true, Data: mustRawJSON([]Prompt{
 			{Name: "greeting", Content: "Hello {{name}}", Template: true},
-		})})
+		}), Meta: &PaginatedMeta{Total: 1, Page: 1, Limit: 20, TotalPages: 1}})
 	})
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
 	client := New(WithBaseURL(server.URL))
-	prompts, err := client.ListPrompts(context.Background())
+	prompts, err := client.ListPrompts(context.Background(), 1, 20)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(prompts) != 1 {
-		t.Errorf("expected 1 prompt, got %d", len(prompts))
+	if len(prompts.Data) != 1 {
+		t.Errorf("expected 1 prompt, got %d", len(prompts.Data))
 	}
 }
 
@@ -952,65 +952,66 @@ func TestPaginatedResultEmptyData(t *testing.T) {
 }
 
 func TestReadSSEEmptyLines(t *testing.T) {
-	lines := []string{}
-	ReadSSE(strings.NewReader("\n\n\n"), func(line string) bool {
-		lines = append(lines, line)
+	var events []SSEEvent
+	ReadSSE(strings.NewReader("\n\n\n"), func(evt SSEEvent) bool {
+		events = append(events, evt)
 		return true
 	})
-	if len(lines) != 0 {
-		t.Errorf("expected 0 lines, got %d", len(lines))
+	if len(events) != 0 {
+		t.Errorf("expected 0 events, got %d", len(events))
 	}
 }
 
 func TestReadSSECarriageReturn(t *testing.T) {
-	lines := []string{}
-	ReadSSE(strings.NewReader("data: hello\r\ndata: world\r\n"), func(line string) bool {
-		lines = append(lines, line)
+	var events []SSEEvent
+	ReadSSE(strings.NewReader("data: hello\r\ndata: world\r\n\r\n"), func(evt SSEEvent) bool {
+		events = append(events, evt)
 		return true
 	})
-	if len(lines) != 2 {
-		t.Fatalf("expected 2 lines, got %d: %v", len(lines), lines)
+	if len(events) != 1 {
+		t.Fatalf("expected 1 event, got %d: %v", len(events), events)
 	}
-	if lines[0] != "data: hello" {
-		t.Errorf("expected 'data: hello', got %q", lines[0])
+	if events[0].Data != "hello\nworld" {
+		t.Errorf("expected 'hello\\nworld', got %q", events[0].Data)
 	}
 }
 
 func TestReadSSEPartialRead(t *testing.T) {
 	r, w := io.Pipe()
-	lines := []string{}
+	var events []SSEEvent
 	go func() {
-		w.Write([]byte("data: hello\nda"))
+		w.Write([]byte("data: hello\n\n"))
+		w.Write([]byte("data: partial\n\n"))
 		w.Close()
 	}()
-	ReadSSE(r, func(line string) bool {
-		lines = append(lines, line)
+	ReadSSE(r, func(evt SSEEvent) bool {
+		events = append(events, evt)
 		return true
 	})
-	if len(lines) != 2 {
-		t.Fatalf("expected 2 lines (full line + remaining buffer), got %d: %v", len(lines), lines)
+	if len(events) != 2 {
+		t.Fatalf("expected 2 events, got %d: %v", len(events), events)
 	}
-	if lines[0] != "data: hello" {
-		t.Errorf("expected 'data: hello', got %q", lines[0])
+	if events[0].Data != "hello" {
+		t.Errorf("events[0].Data = %q, want 'hello'", events[0].Data)
 	}
-	if lines[1] != "da" {
-		t.Errorf("expected 'da', got %q", lines[1])
+	if events[1].Data != "partial" {
+		t.Errorf("events[1].Data = %q, want 'partial'", events[1].Data)
 	}
 }
 
 func TestReadSSEStreamError(t *testing.T) {
 	r, w := io.Pipe()
-	lines := []string{}
+	var events []SSEEvent
 	go func() {
-		w.Write([]byte("data: hello\n"))
+		w.Write([]byte("data: hello\n\n"))
 		w.CloseWithError(assertAnError{})
 	}()
-	ReadSSE(r, func(line string) bool {
-		lines = append(lines, line)
+	ReadSSE(r, func(evt SSEEvent) bool {
+		events = append(events, evt)
 		return true
 	})
-	if len(lines) != 1 {
-		t.Errorf("expected 1 line before error, got %d", len(lines))
+	if len(events) != 1 {
+		t.Errorf("expected 1 event before error, got %d", len(events))
 	}
 }
 

@@ -66,7 +66,7 @@ func (h *Handler) AddCredential(w http.ResponseWriter, r *http.Request) {
 	}
 	c, err := h.credVault.Add(req.Name, req.ProviderType, req.APIKey, req.APIBase, req.Priority)
 	if err != nil {
-		response.Error(w, 400, err.Error())
+		adminErrorWithStatus(w, r, err, 400, "add_credential_failed")
 		return
 	}
 	if h.auditLogger != nil {
@@ -90,7 +90,7 @@ func (h *Handler) RotateCredential(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.credVault.Rotate(id, req.NewAPIKey); err != nil {
-		response.Error(w, 400, err.Error())
+		adminErrorWithStatus(w, r, err, 400, "rotate_credential_failed")
 		return
 	}
 	if h.auditLogger != nil {
@@ -106,7 +106,7 @@ func (h *Handler) DeleteCredential(w http.ResponseWriter, r *http.Request) {
 	}
 	id := chi.URLParam(r, "id")
 	if err := h.credVault.Delete(id); err != nil {
-		response.Error(w, 400, err.Error())
+		adminErrorWithStatus(w, r, err, 400, "delete_credential_failed")
 		return
 	}
 	if h.auditLogger != nil {
@@ -167,7 +167,7 @@ func (h *Handler) CreateVirtualKey(w http.ResponseWriter, r *http.Request) {
 		BudgetResetPeriod: req.BudgetResetPeriod,
 	})
 	if err != nil {
-		response.Error(w, 400, err.Error())
+		adminErrorWithStatus(w, r, err, 400, "create_virtual_key_failed")
 		return
 	}
 	if h.auditLogger != nil {
@@ -190,7 +190,7 @@ func (h *Handler) DeactivateVirtualKey(w http.ResponseWriter, r *http.Request) {
 	}
 	id := chi.URLParam(r, "id")
 	if err := h.vkeyManager.Deactivate(id); err != nil {
-		response.Error(w, 400, err.Error())
+		adminErrorWithStatus(w, r, err, 400, "deactivate_virtual_key_failed")
 		return
 	}
 	response.OK(w, map[string]string{"status": "deactivated"})
@@ -221,7 +221,7 @@ func (h *Handler) ScanContent(w http.ResponseWriter, r *http.Request) {
 	}
 	detections, action, err := h.securityGuard.Scan(r.Context(), req.Text, nil)
 	if err != nil {
-		response.Error(w, 500, err.Error())
+		adminError(w, r, err, "scan_content_failed")
 		return
 	}
 	response.OK(w, map[string]any{

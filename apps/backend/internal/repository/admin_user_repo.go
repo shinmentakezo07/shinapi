@@ -36,13 +36,20 @@ func (r *AdminUserRepo) ListUsers(ctx context.Context, f domain.UserFilter) ([]d
 		n++
 	}
 
+	cq, err := countQuery("users u", w)
+	if err != nil {
+		return nil, 0, fmt.Errorf("count query: %w", err)
+	}
 	var total int
-	if err := r.db.QueryRow(ctx, countQuery("users u", w), args...).Scan(&total); err != nil {
+	if err := r.db.QueryRow(ctx, cq, args...).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("count: %w", err)
 	}
 
 	cols := "u.id,u.name,u.email,u.role,COALESCE(u.status,'active'),u.created_at,u.last_login_at,COALESCE(u.last_login_ip,''),COALESCE(u.notes,''),COALESCE(u.tags,'{}')"
-	q, _ := paginatedQuery(cols, "users u", w, n)
+	q, _, err := paginatedQuery(cols, "users u", w, n)
+	if err != nil {
+		return nil, 0, fmt.Errorf("paginated query: %w", err)
+	}
 	rows, err := r.db.Query(ctx, q, append(args, f.Limit, offset)...)
 	if err != nil {
 		return nil, 0, fmt.Errorf("query: %w", err)

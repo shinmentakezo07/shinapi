@@ -136,7 +136,7 @@ func TestQuotaCheckMiddleware(t *testing.T) {
 	getKey := func(r *http.Request) *ScopedAPIKey { return key }
 	parseRequest := func(r *http.Request) (string, int) { return "gpt-4o", 10 }
 
-	handler := QuotaCheck(qt, getKey, parseRequest)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := QuotaCheck(qt, getKey, parseRequest, nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
@@ -198,7 +198,7 @@ func TestQuotaCheck_RejectsOversizedBody(t *testing.T) {
 	getKey := func(*http.Request) *ScopedAPIKey { return key }
 	parseFn := func(*http.Request) (string, int) { return "gpt-4", 0 }
 
-	mw := QuotaCheck(qt, getKey, parseFn)
+	mw := QuotaCheck(qt, getKey, parseFn, nil)
 
 	// Body larger than the 10 MB limit enforced inside QuotaCheck.
 	body := bytes.Repeat([]byte("A"), (10<<20)+1024)

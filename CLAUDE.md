@@ -94,7 +94,7 @@ docker-compose --profile mongo up -d  # Start Postgres + Mongo profile
 
 ### Frontend architecture
 
-- **Next.js 16 canary is NOT your training data.** Read `node_modules/next/dist/docs/` before writing code. `"use cache"` replaces old `revalidate`/`dynamic` — implicit caching is gone. `fetch()` is no longer cached by default.
+- **Next.js 16 canary is NOT your training data.** Breaking changes from v14/15 — APIs, conventions, and file structure differ. Read `node_modules/next/dist/docs/` before writing any code and heed deprecation notices. `"use cache"` replaces old `revalidate`/`dynamic` — implicit caching is gone. `fetch()` is no longer cached by default.
 - **App Router routes**: `app/dashboard/` (protected), `app/playground/`, `app/pricing/`, `app/models/`, `app/gateway/`, `app/admin/`, `app/login/`, `app/signup/`, `app/docs/`, `app/forgot-password/`. API routes in `app/api/*` proxy to Go backend through `lib/api/proxy.ts`.
 - **Auth**: NextAuth v5 in `auth.ts`/`auth.config.ts`. JWT HS256 secrets must match the backend. OAuth: GitHub + Google. Fallback: `AUTH_SECRET || NEXTAUTH_SECRET`.
 - **Proxy middleware** (`proxy.ts`): redirects unauthenticated `/dashboard/*` to login, authenticated `/login`/`/signup` to dashboard.
@@ -175,7 +175,7 @@ docker-compose --profile mongo up -d  # Start Postgres + Mongo profile
 ```
 
 - **No `as any` or `@ts-ignore`** in TypeScript — enforced at review
-- **No mock data** in dashboard components — must use `getSDK()`. Enforced by `tests/wiring-verification.test.ts` and `scripts/smoke-test.sh`
+- **No mock data** in dashboard components — must use `getSDK()`. Enforced by `tests/wiring-verification.test.ts` and `scripts/smoke-test.sh`.
 - **Zod v4** — breaking changes from v3. Do not use v3 patterns
 - **Tailwind CSS v4** — PostCSS plugin `@tailwindcss/postcss`, not v3 CLI. Config is CSS-first (`globals.css @theme`), NOT `tailwind.config.ts`
 - **Go 1.25** — features may differ from training data (`iter.Seq`, `unique`, `slog` improvements). Run `go vet ./...` before committing

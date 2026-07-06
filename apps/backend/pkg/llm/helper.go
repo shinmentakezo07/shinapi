@@ -65,9 +65,38 @@ func CacheKey(req *ChatRequest) string {
 		h.Write([]byte(fmt.Sprintf("|temp=%.4f", *req.Temperature)))
 	}
 
+	// Hash top_p if set
+	if req.TopP != nil {
+		h.Write([]byte(fmt.Sprintf("|topp=%.4f", *req.TopP)))
+	}
+
+	// Hash top_k if set
+	if req.TopK != nil {
+		h.Write([]byte(fmt.Sprintf("|topk=%d", *req.TopK)))
+	}
+
 	// Hash max_tokens if set
 	if req.MaxTokens != nil {
 		h.Write([]byte(fmt.Sprintf("|maxtok=%d", *req.MaxTokens)))
+	}
+
+	// Hash stop sequences if set
+	if len(req.StopSequences) > 0 {
+		h.Write([]byte("|stop|"))
+		h.Write([]byte(strings.Join(req.StopSequences, ",")))
+	}
+
+	// Hash tool_choice if set
+	if req.ToolChoice != "" {
+		h.Write([]byte("|toolchoice|"))
+		h.Write([]byte(req.ToolChoice))
+	}
+
+	// Hash response_format if set
+	if req.ResponseFormat != nil {
+		rfJSON, _ := json.Marshal(req.ResponseFormat)
+		h.Write([]byte("|responseformat|"))
+		h.Write(rfJSON)
 	}
 
 	// Hash thinking config if present
@@ -220,6 +249,13 @@ func IsStreamingModel(model string) bool {
 // IsVisionModel checks if a model supports vision.
 func IsVisionModel(model string) bool {
 	lower := strings.ToLower(model)
+	// Non-vision model exclusions: Claude 3 Haiku does not support vision.
+	nonVisionPatterns := []string{"claude-3-haiku", "claude-3.5-haiku"}
+	for _, nvm := range nonVisionPatterns {
+		if strings.Contains(lower, nvm) {
+			return false
+		}
+	}
 	visionModels := []string{"gpt-4o", "claude-3", "claude-sonnet", "claude-opus", "gemini", "llava"}
 	for _, vm := range visionModels {
 		if strings.Contains(lower, vm) {
@@ -316,6 +352,14 @@ func MergeContentBlocks(blocks []ContentBlock) string {
 			parts = append(parts, b.Text)
 		case ContentTypeThinking:
 			parts = append(parts, b.Thinking)
+		case ContentTypeToolUse:
+			if b.ToolUse != nil {
+				parts = append(parts, string(b.ToolUse.Input))
+			}
+		case ContentTypeToolResult:
+			if b.ToolResult != nil {
+				parts = append(parts, b.ToolResult.Content)
+			}
 		}
 	}
 	return strings.Join(parts, "")
@@ -332,12 +376,15 @@ func ExtractThinking(blocks []ContentBlock) string {
 	return strings.Join(parts, "")
 }
 
+// controlCharRegex matches control characters except newline (\x0A) and tab (\x09).
+var controlCharRegex = regexp.MustCompile(`[\x00-\x08\x0B-\x0C\x0E-\x1F]`)
+
 // SanitizeContent removes potentially harmful content patterns.
 func SanitizeContent(content string) string {
 	// Remove null bytes
 	content = strings.ReplaceAll(content, "\x00", "")
 	// Remove control characters except newlines and tabs
-	content = regexp.MustCompile(`[\x00-\x08\x0B-\x0C\x0E-\x1F]`).ReplaceAllString(content, "")
+	content = controlCharRegex.ReplaceAllString(content, "")
 	return content
 }
 
@@ -419,7 +466,30 @@ func DeepCopyRequest(req *ChatRequest) *ChatRequest {
 		// Deep copy ContentBlocks
 		if len(m.ContentBlocks) > 0 {
 			blocks := make([]ContentBlock, len(m.ContentBlocks))
-			copy(blocks, m.ContentBlocks)
+			for j, b := range m.ContentBlocks {
+				blocks[j] = b
+				if b.ImageURL != nil {
+					blocks[j].ImageURL = &ImageURL{
+						URL:    b.ImageURL.URL,
+						Detail: b.ImageURL.Detail,
+					}
+				}
+				if b.ToolUse != nil {
+					blocks[j].ToolUse = &ToolUse{
+						ID:    b.ToolUse.ID,
+						Name:  b.ToolUse.Name,
+						Input: make(json.RawMessage, len(b.ToolUse.Input)),
+					}
+					copy(blocks[j].ToolUse.Input, b.ToolUse.Input)
+				}
+				if b.ToolResult != nil {
+					blocks[j].ToolResult = &ToolResult{
+						ToolUseID: b.ToolResult.ToolUseID,
+						Content:   b.ToolResult.Content,
+						IsError:   b.ToolResult.IsError,
+					}
+				}
+			}
 			cpy.Messages[i].ContentBlocks = blocks
 		}
 		// Deep copy Metadata map

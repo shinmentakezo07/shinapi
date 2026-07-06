@@ -23,7 +23,7 @@ export default function BillingPage() {
         amount: pkg.amount,
         description: `${pkg.label} Package`,
       });
-      const data = (result as any)?.data ?? result;
+      const data = result as { checkoutUrl?: string };
       if (data?.checkoutUrl) {
         const url = data.checkoutUrl as string;
         if (typeof url === "string") {
@@ -153,7 +153,7 @@ function PromoCodeSection() {
     setStatus(null);
     try {
       const result = await redeemPromo.mutateAsync(code.trim().toUpperCase());
-      const data = (result as any)?.data ?? result;
+      const data = result as { credits?: number };
       setStatus({
         type: "success",
         msg: `Redeemed! ${data.credits?.toLocaleString() ?? ""} credits added to your account.`,

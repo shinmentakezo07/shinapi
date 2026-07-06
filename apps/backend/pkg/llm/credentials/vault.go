@@ -13,6 +13,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"dra-platform/backend/internal/pkg/logger"
 )
 
 // Credential represents a stored provider API key.
@@ -241,7 +243,9 @@ func (v *Vault) RecordFailure(id string, err error) {
 	if newFailures >= 5 {
 		status = "unhealthy"
 	}
-	_ = v.store.UpdateHealth(id, status, newFailures, errMsg)
+	if err := v.store.UpdateHealth(id, status, newFailures, errMsg); err != nil {
+		logger.Warn("credential_update_health_failed", "id", id, "error", err.Error())
+	}
 
 	if provider != "" {
 		v.invalidateCache(provider)

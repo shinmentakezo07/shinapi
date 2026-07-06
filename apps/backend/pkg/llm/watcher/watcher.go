@@ -229,8 +229,10 @@ func toLower(b byte) byte {
 type CircuitBreaker struct {
 	mu               sync.RWMutex
 	failureThreshold int
+	successThreshold int
 	recoveryTimeout  time.Duration
 	failureCount     int
+	successCount     int
 	lastFailureTime  time.Time
 	state            State
 	halfOpenMaxCalls int
@@ -250,6 +252,7 @@ const (
 func NewCircuitBreaker(failureThreshold int, recoveryTimeout time.Duration) *CircuitBreaker {
 	return &CircuitBreaker{
 		failureThreshold: failureThreshold,
+		successThreshold: 3,
 		recoveryTimeout:  recoveryTimeout,
 		state:            StateClosed,
 		halfOpenMaxCalls: 3,
@@ -268,6 +271,7 @@ func (cb *CircuitBreaker) Allow() bool {
 		if time.Since(cb.lastFailureTime) > cb.recoveryTimeout {
 			cb.state = StateHalfOpen
 			cb.halfOpenCalls = 0
+			cb.successCount = 0
 			return true
 		}
 		return false
@@ -287,8 +291,12 @@ func (cb *CircuitBreaker) RecordSuccess() {
 	defer cb.mu.Unlock()
 	cb.failureCount = 0
 	if cb.state == StateHalfOpen {
-		cb.state = StateClosed
-		cb.halfOpenCalls = 0
+		cb.successCount++
+		if cb.successCount >= cb.successThreshold {
+			cb.state = StateClosed
+			cb.successCount = 0
+			cb.halfOpenCalls = 0
+		}
 	}
 }
 
@@ -297,9 +305,11 @@ func (cb *CircuitBreaker) RecordFailure() {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()
 	cb.failureCount++
+	cb.successCount = 0
 	cb.lastFailureTime = time.Now()
 	if cb.state == StateHalfOpen {
 		cb.state = StateOpen
+		cb.halfOpenCalls = 0
 		return
 	}
 	if cb.failureCount >= cb.failureThreshold {

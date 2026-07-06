@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Globe } from "lucide-react";
 import { Section } from "@/components/docs/Section";
+import { DocsSubhead } from "@/components/docs/DocsCard";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 import { TipBox } from "@/components/docs/TipBox";
 import { getDocsBaseUrl } from "@/lib/docs-config";
@@ -35,10 +36,9 @@ export default function SelfHostingPage() {
         </p>
 
         <div className="mt-8">
-          <h3 className="text-white/95 font-semibold text-sm mb-4 flex items-center gap-2.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60" />
+          <DocsSubhead>
             Setting the Docs Base URL
-          </h3>
+          </DocsSubhead>
           <p>
             There are two ways to change the base URL shown in all docs code
             examples:
@@ -96,10 +96,9 @@ docs_base_url = "https://api.yourdomain.com"`}
         </div>
 
         <div className="mt-10">
-          <h3 className="text-white/95 font-semibold text-sm mb-4 flex items-center gap-2.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60" />
+          <DocsSubhead>
             Fallback chain
-          </h3>
+          </DocsSubhead>
           <p className="mb-4">The base URL is resolved in this order:</p>
           <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] overflow-hidden">
             <div className="px-4 py-2.5 border-b border-white/[0.04]">
@@ -153,10 +152,9 @@ docs_base_url = "https://api.yourdomain.com"`}
         </div>
 
         <div className="mt-10">
-          <h3 className="text-white/95 font-semibold text-sm mb-4 flex items-center gap-2.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60" />
+          <DocsSubhead>
             Full deployment example
-          </h3>
+          </DocsSubhead>
           <CodeBlock
             examples={{
               curl: `# 1. Clone the repo
@@ -205,10 +203,9 @@ NEXT_PUBLIC_DOCS_BASE_URL=https://api.yourdomain.com`,
         </div>
 
         <div className="mt-10">
-          <h3 className="text-white/95 font-semibold text-sm mb-4 flex items-center gap-2.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60" />
+          <DocsSubhead>
             Docker Compose environment
-          </h3>
+          </DocsSubhead>
           <p className="text-sm text-white/50 mb-4">
             When deploying with Docker Compose, configure these environment
             variables for the backend service:
@@ -237,10 +234,9 @@ OPENAI_API_KEY=sk-...
         </div>
 
         <div className="mt-10">
-          <h3 className="text-white/95 font-semibold text-sm mb-4 flex items-center gap-2.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60" />
+          <DocsSubhead>
             Verifying the base URL
-          </h3>
+          </DocsSubhead>
           <p className="mb-4">
             After configuring, visit any docs page with code examples. The base
             URL in curl commands, fetch calls, and Python/Go examples should
@@ -257,10 +253,9 @@ curl https://api.yourdomain.com/api/chat ...`}
         </div>
 
         <div className="mt-8">
-          <h3 className="text-white/95 font-semibold text-sm mb-4 flex items-center gap-2.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60" />
+          <DocsSubhead>
             Post-deployment verification
-          </h3>
+          </DocsSubhead>
           <p className="text-sm text-white/50 mb-4">
             After deploying, run a quick smoke test to verify that everything is
             wired correctly:

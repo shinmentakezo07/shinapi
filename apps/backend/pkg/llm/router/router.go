@@ -112,7 +112,9 @@ func (et *errorTracker) errorRate() float64 {
 	et.mu.RLock()
 	defer et.mu.RUnlock()
 	if et.total == 0 {
-		return 0
+		// No data means unknown reliability; return a moderate default
+		// so providers with actual data are preferred over untested ones.
+		return 0.5
 	}
 	return float64(et.failures) / float64(et.total)
 }

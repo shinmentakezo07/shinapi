@@ -192,6 +192,9 @@ func (bt *BaseTranslator) BuildAnthropicMessages(messages []llm.Message) []map[s
 			}
 			msg["content"] = content
 		} else if m.ToolCallID != "" {
+			// Anthropic requires tool results to have role "user" with tool_result content blocks,
+			// not role "tool" as in OpenAI format.
+			msg["role"] = "user"
 			msg["content"] = []map[string]interface{}{
 				{
 					"type":        "tool_result",

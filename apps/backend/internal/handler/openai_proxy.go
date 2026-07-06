@@ -78,29 +78,28 @@ func (h *Handler) OpenAIChatCompletions(w http.ResponseWriter, r *http.Request) 
 		span.SetTag("ab_test", "active")
 		p, variantName, _ := h.abRouter.Route(r.Context())
 		if p != nil {
-			internalReq.Model = p.Name() + "/" + internalReq.Model
+			// Strip existing provider prefix to avoid double-prefixing (e.g. "openai/openai/gpt-4o")
+			if idx := strings.LastIndex(internalReq.Model, "/"); idx >= 0 {
+				internalReq.Model = p.Name() + "/" + internalReq.Model[idx+1:]
+			} else {
+				internalReq.Model = p.Name() + "/" + internalReq.Model
+			}
 			span.SetTag("ab_variant", variantName)
 		}
 	}
 
 	if !isSandbox {
 		estInput, estOutput := h.providerSvc.EstimateTokens(req.Model, nil)
-		estimatedCost := (estInput + estOutput) * 2
-		if estimatedCost < 100 {
-			estimatedCost = 100
-		}
+		estimatedCost := h.calculateCost(internalReq.Model, estInput, estOutput)
 
 		var balanceErr *domain.AppError
 		canAfford := true
 		if balanceErr = h.creditSvc.CheckBalance(r.Context(), userID, estimatedCost); balanceErr != nil {
 			canAfford = false
 			if h.budgetRouter != nil {
-				cheaperModel, routed := h.budgetRouter.FindAffordableModel(r.Context(), internalReq.Model, 0, estInput, estOutput)
+				cheaperModel, routed := h.budgetRouter.FindAffordableModel(r.Context(), internalReq.Model, 0, estInput, estOutput, internalReq)
 				if routed {
-					newCost := (estInput + estOutput) * 2
-					if newCost < 100 {
-						newCost = 100
-					}
+					newCost := h.calculateCost(cheaperModel, estInput, estOutput)
 					if h.creditSvc.CheckBalance(r.Context(), userID, newCost) == nil {
 						span.SetTag("budget_routed", "true")
 						span.SetTag("budget_original_model", internalReq.Model)
@@ -183,7 +182,6 @@ func (h *Handler) handleOpenAIStream(w http.ResponseWriter, r *http.Request, req
 	w.WriteHeader(http.StatusOK)
 
 	flusher, ok := w.(http.Flusher)
-	var outputBuf strings.Builder
 	var outputTokens int
 
 	done := r.Context().Done()
@@ -194,15 +192,15 @@ func (h *Handler) handleOpenAIStream(w http.ResponseWriter, r *http.Request, req
 				goto FINISH
 			}
 			if chunk.Delta.Content != "" {
-				outputBuf.WriteString(chunk.Delta.Content)
 				outputTokens += llm.EstimateTokens(chunk.Delta.Content)
-				c := chunk
-				openaiChunk := openai.FromInternalStreamChunk(&c)
-				data, _ := json.Marshal(openaiChunk)
-				fmt.Fprintf(w, "data: %s\n\n", data)
-				if ok {
-					flusher.Flush()
-				}
+			}
+			// Forward ALL chunks (role deltas, tool calls, content, finish_reason)
+			c := chunk
+			openaiChunk := openai.FromInternalStreamChunk(&c)
+			data, _ := json.Marshal(openaiChunk)
+			fmt.Fprintf(w, "data: %s\n\n", data)
+			if ok {
+				flusher.Flush()
 			}
 			if chunk.FinishReason != nil {
 				fmt.Fprintf(w, "data: [DONE]\n\n")

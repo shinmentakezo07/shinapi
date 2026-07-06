@@ -7,7 +7,7 @@
 
 <!-- ANIMATED TYPING TEXT - Multi-line with gradient -->
 <a href="https://git.io/typing-svg">
-  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=22&pause=1000&color=6366F1&center=true&vCenter=true&width=750&height=60&lines=%F0%9F%94%90+One+API+%E2%80%A2+100%2B+Models+%E2%80%A2+Zero+Complexity+%E2%9A%A1;GPT-4o+%E2%80%A2+Claude+4+%E2%80%A2+Gemini+2.5+%E2%80%A2+Llama+4+%E2%80%A2+Mistral+%E2%80%A2+Grok;Production-Grade+AI+Gateway+%F0%9F%9A%80;Next.js+16+%2B+Go+1.25+%2B+PostgreSQL+16+%2B+Redis" alt="Typing SVG" />
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=22&pause=1000&color=6366F1&center=true&vCenter=true&width=750&height=60&lines=%F0%9F%94%90+One+API+%E2%80%A2+100%2B+Models+%E2%80%A2+Zero+Complexity+%E2%9A%A1;GPT-4o+%E2%80%A2+Claude+4+%E2%80%A2+Gemini+2.5+%E2%80%A2+Llama+4+%E2%80%A2+Mistral+%E2%80%A2+Grok;Production-Grade+AI+Gateway+%F0%9F%9A%80;Next.js+16+%2B+Go+1.25+%2B+PostgreSQL+16+%2B+Redis+7" alt="Typing SVG" />
 </a>
 
 <br/>
@@ -22,8 +22,9 @@
 <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL%2016-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" /></a>
 <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" /></a>
 <a href="https://turbo.build/"><img src="https://img.shields.io/badge/Turborepo-EF4444?style=for-the-badge&logo=turborepo&logoColor=white" /></a>
-<a href="https://redis.io/"><img src="https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white" /></a>
+<a href="https://redis.io/"><img src="https://img.shields.io/badge/Redis%207-DC382D?style=for-the-badge&logo=redis&logoColor=white" /></a>
 <a href="https://stripe.com/"><img src="https://img.shields.io/badge/Stripe-635BFF?style=for-the-badge&logo=stripe&logoColor=white" /></a>
+<a href="https://www.mongodb.com/"><img src="https://img.shields.io/badge/MongoDB%207-47A248?style=for-the-badge&logo=mongodb&logoColor=white" /></a>
 
 <br/>
 <br/>
@@ -45,17 +46,22 @@
   <img src="https://img.shields.io/badge/DB-PostgreSQL%2016-4169E1?style=flat-square&logo=postgresql&labelColor=0f172a" />
   <img src="https://img.shields.io/badge/PRs-Welcome-8b5cf6?style=flat-square&labelColor=0f172a" />
   <img src="https://img.shields.io/badge/Build-Passing-22c55e?style=flat-square&labelColor=0f172a" />
+  <img src="https://img.shields.io/badge/Endpoints-210+-f59e0b?style=flat-square&labelColor=0f172a" />
+  <img src="https://img.shields.io/badge/Models-100+-6366f1?style=flat-square&labelColor=0f172a" />
 </p>
 
 <br/>
 
 <!-- NAVIGATION KBD BUTTONS WITH GLOW -->
 <p align="center">
+  <a href="#-why-teams-use-yapapa"><kbd> <br/>🎯 Why<br/> </kbd></a>&nbsp;
   <a href="#-features"><kbd> <br/>✨ Features<br/> </kbd></a>&nbsp;
   <a href="#-quick-start"><kbd> <br/>⚡ Quick Start<br/> </kbd></a>&nbsp;
   <a href="#-architecture"><kbd> <br/>🏗️ Architecture<br/> </kbd></a>&nbsp;
+  <a href="#-llm-pipeline"><kbd> <br/>🤖 LLM Pipeline<br/> </kbd></a>&nbsp;
   <a href="#-api-reference"><kbd> <br/>📡 API Reference<br/> </kbd></a>&nbsp;
   <a href="#-tech-stack"><kbd> <br/>🛠️ Tech Stack<br/> </kbd></a>&nbsp;
+  <a href="#-database"><kbd> <br/>🗄️ Database<br/> </kbd></a>&nbsp;
   <a href="#-deployment"><kbd> <br/>🐳 Deploy<br/> </kbd></a>&nbsp;
   <a href="#-roadmap"><kbd> <br/>🗺️ Roadmap<br/> </kbd></a>
 </p>
@@ -73,12 +79,13 @@
 | Poor visibility into token spend and latency                          | **Built-in analytics, logs, and billing** |
 | Hard to compare model quality across providers                        | **Playground for side-by-side testing**   |
 | Production auth, quotas, and rate limits take time to build           | **Ready-made gateway infrastructure**     |
+| Different formats across providers (OpenAI vs Anthropic)              | **Automatic format translation**          |
 
 </div>
 
 <br/>
 
-> Yapapa is an **OpenRouter-style universal LLM gateway** built with **Next.js 16 canary + Go 1.25**. It gives you a production-ready control plane for AI traffic: routing, billing, analytics, auth, quotas, webhooks, conversations, prompts, and multi-provider access.
+> Yapapa is an **OpenRouter-style universal LLM gateway** built with **Next.js 16 canary + Go 1.25**. It gives you a production-ready control plane for AI traffic: routing, billing, analytics, auth, quotas, webhooks, conversations, prompts, and multi-provider access — all through **210+ API endpoints** and **31 LLM pipeline subpackages**.
 
 <br/>
 
@@ -89,12 +96,18 @@
 
 <br/>
 
+<!-- FEATURES SECTION -->
+
+<a id="features"></a>
+
+## ✨ Features
+
 <table>
 <tr>
 <td width="50%" valign="top">
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Globe%20with%20Meridians.png" width="80" />
+  <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Globe%20with%20Meridians.png" width="64" />
 </p>
 
 ### 🌐 Unified AI Gateway
@@ -108,14 +121,16 @@ const client = new OpenAI({
 });
 ```
 
-✅ OpenAI-compatible `/v1/chat/completions` proxy  
-✅ Automatic failover & load balancing  
+✅ OpenAI-compatible `/v1/chat/completions` proxy
+✅ Anthropic-compatible `/v1/messages` proxy
+✅ Automatic failover & load balancing
 ✅ Per-model routing & caching
+✅ 10-stage LLM pipeline with 31 subpackages
 
 <br/>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Bar%20Chart.png" width="80" />
+  <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Bar%20Chart.png" width="64" />
 </p>
 
 ### 📊 Real-Time Analytics
@@ -126,29 +141,39 @@ const client = new OpenAI({
 - 💰 Cost breakdown by model & provider
 - 📊 Exportable CSV/PDF reports
 - 🔔 Usage alerts & budget caps
+- 📡 Provider health monitoring
 
 <br/>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Link.png" width="80" />
+  <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Link.png" width="64" />
 </p>
 
-### 🔌 OpenAI-Compatible API
+### 🔌 Multi-Format API Compatibility
 
-**Drop-in replacement for OpenAI SDKs.** Use any OpenAI client — Python, TypeScript, Go, Rust — against your Yapapa instance. Zero code changes needed.
+**Drop-in replacement for OpenAI and Anthropic SDKs.** Use any client — Python, TypeScript, Go, Rust — against your Yapapa instance. Zero code changes needed.
 
 ```bash
-# Works with any OpenAI SDK
+# OpenAI-compatible
 curl https://yapa.up.railway.app/v1/chat/completions \
   -H "Authorization: Bearer $API_KEY" \
   -d '{"model":"gpt-4o","messages":[...]}'
+
+# Anthropic-compatible
+curl https://yapa.up.railway.app/v1/messages \
+  -H "x-api-key: $API_KEY" \
+  -d '{"model":"claude-opus-4","messages":[...]}'
 ```
+
+✅ OpenAI format (`/v1/chat/completions`, `/v1/embeddings`, `/v1/models`)
+✅ Anthropic format (`/v1/messages` with SSE events)
+✅ Automatic format translation between providers
 
 </td>
 <td width="50%" valign="top">
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Test%20Tube.png" width="80" />
+  <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Test%20Tube.png" width="64" />
 </p>
 
 ### 🧪 Neural Playground
@@ -158,13 +183,14 @@ curl https://yapa.up.railway.app/v1/chat/completions \
 - 🤖 Multi-model simultaneous testing
 - 💬 Streaming responses with markdown
 - 📝 Persistent conversation history
-- 🎨 Code syntax highlighting
+- 🎨 Code syntax highlighting (Monaco Editor)
 - ⚡ Real-time response rendering
+- 🏟️ A/B model battle comparison
 
 <br/>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Lock.png" width="80" />
+  <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Lock.png" width="64" />
 </p>
 
 ### 🔐 Enterprise Security
@@ -174,13 +200,16 @@ curl https://yapa.up.railway.app/v1/chat/completions \
 - 🔑 NextAuth v5 with GitHub + Google OAuth
 - 🛡️ Per-user rate limiting (sliding window + Redis)
 - 🌐 CORS protection & request logging
-- 👑 Role-based admin controls
+- 👑 Role-based access control (RBAC)
 - 🔒 bcrypt hashing & input validation
+- 🚫 Token blacklist & session management
+- 📋 Audit logging & IP access lists
+- 🛡️ Suspicious activity detection
 
 <br/>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Keycap%20Digit%20Zero.png" width="80" />
+  <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Credit%20Card.png" width="64" />
 </p>
 
 ### 💳 Credit-Based Billing
@@ -191,6 +220,8 @@ curl https://yapa.up.railway.app/v1/chat/completions \
 - 📊 Real-time balance tracking
 - 🎯 Budget caps & spending alerts
 - 📜 Transaction history & receipts
+- 🎟️ Promo codes & discount system
+- 📈 Usage forecasting
 - 🚫 No subscriptions, no hidden fees
 
 </td>
@@ -218,7 +249,7 @@ curl https://yapa.up.railway.app/v1/chat/completions \
 
 <br/>
 
-> ⚡ **One command to rule them all**: `bash scripts/dev.sh` installs deps, starts Postgres, pushes schema, seeds the DB, and launches both servers.
+> ⚡ **One command to rule them all**: `bash scripts/dev.sh` installs deps, starts Postgres + Redis, pushes schema, seeds the DB, and launches both servers.
 
 <br/>
 
@@ -230,7 +261,7 @@ curl https://yapa.up.railway.app/v1/chat/completions \
 
 ```bash
 git clone https://github.com/shinmentakezo07/owsiwa.git
-cd osiwa
+cd oswiwa
 npm install
 ```
 
@@ -242,7 +273,7 @@ npm install
 ### **2️⃣** Environment Setup
 
 ```bash
-cp apps/web/.env.example apps/web/.env.local
+cp apps/web/.env.local.example apps/web/.env.local
 cp apps/backend/.env.example apps/backend/.env
 
 # Generate secure secrets:
@@ -258,7 +289,7 @@ openssl rand -base64 32  # NEXTAUTH_SECRET
 ### **3️⃣** Database & Launch
 
 ```bash
-docker-compose up -d postgres
+docker compose up -d postgres redis
 cd apps/web && npm run db:setup
 npm run dev   # ← from root
 ```
@@ -281,6 +312,8 @@ npm run dev   # ← from root
 | ⚙️ **Backend API** | [http://localhost:8080](http://localhost:8080)                       | Go 1.25 chi router API server       |
 | 📚 **API Docs**    | [http://localhost:3000/docs](http://localhost:3000/docs)             | Interactive OpenAPI documentation   |
 | 🧪 **Playground**  | [http://localhost:3000/playground](http://localhost:3000/playground) | Multi-model AI chat playground      |
+| 🛡️ **Admin Panel** | [http://localhost:3000/admin](http://localhost:3000/admin)           | Admin management dashboard          |
+| 📊 **Dashboard**   | [http://localhost:3000/dashboard](http://localhost:3000/dashboard)   | User analytics & management         |
 
 </div>
 
@@ -303,10 +336,6 @@ npm run dev   # ← from root
 
 <br/>
 
-```math
-\large{\text{YAPAPA PLATFORM}}
-```
-
 ```
 ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
 │                                        🌐 YAPAPA                                              │
@@ -321,7 +350,7 @@ npm run dev   # ← from root
 │  │  │ API Key Manager       │    │          │  └────┬─────┘  │  Window) │  └──────────┘    │ │
 │  │  │ Billing & Credits     │    │          │       │         └──────────┘                  │ │
 │  │  │ Request Logs          │    │          │  ┌────┴──────────────────────────────────┐    │ │
-│  │  │ User Settings         │    │          │  │        🌐 Chi Router (v5)             │    │ │
+│  │  │ User Settings         │    │          │  │        🌐 Chi Router (v5) — 210+ Routes│    │ │
 │  │  │ Organizations         │    │          │  └──┬──┬──┬──┬──┬──┬──┬──┬──┬──┬──┬─────┘    │ │
 │  │  │ Webhooks              │    │          │     │  │  │  │  │  │  │  │  │  │  │          │ │
 │  │  │ Conversations         │    │          │  ┌──┴┐┌┴┐┌┴┐┌┴┐┌┴┐┌┴┐┌┴┐┌┴┐┌┴┐┌┴┐┌┴┐       │ │
@@ -336,16 +365,16 @@ npm run dev   # ← from root
 │  │   └────────────────┘        │          │  └───┘└──┘└──┘└──┘└──┘└──┘└──┘└──┘└──┘└──┘  │ │
 │  │                              │          │                                                │ │
 │  │                              │          │  ┌────────────────────────────────────────┐   │ │
-│  │                              │          │  │        🤖 LLM SDK Pipeline             │   │ │
+│  │                              │          │  │      🤖 LLM SDK Pipeline (10 stages)   │   │ │
 │  │                              │          │  │  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐  │   │ │
-│  │                              │          │  │  │Prov. │ │Trans.│ │Route │ │Cache │  │   │ │
+│  │                              │          │  │  │Valid.│ │Route │ │Cache │ │Guard.│  │   │ │
 │  │                              │          │  │  └──────┘ └──────┘ └──────┘ └──────┘  │   │ │
 │  │                              │          │  │  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐  │   │ │
-│  │                              │          │  │  │Guard.│ │Moder.│ │Circ. │ │Tele. │  │   │ │
+│  │                              │          │  │  │Moder.│ │Trans.│ │Provi.│ │Tele. │  │   │ │
 │  │                              │          │  │  └──────┘ └──────┘ └──────┘ └──────┘  │   │ │
-│  │                              │          │  │  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐  │   │ │
-│  │                              │          │  │  │Token │ │Batch │ │Tools │ │Watch │  │   │ │
-│  │                              │          │  │  └──────┘ └──────┘ └──────┘ └──────┘  │   │ │
+│  │                              │          │  │  ┌──────┐ ┌──────┐                       │   │ │
+│  │                              │          │  │  │Circ. │ │Watch │                       │   │ │
+│  │                              │          │  │  └──────┘ └──────┘                       │   │ │
 │  │                              │          │  └────────────────────────────────────────┘   │ │
 │  │                              │          │                                                │ │
 │  │                              │          │  ┌────────────────────────────────────────┐   │ │
@@ -365,13 +394,16 @@ graph LR
     A["👤 User Request"] --> B["🌐 Chi Router"]
     B --> C["🛡️ Auth Middleware"]
     C --> D["⏱️ Rate Limiter"]
-    D --> E["🔗 CORS"]
+    D --> E["💰 Quota Check"]
     E --> F["🎯 Handler"]
     F --> G{"Route Type"}
     G -->|"API Keys"| H["🗄️ PostgreSQL"]
     G -->|"Credits/Billing"| I["🗄️ PostgreSQL"]
-    G -->|"Chat Proxy"| J["🤖 LLM SDK Pipeline"]
-    J --> K["Provider → Model → SSE"]
+    G -->|"Chat Proxy"| J["🤖 LLM Pipeline"]
+    J --> K["Validator → Router → Cache → Guardrails"]
+    K --> L["Moderation → Translator → Provider"]
+    L --> M["Telemetry → Circuit Breaker → Watcher"]
+    M --> N["📤 SSE Stream Response"]
     H --> F
     I --> F
     style A fill:#312e81,color:#fff,stroke:#6366f1
@@ -382,8 +414,144 @@ graph LR
     style F fill:#1e1b4b,color:#fff,stroke:#818cf8
     style G fill:#312e81,color:#fff,stroke:#6366f1
     style J fill:#1e1b4b,color:#fff,stroke:#6366f1
-    style K fill:#0f172a,color:#fff,stroke:#a78bfa
+    style K fill:#312e81,color:#fff,stroke:#a78bfa
+    style L fill:#312e81,color:#fff,stroke:#a78bfa
+    style M fill:#312e81,color:#fff,stroke:#a78bfa
+    style N fill:#0f172a,color:#fff,stroke:#22c55e
 ```
+
+<br/>
+
+### Backend Layered Architecture
+
+```
+┌────────────────────────────────────────────────────┐
+│                  cmd/api/main.go                    │
+│            (Server setup, metrics, DI)              │
+├────────────────────────────────────────────────────┤
+│                  cmd/api/routes.go                  │
+│           (210+ route definitions, middleware)      │
+├────────────────────────────────────────────────────┤
+│                  cmd/api/services.go                │
+│          (Dependency injection via initServices)    │
+├──────────────┬──────────────┬──────────────────────┤
+│   Handler    │   Service    │    Repository         │
+│  (37 files)  │  (32 files)  │    (44 files)        │
+│              │              │                       │
+│ HTTP only    │ Business     │ Raw SQL               │
+│ parse/call/  │ logic only   │ (all parameterized    │
+│ write        │ never net/   │  via pgx)             │
+│              │ http         │                       │
+├──────────────┴──────────────┴──────────────────────┤
+│                   internal/domain                   │
+│          (AppError, models, interfaces)             │
+├────────────────────────────────────────────────────┤
+│               internal/middleware (14 files)        │
+│  Auth · CORS · Rate Limit · Quota · Logging · ...  │
+└────────────────────────────────────────────────────┘
+```
+
+<br/>
+
+---
+
+<br/>
+
+<!-- LLM PIPELINE SECTION -->
+
+<a id="llm-pipeline"></a>
+
+## 🤖 LLM Pipeline
+
+<div align="center">
+  <br/>
+  <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Robot.png" width="48" />
+</div>
+
+<br/>
+
+> Every request flows through a **10-stage pipeline** orchestrated by `pkg/llm/pipeline/pipeline.go`, backed by **31 subpackages** under `pkg/llm/`.
+
+<br/>
+
+<div align="center">
+
+| Stage | Package | Purpose |
+| :---: | :------ | :------ |
+| 1️⃣ | `validator/` | Input validation & schema checks |
+| 2️⃣ | `router/` | Model→provider mapping, A/B routing, budget-aware selection |
+| 3️⃣ | `cache/` | TTL + semantic dedup + Redis response caching |
+| 4️⃣ | `guardrails/` | Content policy enforcement & input filtering |
+| 5️⃣ | `moderation/` | Output moderation & safety checks |
+| 6️⃣ | `translator/` | Format translation: Anthropic ↔ OpenAI ↔ Generic |
+| 7️⃣ | `provider/` | Provider registry, key rotation, health checks, failover |
+| 8️⃣ | `telemetry/` | Request tracing, metrics, and observability |
+| 9️⃣ | `circuitbreaker/` | Per-provider circuit breaking with configurable thresholds |
+| 🔟 | `watcher/` | Response quality monitoring & anomaly detection |
+
+</div>
+
+<br/>
+
+### Pipeline Subpackages (31 total)
+
+<details>
+<summary><b>📦 Full subpackage map</b></summary>
+
+| Subpackage | Purpose |
+| :--------- | :------ |
+| `anthropic/` | Anthropic format types & SSE event handling |
+| `audit/` | Request/response audit logging |
+| `batch/` | Batch job processing |
+| `budget/` | Budget enforcement & spending limits |
+| `cache/` | TTL + semantic dedup + Redis caching |
+| `circuitbreaker/` | Per-provider circuit breaking |
+| `credentials/` | Credential management & rotation |
+| `embeddings/` | Embedding generation & handling |
+| `guardrails/` | Content policy enforcement |
+| `interfaces/` | Shared pipeline interfaces |
+| `loadbalancer/` | Provider load balancing strategies |
+| `moderation/` | Output moderation & safety |
+| `openai/` | OpenAI format schema types |
+| `otel/` | OpenTelemetry integration |
+| `pipeline/` | 10-stage pipeline orchestrator |
+| `provider/` | Provider registry, health, fallback |
+| `registry/` | Model & provider registration |
+| `router/` | Model→provider routing, A/B, budget-aware |
+| `security/` | Security scanning & validation |
+| `stores/` | Persistent storage abstractions |
+| `streaming/` | SSE streaming infrastructure |
+| `thinking/` | Extended thinking / chain-of-thought |
+| `tokens/` | Token counting & estimation |
+| `tools/` | Function calling & web search tools |
+| `translator/` | Anthropic ↔ OpenAI ↔ Generic format translation |
+| `usage/` | Usage tracking & metering |
+| `util/` | Shared utilities |
+| `validator/` | Input validation & schema checks |
+| `virtualkeys/` | Virtual key management |
+| `watcher/` | Response quality & anomaly monitoring |
+| `ws/` | WebSocket streaming support |
+
+</details>
+
+<br/>
+
+### Supported Providers
+
+<div align="center">
+
+| Provider | Models | Streaming | Embeddings | Tools |
+| :------- | :----- | :-------: | :--------: | :---: |
+| **OpenAI** | GPT-4o, GPT-4.1, o3, o4-mini, GPT-4o-mini | ✅ | ✅ | ✅ |
+| **Anthropic** | Claude Opus 4, Claude Sonnet 4, Claude Haiku 4.5 | ✅ | ❌ | ✅ |
+| **Google** | Gemini 2.5 Pro, Gemini 2.5 Flash | ✅ | ✅ | ✅ |
+| **Groq** | Llama 4, Mixtral, Gemma 2 | ✅ | ❌ | ❌ |
+| **NVIDIA NIM** | Various optimized models | ✅ | ✅ | ❌ |
+| **Mistral** | Mistral Large, Medium, Small | ✅ | ✅ | ✅ |
+| **xAI** | Grok 3, Grok 3 Mini | ✅ | ❌ | ❌ |
+| **Cohere** | Command R+, Embed v3 | ✅ | ✅ | ❌ |
+
+</div>
 
 <br/>
 
@@ -411,27 +579,36 @@ graph LR
 | <img src="https://img.shields.io/badge/Next.js-000000?style=flat-square&logo=next.js" />                     | React Framework (App Router, RSC) | 16.3.0-canary |
 | <img src="https://img.shields.io/badge/React-61DAFB?style=flat-square&logo=react&color=222" />               | UI Library                        |    19.2.5     |
 | <img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&color=222" />     | Type Safety                       |     5.9.3     |
-| <img src="https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=flat-square&logo=tailwindcss&color=222" />  | Utility-first Styling             |    v4.2.2     |
+| <img src="https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=flat-square&logo=tailwindcss&color=222" />  | Utility-first Styling (v4 CSS)    |    v4.2.2     |
 | <img src="https://img.shields.io/badge/Framer-0055FF?style=flat-square&logo=framer&color=222" />             | Animations & Gestures             |    12.38.0    |
 | <img src="https://img.shields.io/badge/GSAP-88CE02?style=flat-square&logo=greensock&color=222" />            | Advanced Scroll Animations        |    3.15.0     |
 | <img src="https://img.shields.io/badge/Recharts-22b5bf?style=flat-square&color=222" />                       | Data Visualization                |     3.8.1     |
-| <img src="https://img.shields.io/badge/NextAuth-000000?style=flat-square&logo=auth0&color=222" />            | Authentication                    |  5.0.0-beta   |
+| <img src="https://img.shields.io/badge/NextAuth-000000?style=flat-square&logo=auth0&color=222" />            | Authentication (v5 beta)          |  5.0.0-beta   |
 | <img src="https://img.shields.io/badge/Drizzle_ORM-c5f74f?style=flat-square&color=222" />                    | Database ORM + Migrations         |    0.45.2     |
-| <img src="https://img.shields.io/badge/Zod-3068B7?style=flat-square&logo=zod&color=222" />                   | Schema Validation                 |      v4       |
+| <img src="https://img.shields.io/badge/Zod-3068B7?style=flat-square&logo=zod&color=222" />                   | Schema Validation (v4)            |      v4       |
 | <img src="https://img.shields.io/badge/AI_SDK-000000?style=flat-square&logo=vercel&color=222" />             | AI/LLM Integration                |     6.0.x     |
 | <img src="https://img.shields.io/badge/TanStack_Query-FF4154?style=flat-square&logo=reactquery&color=222" /> | Server State Management           |    5.71.0     |
 | <img src="https://img.shields.io/badge/Lucide-000000?style=flat-square&logo=lucide&color=222" />             | Icon Library                      |    1.14.0     |
+| <img src="https://img.shields.io/badge/Monaco-000000?style=flat-square&logo=monacoeditor&color=222" />       | Code Editor                       |    4.7.0      |
+| <img src="https://img.shields.io/badge/Mermaid-FF3670?style=flat-square&color=222" />                        | Diagrams & Flowcharts             |    11.14.0    |
+| <img src="https://img.shields.io/badge/xterm.js-2B2B2B?style=flat-square&color=222" />                       | Terminal Emulator                  |    5.5.0      |
 
 ### Backend
 
-| Technology                                                                                               | Purpose                  |    Version    |
-| :------------------------------------------------------------------------------------------------------- | :----------------------- | :-----------: |
-| <img src="https://img.shields.io/badge/Go-00ADD8?style=flat-square&logo=go&color=222" />                 | Runtime & Language       |    1.25.0     |
-| <img src="https://img.shields.io/badge/Chi_Router-000000?style=flat-square&color=222" />                 | HTTP Router & Middleware |    v5.2.5     |
-| <img src="https://img.shields.io/badge/pgx-336791?style=flat-square&logo=postgresql&color=222" />        | PostgreSQL Driver + Pool |    v5.9.2     |
-| <img src="https://img.shields.io/badge/JWT-000000?style=flat-square&logo=jsonwebtokens&color=222" />     | Token Authentication     |    v5.3.1     |
-| <img src="https://img.shields.io/badge/Prometheus-E6522C?style=flat-square&logo=prometheus&color=222" /> | Metrics Collection       | client_golang |
-| <img src="https://img.shields.io/badge/Slog-000000?style=flat-square&color=222" />                       | Structured Logging       |    stdlib     |
+| Technology                                                                                                  | Purpose                      |     Version     |
+| :---------------------------------------------------------------------------------------------------------- | :--------------------------- | :-------------: |
+| <img src="https://img.shields.io/badge/Go-00ADD8?style=flat-square&logo=go&color=222" />                    | Runtime & Language           |     1.25.0      |
+| <img src="https://img.shields.io/badge/Chi_Router-000000?style=flat-square&color=222" />                    | HTTP Router & Middleware     |     v5.2.5      |
+| <img src="https://img.shields.io/badge/pgx-336791?style=flat-square&logo=postgresql&color=222" />           | PostgreSQL Driver + Pool     |     v5.9.2      |
+| <img src="https://img.shields.io/badge/mongo_driver-47A248?style=flat-square&logo=mongodb&color=222" />     | MongoDB Driver               |     v2.1.0      |
+| <img src="https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&color=222" />            | Embedded DB (lite mode)      | modernc v1.53.0 |
+| <img src="https://img.shields.io/badge/JWT-000000?style=flat-square&logo=jsonwebtokens&color=222" />        | Token Authentication         |     v5.3.1      |
+| <img src="https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&color=222" />              | Caching & Rate Limiting      |     v9.19.0     |
+| <img src="https://img.shields.io/badge/Prometheus-E6522C?style=flat-square&logo=prometheus&color=222" />    | Metrics Collection           |   client_golang |
+| <img src="https://img.shields.io/badge/Stripe-635BFF?style=flat-square&logo=stripe&color=222" />            | Payment Processing           |     v76.25.0    |
+| <img src="https://img.shields.io/badge/OpenAI_SDK-412991?style=flat-square&logo=openai&color=222" />        | Official OpenAI Go SDK       |     v3.35.0     |
+| <img src="https://img.shields.io/badge/Anthropic_SDK-D4A574?style=flat-square&color=222" />                 | Official Anthropic Go SDK    |     v1.43.0     |
+| <img src="https://img.shields.io/badge/Slog-000000?style=flat-square&color=222" />                          | Structured Logging           |     stdlib      |
 
 ### Infrastructure
 
@@ -439,7 +616,9 @@ graph LR
 | :---------------------------------------------------------------------------------------------------------- | :------------------------------- |
 | <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&color=0f172a" /> | Primary Database                 |
 | <img src="https://img.shields.io/badge/Neon-00E599?style=flat-square&logo=neon&color=0f172a" />             | Serverless PostgreSQL            |
-| <img src="https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&color=0f172a" />           | Optional caching + rate limiting |
+| <img src="https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&color=0f172a" />           | Caching + Rate Limiting          |
+| <img src="https://img.shields.io/badge/MongoDB-47A248?style=flat-square&logo=mongodb&color=0f172a" />       | Alternative DB (profile: mongo)  |
+| <img src="https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&color=0f172a" />         | Embedded DB (lite runtime)       |
 | <img src="https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&color=0f172a" />         | Containerization                 |
 | <img src="https://img.shields.io/badge/Turborepo-EF4444?style=flat-square&logo=turborepo&color=0f172a" />   | Monorepo Task Runner             |
 | <img src="https://img.shields.io/badge/Railway-0B0D0E?style=flat-square&logo=railway&color=0f172a" />       | Deployment Platform              |
@@ -462,52 +641,81 @@ graph LR
 <br/>
 
 ```
-shinway/
+owsiwa/
 ├── 📦 apps/
 │   ├── 🌐 web/                          # Next.js 16 Frontend
 │   │   ├── 📂 app/                      # App Router (RSC + Client Components)
 │   │   │   ├── 🏠 page.tsx              # Landing page (Hero + Features)
+│   │   │   ├── 📖 about/                # About page
+│   │   │   ├── 📝 blog/                 # Blog section
+│   │   │   ├── 📋 changelog/            # Changelog
+│   │   │   ├── 📞 contact/              # Contact page
+│   │   │   ├── 🏢 enterprise/           # Enterprise landing
+│   │   │   ├── ⚖️ legal/                # Legal / Terms / Privacy
+│   │   │   ├── 🗺️ roadmap/              # Public roadmap
+│   │   │   ├── 📊 status/               # System status page
 │   │   │   ├── 🧪 playground/           # AI Playground (multi-model chat)
-│   │   │   ├── 📊 dashboard/            # Analytics, Keys, Logs, Billing
-│   │   │   │   ├── page.tsx             # Dashboard overview
-│   │   │   │   ├── analytics/           # Usage charts & model breakdown
-│   │   │   │   ├── keys/                # API key management
-│   │   │   │   ├── logs/                # Request audit trail
-│   │   │   │   ├── billing/             # Credit management
-│   │   │   │   ├── chat/                # Chat interface
-│   │   │   │   ├── battle/              # A/B model comparison
-│   │   │   │   ├── exports/             # CSV/PDF data exports
-│   │   │   │   ├── fine-tuning/         # Fine-tuning jobs
-│   │   │   │   ├── inbox/               # Admin messages
-│   │   │   │   ├── notifications/       # Real-time notifications
-│   │   │   │   ├── organization/        # Team workspaces
-│   │   │   │   ├── provider-health/     # Provider status monitoring
-│   │   │   │   ├── webhooks/            # Webhook configuration
-│   │   │   │   └── settings/            # User profile settings
 │   │   │   ├── 🌐 gateway/              # AI Gateway interface
 │   │   │   ├── 💰 pricing/              # Credit plans & billing
-│   │   │   ├── 🔐 auth                  # Login · Signup · Password Reset
-│   │   │   ├── 📚 docs/                 # 18 doc pages (API ref, quickstart, guides)
+│   │   │   ├── 📁 models/               # Model browser + detail pages
+│   │   │   ├── 🔐 login/ · signup/      # Auth flows
+│   │   │   ├── 🔑 forgot-password/      # Password reset
+│   │   │   ├── 📊 dashboard/            # User Dashboard (15 subroutes)
+│   │   │   │   ├── 📈 analytics/        # Usage charts & model breakdown
+│   │   │   │   ├── 🔑 keys/             # API key management
+│   │   │   │   ├── 📋 logs/             # Request audit trail
+│   │   │   │   ├── 💰 billing/          # Credit management
+│   │   │   │   ├── 💬 chat/             # Chat interface
+│   │   │   │   ├── 🏟️ battle/           # A/B model comparison
+│   │   │   │   ├── 📤 exports/          # CSV/PDF data exports
+│   │   │   │   ├── 🎯 fine-tuning/      # Fine-tuning jobs
+│   │   │   │   ├── 📥 inbox/            # Admin messages
+│   │   │   │   ├── 🔔 notifications/    # Real-time notifications
+│   │   │   │   ├── 🏢 organization/     # Team workspaces
+│   │   │   │   ├── 💚 provider-health/  # Provider status monitoring
+│   │   │   │   ├── 🪝 webhooks/         # Webhook configuration
+│   │   │   │   ├── ⚙️ settings/         # User profile settings
+│   │   │   │   └── 🛡️ admin/            # Admin panel (from dashboard)
+│   │   │   ├── 📚 docs/                 # 20 doc pages
+│   │   │   │   ├── quickstart/          # Getting started guide
+│   │   │   │   ├── api-reference/       # API reference
+│   │   │   │   ├── authentication/      # Auth docs
+│   │   │   │   ├── chat/ · models/      # Feature docs
+│   │   │   │   ├── embeddings/ · batch/ # Advanced docs
+│   │   │   │   ├── webhooks/ · rate-limits/ # Integration docs
+│   │   │   │   ├── security/ · error-handling/ # Safety docs
+│   │   │   │   ├── organizations/ · prompts/ # Management docs
+│   │   │   │   ├── conversations/ · files/ # Resource docs
+│   │   │   │   ├── pricing/ · dashboard/ # Business docs
+│   │   │   │   ├── self-hosting/ · examples/ # Operations docs
+│   │   │   │   └── organizations/        # Team docs
 │   │   │   ├── 📁 admin/                # Admin panel (20 pages)
 │   │   │   │   ├── login/               # Admin auth
+│   │   │   │   ├── setup/               # First-time admin bootstrap
 │   │   │   │   └── (protected)/         # Protected admin routes
 │   │   │   │       ├── dashboard/       # Admin overview
 │   │   │   │       ├── users/           # User management
+│   │   │   │       ├── admins/          # Admin management
 │   │   │   │       ├── models/          # Model CRUD
 │   │   │   │       ├── providers/       # Provider CRUD + hot-reload
-│   │   │   │       ├── billing/         # Billing admin
+│   │   │   │       ├── billing/ · cost/ # Billing admin
 │   │   │   │       ├── security/        # Security dashboard
-│   │   │   │       ├── analytics/       # Admin analytics
+│   │   │   │       ├── audit/ · logs/   # Audit & logging
+│   │   │   │       ├── analytics/ · reports/ # Analytics
 │   │   │   │       ├── sso/             # SSO configuration
-│   │   │   │       └── ...              # 12 more admin pages
-│   │   │   ├── 📁 models/               # Model browser + detail pages
+│   │   │   │       ├── operations/      # Operations dashboard
+│   │   │   │       ├── messages/ · announcements/ # Comms
+│   │   │   │       ├── promos/          # Promo code management
+│   │   │   │       ├── ip/              # IP access management
+│   │   │   │       ├── changelog/       # API changelog
+│   │   │   │       └── settings/        # System settings
 │   │   │   ├── 📁 api/                  # API routes & Server Actions
 │   │   │   ├── 🛑 error.tsx             # Global error boundary
 │   │   │   ├── 👻 not-found.tsx         # 404 page
-│   │   │   ├── 🎨 globals.css           # Tailwind + animations
+│   │   │   ├── 🎨 globals.css           # Tailwind v4 + @theme + animations
 │   │   │   ├── 📐 layout.tsx            # Root layout
 │   │   │   └── 🔧 providers.tsx         # React Query + Session
-│   │   ├── 🗄️ db/                       # Schema · Connection · Seed
+│   │   ├── 🗄️ db/                       # Schema · Connection · Seed (Drizzle)
 │   │   ├── 🧩 components/               # Shared UI components
 │   │   │   ├── ui/                      # Primitives (Button, Input, Card)
 │   │   │   ├── dashboard/               # Dashboard components
@@ -515,32 +723,43 @@ shinway/
 │   │   │   ├── playground/              # Playground components
 │   │   │   └── pricing/                 # Pricing components
 │   │   ├── 🔧 lib/                      # SDK · Auth · Utils
+│   │   │   └── api/                     # SDK (~2195 lines) + Hooks (~800 lines)
 │   │   ├── 🔐 auth.ts                   # NextAuth v5 config
 │   │   ├── 🔐 auth.config.ts            # Auth providers & callbacks
 │   │   ├── 🪞 proxy.ts                  # NextAuth middleware
 │   │   └── 🧪 tests/                    # Vitest test suite
 │   │
 │   └── ⚙️ backend/                      # Go Backend Service
-│       ├── 🚀 cmd/api/                  # Entrypoint
+│       ├── 🚀 cmd/api/                  # Entrypoint + Routes + DI
+│       │   ├── main.go                  # Server setup, metrics, wiring
+│       │   ├── routes.go                # 210+ route definitions
+│       │   └── services.go              # Dependency injection factory
 │       ├── 🧠 internal/                 # config · db · domain · handler
-│       │   ├── handler/                 # 34 HTTP route handlers (chi)
-│       │   ├── middleware/              # Auth · Rate limit · CORS · Logs
-│       │   ├── repository/              # Data access layer (raw SQL)
-│       │   └── service/                 # 30 business logic services
+│       │   ├── handler/                 # 37 HTTP route handlers (chi)
+│       │   ├── middleware/              # 14 files: Auth · Rate · CORS · Quota · Logs
+│       │   ├── repository/              # 44 data access files (raw SQL)
+│       │   ├── service/                 # 32 business logic services
+│       │   ├── domain/                  # AppError, models, interfaces
+│       │   ├── config/                  # Environment-based config
+│       │   ├── db/                      # pgx pool + SQLite + auto-migrate/seed
+│       │   └── pkg/                     # logger · response · token
 │       ├── 📦 pkg/                      # SDK · LLM · Webhook · Email
-│       │   ├── llm/                     # 16 subpackages (LLM pipeline)
-│       │   └── sdk/                     # Go SDK for external consumers
-│       ├── 📂 migrations/               # 19 SQL migrations (70+ tables)
+│       │   ├── llm/                     # 31 subpackages (10-stage pipeline)
+│       │   ├── sdk/                     # Go SDK (~1859 lines)
+│       │   ├── webhook/                 # Retry, DLQ, delivery logs
+│       │   ├── email/                   # SMTP integration
+│       │   └── trace/                   # Distributed tracing
+│       ├── 📂 migrations/               # 23 SQL migrations (70+ tables)
 │       ├── 🧪 tests/                    # Integration tests
 │       └── 📋 Makefile                  # Build · Test · Lint
 │
-├── 🐳 docker-compose.yml                # Full stack orchestration
-├── 🐋 Dockerfile                        # Frontend production build
+├── 🐳 docker-compose.yml                # Full stack: PG + Redis + Mongo (profile)
+├── 🐋 Dockerfile                        # Production build (standalone)
 ├── ⚡ turbo.json                        # Monorepo task pipeline
 ├── 📦 package.json                      # Workspace root
-├── 📜 AGENTS.md                         # Agent guide
 ├── 📜 CLAUDE.md                         # Claude Code instructions
-└── 📂 docs/                             # Implementation guides
+├── 📜 AGENTS.md                         # Agent guide
+└── 📂 scripts/                          # dev.sh · smoke-test.sh
 ```
 
 <br/>
@@ -562,6 +781,10 @@ shinway/
 
 <br/>
 
+> **210+ endpoints** across public, authenticated, and admin routes. Full SDK coverage in both **Go** (`pkg/sdk/`, ~1859 lines) and **TypeScript** (`lib/api/sdk.ts`, ~2195 lines).
+
+<br/>
+
 ### 🔓 Public Endpoints
 
 | Method | Endpoint            | Description                  |
@@ -570,6 +793,8 @@ shinway/
 | `GET`  | `/health/providers` | LLM provider health summary  |
 | `GET`  | `/api/models`       | List available AI models     |
 | `GET`  | `/v1/models`        | OpenAI-compatible model list |
+| `GET`  | `/api/setup/status` | Admin bootstrap status       |
+| `POST` | `/api/setup/bootstrap` | First-time admin setup    |
 
 ### 🔐 Authenticated Endpoints
 
@@ -589,7 +814,7 @@ shinway/
 </details>
 
 <details>
-<summary><b>💬 Chat & AI</b> — 5 endpoints</summary>
+<summary><b>💬 Chat & AI</b> — 6 endpoints</summary>
 
 | Method | Endpoint               | Description                       |
 | :----- | :--------------------- | :-------------------------------- |
@@ -597,6 +822,7 @@ shinway/
 | `POST` | `/api/embeddings`      | Generate embeddings               |
 | `POST` | `/v1/chat/completions` | OpenAI-compatible streaming proxy |
 | `POST` | `/v1/embeddings`       | OpenAI-compatible embeddings      |
+| `POST` | `/v1/messages`         | Anthropic-compatible messages     |
 | `POST` | `/api/validate`        | Validate structured output        |
 
 </details>
@@ -683,10 +909,10 @@ shinway/
 <details>
 <summary><b>📊 Usage & Logs</b> — 2 endpoints</summary>
 
-| Method | Endpoint         | Description              |
-| :----- | :--------------- | :----------------------- |
-| `GET`  | `/api/logs`      | Request logs (paginated) |
-| `GET`  | `/api/analytics` | Usage analytics          |
+| Method | Endpoint         | Description               |
+| :----- | :--------------- | :------------------------ |
+| `GET`  | `/api/logs`      | Request logs (paginated)  |
+| `GET`  | `/api/analytics` | Usage analytics           |
 
 </details>
 
@@ -779,6 +1005,36 @@ for await (const chunk of stream) {
 </details>
 
 <details open>
+<summary><b>🐹 Go SDK</b></summary>
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    sdk "dra-platform/backend/pkg/sdk"
+)
+
+func main() {
+    client := sdk.NewClient("http://localhost:8080", "your-api-key")
+
+    resp, err := client.ChatCompletion(context.Background(), &sdk.ChatRequest{
+        Model: "gpt-4o",
+        Messages: []sdk.Message{
+            {Role: "user", Content: "Hello!"},
+        },
+    })
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println(resp.Choices[0].Message.Content)
+}
+```
+
+</details>
+
+<details open>
 <summary><b>🐍 OpenAI-Compatible API (Python)</b></summary>
 
 ```python
@@ -805,6 +1061,7 @@ for chunk in response:
 <summary><b>🔑 API Key Authentication</b></summary>
 
 ```bash
+# Three auth modes: Bearer JWT, session cookie, or x-api-key
 curl http://localhost:8080/api/chat \
   -H "Content-Type: application/json" \
   -H "x-api-key: your-api-key-here" \
@@ -822,9 +1079,11 @@ curl http://localhost:8080/api/chat \
 
 <br/>
 
-<!-- DATABASE SCHEMA SECTION -->
+<!-- DATABASE SECTION -->
 
-## 🗄️ Database Schema
+<a id="database"></a>
+
+## 🗄️ Database
 
 <div align="center">
   <br/>
@@ -832,6 +1091,23 @@ curl http://localhost:8080/api/chat \
 </div>
 
 <br/>
+
+### Multi-Database Support
+
+<div align="center">
+
+| Mode | `DB_TYPE` | Driver | Use Case |
+| :--- | :-------- | :----- | :------- |
+| 🐘 **PostgreSQL** | `postgres` (default) | pgx v5 | Production, full feature set |
+| ☁️ **Neon** | `neon` | @neondatabase/serverless | Cloud serverless PostgreSQL |
+| 🍃 **MongoDB** | `mongodb` | mongo-driver v2 | Alternative document store (Docker profile) |
+| 📦 **SQLite** | `sqlite` | modernc.org/sqlite | Embedded single-binary runtime (lite) |
+
+</div>
+
+<br/>
+
+### Schema Overview
 
 ```sql
 -- Core Auth & Users
@@ -932,8 +1208,8 @@ cache_stats (id, hits, misses, evictions, period_start)
 
 | Metric                  | Count |
 | :---------------------- | ----: |
-| Total tables            |   70+ |
-| SQL migrations          |    19 |
+| Total tables            |   71  |
+| SQL migrations          |    23 |
 | Performance indexes     |   40+ |
 | Foreign key constraints |   50+ |
 
@@ -979,6 +1255,7 @@ npm run test:backend  # Backend tests
 npm run dev           # Next.js dev (:3000)
 npm run start         # Prod server
 npm run test          # Vitest suite
+npm run test:watch    # Vitest watch mode
 npm run db:push       # Push schema
 npm run db:seed       # Seed data
 npm run db:setup      # Push + seed
@@ -992,10 +1269,13 @@ npm run db:setup      # Push + seed
 ```bash
 make build            # go build
 make dev              # go run
-make test             # go test -race
+make test             # go test -race -cover
+make test-unit        # go test -v -short
+make test-integration # Handler + integration
+make test-coverage    # Coverage report
 make vet              # go vet
 make lint             # vet + staticcheck
-make fmt             # gofmt + goimports
+make fmt              # gofmt + goimports
 make docker           # Build image
 ```
 
@@ -1006,7 +1286,9 @@ make docker           # Build image
 ### Full-Stack Scripts
 
 ```bash
-bash scripts/dev.sh         # Full stack: deps → Postgres → schema → seed → servers
+bash scripts/dev.sh         # Full stack: deps → Postgres → Redis → schema → seed → servers
+bash scripts/dev.sh --check # Dependency and environment check only
+bash scripts/dev.sh --logs  # Show logs from last dev.sh run
 bash scripts/smoke-test.sh  # Post-change wiring verification
 ```
 
@@ -1037,14 +1319,22 @@ bash scripts/smoke-test.sh  # Post-change wiring verification
 
 ```bash
 # Production in one command
-docker-compose up -d
+docker compose up -d
+
+# With MongoDB support
+docker compose --profile mongo up -d
+
+# PostgreSQL only (for local dev)
+docker compose up -d postgres redis
 ```
 
 | Service              | Image                | Port |
 | :------------------- | :------------------- | :--: |
 | 🐘 **PostgreSQL 16** | `postgres:16-alpine` | 5432 |
+| 🔴 **Redis 7**       | `redis:7-alpine`     | 6379 |
 | 🌐 **Frontend**      | `owsiwa-web`         | 3000 |
 | ⚙️ **Backend**       | `owsiwa-api`         | 8080 |
+| 🍃 **MongoDB 7**     | `mongo:7`            | 27017 |
 
 </td>
 <td width="50%" valign="top">
@@ -1065,29 +1355,93 @@ Use the OpenAI-compatible endpoint:
 https://yapa.up.railway.app/v1/chat/completions
 ```
 
+Or the Anthropic-compatible endpoint:
+
+```
+https://yapa.up.railway.app/v1/messages
+```
+
 </td>
 </tr>
 </table>
 
 ### Environment Variables
 
-| Variable                                | Required | Description                  |
-| :-------------------------------------- | :------: | :--------------------------- |
-| `DATABASE_URL`                          |    ✅    | PostgreSQL connection string |
-| `AUTH_SECRET`                           |    ✅    | JWT signing secret           |
-| `NEXTAUTH_SECRET`                       |    ✅    | NextAuth session secret      |
-| `NEXTAUTH_URL`                          |    ✅    | Public base URL              |
-| `BACKEND_URL`                           |    ✅    | Go backend URL               |
-| `OPENAI_API_KEY`                        |    ❌    | OpenAI API key               |
-| `NVIDIA_API_KEY`                        |    ❌    | NVIDIA NIM API key           |
-| `ANTHROPIC_API_KEY`                     |    ❌    | Anthropic API key            |
-| `GROQ_API_KEY`                          |    ❌    | Groq API key                 |
-| `GEMINI_API_KEY`                        |    ❌    | Google Gemini API key        |
-| `RATE_LIMIT_RPM`                        |    ❌    | Rate limit per minute        |
-| `STRIPE_SECRET_KEY`                     |    ❌    | Stripe secret key            |
-| `STRIPE_WEBHOOK_SECRET`                 |    ❌    | Stripe webhook secret        |
-| `SMTP_HOST` / `SMTP_USER` / `SMTP_PASS` |    ❌    | SMTP email config            |
-| `REDIS_URL`                             |    ❌    | Redis connection URL         |
+| Variable                                | Required | Description                     |
+| :-------------------------------------- | :------: | :------------------------------ |
+| `DATABASE_URL`                          |    ✅    | PostgreSQL connection string    |
+| `AUTH_SECRET`                           |    ✅    | JWT signing secret              |
+| `NEXTAUTH_SECRET`                       |    ✅    | NextAuth session secret         |
+| `NEXTAUTH_URL`                          |    ✅    | Public base URL                 |
+| `BACKEND_URL`                           |    ✅    | Go backend URL                  |
+| `DB_TYPE`                               |    ❌    | `postgres` (default), `neon`, `mongodb`, `sqlite` |
+| `ENV`                                   |    ❌    | `development` (debug) or `production` |
+| `OPENAI_API_KEY`                        |    ❌    | OpenAI API key                  |
+| `NVIDIA_API_KEY`                        |    ❌    | NVIDIA NIM API key              |
+| `ANTHROPIC_API_KEY`                     |    ❌    | Anthropic API key               |
+| `GROQ_API_KEY`                          |    ❌    | Groq API key                    |
+| `GEMINI_API_KEY`                        |    ❌    | Google Gemini API key           |
+| `MISTRAL_API_KEY`                       |    ❌    | Mistral API key                 |
+| `RATE_LIMIT_RPM`                        |    ❌    | Rate limit per minute           |
+| `STRIPE_SECRET_KEY`                     |    ❌    | Stripe secret key               |
+| `STRIPE_WEBHOOK_SECRET`                 |    ❌    | Stripe webhook secret           |
+| `SMTP_HOST` / `SMTP_USER` / `SMTP_PASS` |    ❌    | SMTP email config               |
+| `REDIS_URL`                             |    ❌    | Redis connection URL            |
+
+<br/>
+
+---
+
+<br/>
+
+<!-- SECURITY SECTION -->
+
+<a id="security"></a>
+
+## 🛡️ Security
+
+<div align="center">
+  <br/>
+  <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Shield.png" width="48" />
+</div>
+
+<br/>
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+### 🔐 Authentication
+
+| Feature | Implementation |
+| :------ | :------------- |
+| **User Auth** | NextAuth v5 (GitHub + Google OAuth) |
+| **Admin Auth** | Separate admin auth flow with bootstrap |
+| **API Key Auth** | `x-api-key` header for programmatic access |
+| **JWT Tokens** | HS256, configurable expiry |
+| **Token Blacklist** | Revoked tokens invalidated instantly |
+| **First-time Setup** | Admin bootstrap via `/api/setup/bootstrap` |
+
+</td>
+<td width="50%" valign="top">
+
+### 🛡️ Protection
+
+| Feature | Implementation |
+| :------ | :------------- |
+| **Rate Limiting** | Sliding window + Redis per-user limits |
+| **CORS** | Configurable origin allowlist |
+| **Input Validation** | Zod v4 (frontend) + Go validation (backend) |
+| **SQL Injection** | All queries parameterized via pgx |
+| **Password Hashing** | bcrypt with salt |
+| **Request Logging** | Full audit trail with IP tracking |
+| **IP Lists** | Allowlist / blocklist with expiry |
+| **Suspicious Activity** | Automated detection & alerting |
+| **Sandbox Mode** | `X-Sandbox: true` header for safe testing |
+
+</td>
+</tr>
+</table>
 
 <br/>
 
@@ -1135,6 +1489,7 @@ https://yapa.up.railway.app/v1/chat/completions
 | 🏖️ **Sandbox mode**          | `X-Sandbox: true` header skips quota, cost, and logging                    |
 | 📜 **Migrations**            | Hand-applied SQL only. Apply in order, one-time                            |
 | 🔒 **Auth**                  | `AUTH_SECRET` must be identical between frontend and backend               |
+| 📋 **Errors**                | Flow through `domain.AppError`, not ad-hoc HTTP errors                     |
 
 </td>
 </tr>
@@ -1165,23 +1520,24 @@ https://yapa.up.railway.app/v1/chat/completions
 <tr>
 <td width="50%" valign="top">
 
-### ✅ Completed (25+ Features)
+### ✅ Completed (30+ Features)
 
 - [x] Multi-provider AI gateway (100+ models)
 - [x] OpenAI-compatible API drop-in (`/v1/chat/completions`)
+- [x] Anthropic-compatible API (`/v1/messages`)
 - [x] Credit-based billing + Stripe integration
 - [x] Real-time analytics dashboards (Recharts)
 - [x] API key lifecycle management
 - [x] Neural Playground (multi-model chat)
 - [x] Prompt management system
-- [x] Webhook system with retry logic
-- [x] Organization workspaces
+- [x] Webhook system with retry logic + DLQ
+- [x] Organization workspaces & teams
 - [x] Conversations & history
 - [x] Batch processing
 - [x] File uploads
 - [x] SSE real-time notifications
-- [x] Full LLM pipeline (cache, guardrails, circuit breaker, telemetry)
-- [x] Admin management panel with real-time hot-reload
+- [x] Full 10-stage LLM pipeline (31 subpackages)
+- [x] Admin management panel (20 pages) with hot-reload
 - [x] Fine-grained RBAC (role-based access control)
 - [x] Usage alerts & budget caps
 - [x] Custom provider plugin system
@@ -1189,24 +1545,38 @@ https://yapa.up.railway.app/v1/chat/completions
 - [x] Per-tier rate limiting (free/pro/enterprise)
 - [x] Provider hot-registration & model discovery
 - [x] Model detail pages with editorial bento layout
-- [x] Docs UI with color-coded sections & code examples
+- [x] Docs UI with 20 pages & code examples
 - [x] Configurable docs base URL for self-hosting
 - [x] Token blacklist & session management
 - [x] Admin UI redesign with CSS design system
 - [x] Full SDK coverage (Go + TypeScript) with admin API
+- [x] Multi-database support (Postgres, Neon, MongoDB, SQLite)
+- [x] First-time admin bootstrap flow
+- [x] Circuit breaker & provider failover
+- [x] Extended thinking / chain-of-thought support
+- [x] Function calling / tools integration
 
 </td>
 <td width="50%" valign="top">
 
-### ⏳ In Progress (Q2-Q3 2026)
+### ⏳ In Progress & Planned (Q3-Q4 2026)
 
 - [ ] 🎯 Model fine-tuning interface
 - [ ] 🌍 Multi-region deployment
 - [ ] 🌐 Custom domain support
 - [ ] 🦜 LangChain / LlamaIndex integration
 - [ ] 🔄 WebSocket streaming fallback
-- [ ] ⚖️ A/B model comparison
+- [ ] ⚖️ A/B model comparison dashboard
 - [ ] 📡 API versioning (v2)
+- [ ] 📱 Mobile-responsive dashboard redesign
+- [ ] 🔐 SAML / SSO enterprise integration
+- [ ] 📊 Real-time collaboration in playground
+- [ ] 🤖 Agent mode (multi-step tool use)
+- [ ] 📈 Usage forecasting & cost prediction
+- [ ] 🎨 Custom theme / white-label support
+- [ ] 🔄 Auto-migration runner (no more hand-applied SQL)
+- [ ] 🧪 E2E test suite (Playwright)
+- [ ] 📦 Plugin marketplace
 
 </td>
 </tr>
@@ -1307,6 +1677,7 @@ We welcome contributions from the community! Yapapa is an open-source project an
 | 📦 **SDKs**  | Update both Go + TypeScript SDKs for API changes                   |
 | ✅ **CI**    | `npm run build` + `make test` must pass before PR                  |
 | 🚫 **Never** | Use `as any` or `@ts-ignore` — maintain strict TypeScript coverage |
+| 📊 **Data**  | No mock data in dashboard — use `getSDK()` for real data           |
 
 </div>
 
@@ -1317,6 +1688,7 @@ We welcome contributions from the community! Yapapa is an open-source project an
 - 🧪 **Tests** — improve coverage, add edge cases
 - 🚀 **Features** — check the [Roadmap](#-roadmap) for ideas
 - 🎨 **UI improvements** — better UX, animations, accessibility
+- 🔒 **Security** — vulnerability reports and hardening
 
 <br/>
 

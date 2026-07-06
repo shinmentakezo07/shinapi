@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Shield, Timer, Gauge, Users } from "lucide-react";
 import { Section } from "@/components/docs/Section";
+import { DocsSubhead } from "@/components/docs/DocsCard";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 import { TipBox } from "@/components/docs/TipBox";
 
@@ -69,10 +70,9 @@ export default function RateLimitsPage() {
         </div>
 
         <div className="mt-8">
-          <h3 className="text-white/95 font-semibold text-sm mb-4 flex items-center gap-2.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60" />
+          <DocsSubhead>
             Rate limit headers
-          </h3>
+          </DocsSubhead>
           <p className="text-sm text-white/50 mb-4">
             Every response includes headers that indicate your current rate
             limit status. These can be used to implement client-side rate
@@ -130,10 +130,9 @@ Retry-After: 2`}
         </div>
 
         <div className="mt-8">
-          <h3 className="text-white/95 font-semibold text-sm mb-4 flex items-center gap-2.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60" />
+          <DocsSubhead>
             Rate limited response (429)
-          </h3>
+          </DocsSubhead>
           <CodeBlock
             language="json"
             code={`HTTP/1.1 429 Too Many Requests
@@ -152,10 +151,9 @@ Retry-After: 2
         </div>
 
         <div className="mt-8">
-          <h3 className="text-white/95 font-semibold text-sm mb-4 flex items-center gap-2.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60" />
+          <DocsSubhead>
             Endpoint-specific limits
-          </h3>
+          </DocsSubhead>
           <p className="text-sm text-white/50 mb-4">
             Different endpoint groups have different rate limits. Auth endpoints
             have stricter limits to prevent brute force attacks.

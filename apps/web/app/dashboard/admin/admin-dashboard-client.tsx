@@ -52,9 +52,8 @@ export default function AdminDashboardClient() {
   } = useAdminUsers(userPage, userLimit);
   const deleteUser = useAdminDeleteUser();
 
-  const users = (usersData as any)?.data ?? [];
-  const userTotal =
-    (usersData as any)?.meta?.total ?? (usersData as any)?.total ?? 0;
+  const users = usersData?.data ?? [];
+  const userTotal = usersData?.total ?? 0;
 
   const handleDelete = async (userId: string) => {
     setError(null);

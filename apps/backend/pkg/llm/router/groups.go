@@ -8,9 +8,15 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"dra-platform/backend/pkg/llm"
 )
+
+// rng is a package-level random source initialized with a seed to ensure
+// non-deterministic behavior across restarts (unlike the default math/rand
+// global source which may be seeded to a fixed value in some Go versions).
+var rng = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 // ModelGroup represents a group of deployments for the same user-facing model.
 // E.g., "gpt-4o" can have OpenAI + Azure + self-hosted deployments.
@@ -133,7 +139,7 @@ func (gr *GroupRouter) pickDeployment(group *ModelGroup) *Deployment {
 	}
 
 	// Weighted random selection
-	r := rand.Intn(totalWeight)
+	r := rng.Intn(totalWeight)
 	cumulative := 0
 	for i := range active {
 		cumulative += active[i].Weight
@@ -236,7 +242,7 @@ func ExpandModelGroup(modelID string, groups map[string]*ModelGroup) string {
 		if len(active) == 0 {
 			return modelID
 		}
-		r := rand.Intn(totalWeight)
+		r := rng.Intn(totalWeight)
 		cumulative := 0
 		for _, d := range active {
 			cumulative += d.Weight

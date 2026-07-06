@@ -473,9 +473,23 @@ class DraSDK {
   private async fetchWithTimeout(
     url: string,
     init: RequestInit,
+    externalSignal?: AbortSignal,
   ): Promise<Response> {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), this.timeout);
+
+    // If an external signal is provided, link it so that aborting the
+    // external signal also aborts this request.
+    if (externalSignal) {
+      if (externalSignal.aborted) {
+        controller.abort();
+      } else {
+        externalSignal.addEventListener("abort", () => controller.abort(), {
+          once: true,
+        });
+      }
+    }
+
     try {
       const res = await fetch(url, { ...init, signal: controller.signal });
       return res;
@@ -776,17 +790,21 @@ class DraSDK {
   }
 
   // Chat streaming with parsed SSE chunks
-  async *chatStream(data: {
-    model: string;
-    messages: ChatMessage[];
-  }): AsyncGenerator<string, void, unknown> {
+  async *chatStream(
+    data: { model: string; messages: ChatMessage[] },
+    signal?: AbortSignal,
+  ): AsyncGenerator<string, void, unknown> {
     const url = `${this.baseUrl}/api/chat`;
-    const res = await this.fetchWithTimeout(url, {
-      method: "POST",
-      headers: this.headers(),
-      credentials: "include",
-      body: JSON.stringify(data),
-    });
+    const res = await this.fetchWithTimeout(
+      url,
+      {
+        method: "POST",
+        headers: this.headers(),
+        credentials: "include",
+        body: JSON.stringify(data),
+      },
+      signal,
+    );
     this.extractResponseHeaders(res);
 
     if (!res.ok || !res.body) {
@@ -981,8 +999,11 @@ class DraSDK {
 
   // Prompts
 
-  listPrompts() {
-    return this.request<Prompt[]>("GET", "/api/prompts");
+  listPrompts(page?: number, limit?: number) {
+    return this.paginatedRequest<Prompt>("/api/prompts", {
+      page,
+      limit,
+    });
   }
 
   createPrompt(data: {
@@ -1224,17 +1245,21 @@ class DraSDK {
 
   // Notifications
 
-  async *notificationsStream(): AsyncGenerator<
+  async *notificationsStream(signal?: AbortSignal): AsyncGenerator<
     NotificationEvent,
     void,
     unknown
   > {
     const url = `${this.baseUrl}/api/notifications/stream`;
-    const res = await this.fetchWithTimeout(url, {
-      method: "GET",
-      headers: this.headers(),
-      credentials: "include",
-    });
+    const res = await this.fetchWithTimeout(
+      url,
+      {
+        method: "GET",
+        headers: this.headers(),
+        credentials: "include",
+      },
+      signal,
+    );
 
     if (!res.ok || !res.body) {
       const text = await res.text();
@@ -1531,11 +1556,11 @@ class DraSDK {
     );
   }
 
-  adminUpdateUserStatus(id: string, status: string) {
+  adminUpdateUserStatus(id: string, status: string, reason?: string) {
     return this.request<{ updated: boolean }>(
       "PUT",
       `/api/admin/users/${encodeURIComponent(id)}/status`,
-      { status },
+      { status, reason },
     );
   }
 

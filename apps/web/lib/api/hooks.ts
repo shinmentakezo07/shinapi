@@ -268,10 +268,10 @@ export function useAddMessage() {
 // Prompts
 // ============================================================================
 
-export function usePrompts() {
-  return useQuery<Prompt[]>({
-    queryKey: ["prompts"],
-    queryFn: () => getSDK().listPrompts(),
+export function usePrompts(page?: number, limit?: number) {
+  return useQuery<PaginatedResult<Prompt>>({
+    queryKey: ["prompts", page, limit],
+    queryFn: () => getSDK().listPrompts(page, limit),
   });
 }
 

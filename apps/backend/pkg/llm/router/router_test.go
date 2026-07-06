@@ -309,7 +309,9 @@ func TestErrorTracker(t *testing.T) {
 
 func TestErrorTracker_Empty(t *testing.T) {
 	et := &errorTracker{}
-	if et.errorRate() != 0 {
-		t.Errorf("empty tracker errorRate = %f, want 0", et.errorRate())
+	// Providers with no tracking data return a moderate default (0.5)
+	// so they are not preferred over providers with real data.
+	if et.errorRate() != 0.5 {
+		t.Errorf("empty tracker errorRate = %f, want 0.5", et.errorRate())
 	}
 }

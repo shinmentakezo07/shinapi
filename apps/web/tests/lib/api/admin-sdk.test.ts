@@ -167,6 +167,7 @@ describe("AdminSDK", () => {
       expect(mockSDK.adminUpdateUserStatus).toHaveBeenCalledWith(
         "1",
         "suspended",
+        "abuse",
       );
     });
   });

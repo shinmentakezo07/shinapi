@@ -38,12 +38,12 @@ func (s *PromptService) CreatePrompt(ctx context.Context, userID, name, template
 }
 
 // ListPrompts returns all prompt templates for a user.
-func (s *PromptService) ListPrompts(ctx context.Context, userID string, page, limit int) ([]repository.Prompt, *domain.AppError) {
-	prompts, err := s.repo.ListPrompts(ctx, userID, limit, (page-1)*limit)
+func (s *PromptService) ListPrompts(ctx context.Context, userID string, page, limit int) ([]repository.Prompt, int, *domain.AppError) {
+	prompts, total, err := s.repo.ListPrompts(ctx, userID, limit, (page-1)*limit)
 	if err != nil {
-		return nil, domain.Wrap(domain.ErrInternal, 500, "failed to list prompts", err)
+		return nil, 0, domain.Wrap(domain.ErrInternal, 500, "failed to list prompts", err)
 	}
-	return prompts, nil
+	return prompts, total, nil
 }
 
 // GetPrompt retrieves the latest version of a prompt by name for a user.

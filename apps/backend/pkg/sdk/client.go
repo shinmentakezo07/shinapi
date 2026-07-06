@@ -509,16 +509,15 @@ func (c *Client) ChatStream(ctx context.Context, model string, messages []ChatMe
 			return
 		}
 
-		ReadSSE(resp.Body, func(line string) bool {
-			if !strings.HasPrefix(line, "data: ") {
-				return true
-			}
-			data := strings.TrimPrefix(line, "data: ")
-			if data == "[DONE]" {
+		ReadSSE(resp.Body, func(evt SSEEvent) bool {
+			if evt.Data == "[DONE]" {
 				return false
 			}
+			if evt.Data == "" {
+				return true
+			}
 			var chunk ChatCompletionChunk
-			if err := json.Unmarshal([]byte(data), &chunk); err != nil {
+			if err := json.Unmarshal([]byte(evt.Data), &chunk); err != nil {
 				return true
 			}
 			if len(chunk.Choices) > 0 && chunk.Choices[0].Delta.Content != "" {
@@ -674,17 +673,13 @@ func (c *Client) AddMessage(ctx context.Context, conversationID string, role, co
 
 // Prompts
 
-// ListPrompts returns all prompts.
-func (c *Client) ListPrompts(ctx context.Context) ([]Prompt, error) {
+// ListPrompts returns paginated prompts.
+func (c *Client) ListPrompts(ctx context.Context, page, limit int) (*PaginatedResult[Prompt], error) {
 	var r envelope
-	if err := c.get(ctx, "/api/prompts", nil, &r); err != nil {
+	if err := c.get(ctx, "/api/prompts", paginationQuery(page, limit), &r); err != nil {
 		return nil, err
 	}
-	var prompts []Prompt
-	if err := unmarshalData(r.Data, &prompts); err != nil {
-		return nil, err
-	}
-	return prompts, nil
+	return paginatedResult[Prompt](&r)
 }
 
 // CreatePrompt creates a new prompt.
@@ -990,13 +985,12 @@ func (c *Client) NotificationsStream(ctx context.Context) (<-chan NotificationEv
 			return
 		}
 
-		ReadSSE(resp.Body, func(line string) bool {
-			if !strings.HasPrefix(line, "data: ") {
+		ReadSSE(resp.Body, func(evt SSEEvent) bool {
+			if evt.Data == "" {
 				return true
 			}
-			data := strings.TrimPrefix(line, "data: ")
 			var event NotificationEvent
-			if err := json.Unmarshal([]byte(data), &event); err != nil {
+			if err := json.Unmarshal([]byte(evt.Data), &event); err != nil {
 				return true
 			}
 			select {

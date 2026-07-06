@@ -102,7 +102,30 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
       }
 
       if (token.backendToken && isTokenExpired(token.backendToken as string)) {
-        token.backendToken = undefined;
+        // Attempt to refresh the token by calling the backend's /auth/me
+        // endpoint with the existing token. If the backend still accepts it
+        // (grace period), we keep it. Otherwise, clear the token so the user
+        // is prompted to re-authenticate.
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 5_000);
+          const res = await fetch(`${BACKEND_URL}/auth/me`, {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token.backendToken as string}`,
+            },
+            signal: controller.signal,
+          });
+          clearTimeout(timeout);
+
+          if (res.ok) {
+            // Token still accepted by backend — keep it for now
+          } else {
+            token.backendToken = undefined;
+          }
+        } catch {
+          // Network error or timeout — don't clear token on transient failures
+        }
       }
 
       return token;

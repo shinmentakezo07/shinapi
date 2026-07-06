@@ -61,8 +61,8 @@ func (r *PromptRepo) GetPrompt(ctx context.Context, userID, name string) (*Promp
 	return &p, nil
 }
 
-// ListPrompts lists all unique prompt names for a user with their latest version.
-func (r *PromptRepo) ListPrompts(ctx context.Context, userID string, limit, offset int) ([]Prompt, error) {
+// ListPrompts lists all unique prompt names for a user with their latest version and returns the total count.
+func (r *PromptRepo) ListPrompts(ctx context.Context, userID string, limit, offset int) ([]Prompt, int, error) {
 	if limit <= 0 {
 		limit = 20
 	}
@@ -70,7 +70,7 @@ func (r *PromptRepo) ListPrompts(ctx context.Context, userID string, limit, offs
 		`SELECT DISTINCT ON (name) id, user_id, name, version, template, model, config, created_at FROM prompts WHERE user_id = $1 ORDER BY name, version DESC LIMIT $2 OFFSET $3`,
 		userID, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -78,11 +78,17 @@ func (r *PromptRepo) ListPrompts(ctx context.Context, userID string, limit, offs
 	for rows.Next() {
 		var p Prompt
 		if err := rows.Scan(&p.ID, &p.UserID, &p.Name, &p.Version, &p.Template, &p.Model, &p.Config, &p.CreatedAt); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		result = append(result, p)
 	}
-	return result, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+
+	var total int
+	_ = r.db.QueryRow(ctx, `SELECT COUNT(*) FROM (SELECT DISTINCT ON (name) id FROM prompts WHERE user_id = $1) sub`, userID).Scan(&total)
+	return result, total, nil
 }
 
 // DeletePrompt removes all versions of a prompt for a specific user.

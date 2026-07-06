@@ -82,7 +82,7 @@ export class AdminSDK {
     status: string,
     reason?: string,
   ): Promise<void> {
-    await this.api.adminUpdateUserStatus(id, status);
+    await this.api.adminUpdateUserStatus(id, status, reason);
   }
 
   async updateUserRole(id: string, role: string): Promise<void> {
@@ -114,7 +114,10 @@ export class AdminSDK {
   }
 
   async updateProvider(data: Partial<Provider>): Promise<void> {
-    await this.api.adminUpdateProvider(data.id!, data);
+    if (data.id === undefined) {
+      throw new Error("updateProvider requires data.id — got undefined");
+    }
+    await this.api.adminUpdateProvider(data.id, data);
   }
 
   async updateProviderStatus(id: string, status: string): Promise<void> {

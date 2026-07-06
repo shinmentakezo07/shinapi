@@ -129,7 +129,8 @@ func (r *WebhookRepo) ListPendingRetries(ctx context.Context, batchSize int) ([]
 		FROM webhook_deliveries
 		WHERE status = 'pending' AND delivered_at IS NULL AND next_retry_at IS NOT NULL AND next_retry_at <= NOW()
 		ORDER BY next_retry_at ASC
-		LIMIT $1`, batchSize)
+		LIMIT $1
+			FOR UPDATE SKIP LOCKED`, batchSize)
 	if err != nil {
 		return nil, err
 	}

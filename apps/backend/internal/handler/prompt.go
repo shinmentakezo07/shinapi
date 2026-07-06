@@ -48,12 +48,12 @@ func (h *Handler) ListPrompts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	page, limit := parsePagination(r)
-	prompts, appErr := h.promptSvc.ListPrompts(r.Context(), u.ID, page, limit)
+	prompts, total, appErr := h.promptSvc.ListPrompts(r.Context(), u.ID, page, limit)
 	if appErr != nil {
 		response.Error(w, appErr.Status, appErr.Message)
 		return
 	}
-	response.OK(w, prompts)
+	response.Paginated(w, prompts, total, page, limit)
 }
 
 func (h *Handler) GetPrompt(w http.ResponseWriter, r *http.Request) {

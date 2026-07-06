@@ -307,15 +307,14 @@ func (p *AnthropicProvider) ChatStream(ctx context.Context, req *llm.ChatRequest
 		defer close(ch)
 		defer resp.Body.Close()
 
-		ReadSSE(resp.Body, func(line string) bool {
-			if !strings.HasPrefix(line, "data: ") {
-				return true
-			}
-			data := strings.TrimPrefix(line, "data: ")
-			if data == "[DONE]" {
+		ReadSSE(resp.Body, func(evt SSEEvent) bool {
+			if evt.Data == "[DONE]" {
 				return false
 			}
-			chunk, err := p.translator.TranslateStreamChunk([]byte(data), req.Model, p.name)
+			if evt.Data == "" {
+				return true
+			}
+			chunk, err := p.translator.TranslateStreamChunk([]byte(evt.Data), req.Model, p.name)
 			if err != nil {
 				return true
 			}
@@ -589,10 +588,57 @@ func (r *Registry) RouteStreamRequest(ctx context.Context, req *llm.ChatRequest)
 	return p.ChatStream(ctx, routedReq)
 }
 
-// ReadSSE reads server-sent events from a reader.
-func ReadSSE(r io.Reader, yield func(string) bool) {
+// SSEEvent represents a single server-sent event as defined by the SSE specification.
+// It accumulates event, data, and id fields across multiple lines until a blank line
+// separator is encountered, at which point the complete event is emitted.
+type SSEEvent struct {
+	EventType string // from "event:" lines; defaults to "message" per SSE spec
+	Data      string // from "data:" lines, joined with newlines if multiple
+	ID        string // from "id:" lines
+}
+
+// ReadSSE reads server-sent events from a reader per the SSE specification.
+// It accumulates event:, data:, and id: fields across lines, and emits a complete
+// SSEEvent when a blank line (event boundary) is encountered. Multiple data: lines
+// for the same event are joined with newlines, as required by the spec.
+func ReadSSE(r io.Reader, yield func(SSEEvent) bool) {
 	buf := make([]byte, 4096)
 	var line []byte
+	var eventType string
+	var dataLines []string
+	var eventID string
+
+	// sseFieldValue extracts the value from an SSE field line.
+	// Per the SSE spec, after "field:", a single leading space is stripped if present.
+	sseFieldValue := func(line, prefix string) string {
+		v := strings.TrimPrefix(line, prefix)
+		if len(v) > 0 && v[0] == ' ' {
+			v = v[1:]
+		}
+		return v
+	}
+
+	emit := func() bool {
+		if len(dataLines) == 0 && eventType == "" && eventID == "" {
+			return true
+		}
+		evt := SSEEvent{
+			EventType: eventType,
+			Data:      strings.Join(dataLines, "\n"),
+			ID:        eventID,
+		}
+		if evt.EventType == "" {
+			evt.EventType = "message"
+		}
+		return yield(evt)
+	}
+
+	reset := func() {
+		eventType = ""
+		dataLines = dataLines[:0]
+		eventID = ""
+	}
+
 	for {
 		n, err := r.Read(buf)
 		if n > 0 {
@@ -600,9 +646,21 @@ func ReadSSE(r io.Reader, yield func(string) bool) {
 				b := buf[i]
 				if b == '\n' {
 					if len(line) > 0 {
-						if !yield(string(line)) {
+						s := string(line)
+						if strings.HasPrefix(s, "data:") {
+							dataLines = append(dataLines, sseFieldValue(s, "data:"))
+						} else if strings.HasPrefix(s, "event:") {
+							eventType = sseFieldValue(s, "event:")
+						} else if strings.HasPrefix(s, "id:") {
+							eventID = sseFieldValue(s, "id:")
+						}
+					}
+					// Blank line = event boundary
+					if len(line) == 0 {
+						if !emit() {
 							return
 						}
+						reset()
 					}
 					line = line[:0]
 				} else if b != '\r' {
@@ -611,9 +669,18 @@ func ReadSSE(r io.Reader, yield func(string) bool) {
 			}
 		}
 		if err != nil {
+			// Emit any remaining event data
 			if len(line) > 0 {
-				yield(string(line))
+				s := string(line)
+				if strings.HasPrefix(s, "data:") {
+					dataLines = append(dataLines, sseFieldValue(s, "data:"))
+				} else if strings.HasPrefix(s, "event:") {
+					eventType = sseFieldValue(s, "event:")
+				} else if strings.HasPrefix(s, "id:") {
+					eventID = sseFieldValue(s, "id:")
+				}
 			}
+			emit()
 			return
 		}
 	}

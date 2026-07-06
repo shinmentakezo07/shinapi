@@ -154,6 +154,46 @@ func (g *Guard) CheckRequest(ctx context.Context, req *llm.ChatRequest) (*CheckR
 				result.Allowed = false
 			}
 		}
+
+		// Also check tool_use and tool_result content blocks for guardrails
+		for _, cb := range m.ContentBlocks {
+			switch cb.Type {
+			case llm.ContentTypeToolUse:
+				if cb.ToolUse != nil {
+					toolContent := string(cb.ToolUse.Input)
+					for _, re := range g.blockedPatterns {
+						if re.MatchString(toolContent) {
+							result.Allowed = false
+							result.Violations = append(result.Violations, fmt.Sprintf("message %d tool_use %s: blocked content pattern matched in arguments", i, cb.ToolUse.Name))
+						}
+					}
+					if risk := g.detectInjection(toolContent); risk > 0.5 {
+						result.InjectionRisk = risk
+						result.Violations = append(result.Violations, fmt.Sprintf("message %d tool_use %s: potential prompt injection in arguments (risk: %.2f)", i, cb.ToolUse.Name, risk))
+						if risk > 0.8 {
+							result.Allowed = false
+						}
+					}
+				}
+			case llm.ContentTypeToolResult:
+				if cb.ToolResult != nil {
+					toolContent := cb.ToolResult.Content
+					for _, re := range g.blockedPatterns {
+						if re.MatchString(toolContent) {
+							result.Allowed = false
+							result.Violations = append(result.Violations, fmt.Sprintf("message %d tool_result: blocked content pattern matched in result", i))
+						}
+					}
+					if risk := g.detectInjection(toolContent); risk > 0.5 {
+						result.InjectionRisk = risk
+						result.Violations = append(result.Violations, fmt.Sprintf("message %d tool_result: potential prompt injection in result (risk: %.2f)", i, risk))
+						if risk > 0.8 {
+							result.Allowed = false
+						}
+					}
+				}
+			}
+		}
 	}
 
 	if len(result.Violations) > 0 && result.Reason == "" {
@@ -186,6 +226,32 @@ func (g *Guard) CheckResponse(ctx context.Context, resp *llm.ChatResponse) (*Che
 			if re.MatchString(content) {
 				result.PIIDetected = true
 				result.Violations = append(result.Violations, fmt.Sprintf("choice %d: PII detected in output", i))
+			}
+		}
+
+		// Also check tool_use and tool_result content blocks for PII
+		for _, cb := range c.Message.ContentBlocks {
+			switch cb.Type {
+			case llm.ContentTypeToolUse:
+				if cb.ToolUse != nil {
+					toolContent := string(cb.ToolUse.Input)
+					for _, re := range g.piiPatterns {
+						if re.MatchString(toolContent) {
+							result.PIIDetected = true
+							result.Violations = append(result.Violations, fmt.Sprintf("choice %d tool_use %s: PII detected in arguments", i, cb.ToolUse.Name))
+						}
+					}
+				}
+			case llm.ContentTypeToolResult:
+				if cb.ToolResult != nil {
+					toolContent := cb.ToolResult.Content
+					for _, re := range g.piiPatterns {
+						if re.MatchString(toolContent) {
+							result.PIIDetected = true
+							result.Violations = append(result.Violations, fmt.Sprintf("choice %d tool_result: PII detected in result", i))
+						}
+					}
+				}
 			}
 		}
 	}

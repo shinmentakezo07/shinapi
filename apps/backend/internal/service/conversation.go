@@ -30,12 +30,12 @@ func (s *ConversationService) CreateConversation(ctx context.Context, userID, ti
 }
 
 // ListConversations returns conversations for a user.
-func (s *ConversationService) ListConversations(ctx context.Context, userID string, page, limit int) ([]repository.Conversation, *domain.AppError) {
-	convs, err := s.repo.ListConversations(ctx, userID, limit, (page-1)*limit)
+func (s *ConversationService) ListConversations(ctx context.Context, userID string, page, limit int) ([]repository.Conversation, int, *domain.AppError) {
+	convs, total, err := s.repo.ListConversations(ctx, userID, limit, (page-1)*limit)
 	if err != nil {
-		return nil, domain.Wrap(domain.ErrInternal, 500, "failed to list conversations", err)
+		return nil, 0, domain.Wrap(domain.ErrInternal, 500, "failed to list conversations", err)
 	}
-	return convs, nil
+	return convs, total, nil
 }
 
 // GetConversation retrieves a conversation with messages.

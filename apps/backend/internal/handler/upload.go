@@ -34,6 +34,17 @@ type UploadedFile struct {
 	StorageKey string `json:"storage_key,omitempty"`
 }
 
+type UploadFileError struct {
+	Filename string `json:"filename"`
+	Error    string `json:"error"`
+}
+
+type UploadResponse struct {
+	Files  []UploadedFile    `json:"files"`
+	Count  int               `json:"count"`
+	Errors []UploadFileError `json:"errors,omitempty"`
+}
+
 func (h *Handler) UploadFiles(w http.ResponseWriter, r *http.Request) {
 	u := middleware.GetUser(r)
 	if u == nil {
@@ -55,10 +66,15 @@ func (h *Handler) UploadFiles(w http.ResponseWriter, r *http.Request) {
 	}
 
 	uploaded := make([]UploadedFile, 0)
+	var uploadErrors []UploadFileError
 	for _, header := range files {
 		f, err := processUpload(header)
 		if err != nil {
 			logger.Warn("upload_processing_failed", "file", header.Filename, "error", err.Error())
+			uploadErrors = append(uploadErrors, UploadFileError{
+				Filename: header.Filename,
+				Error:    err.Error(),
+			})
 			continue
 		}
 
@@ -66,6 +82,11 @@ func (h *Handler) UploadFiles(w http.ResponseWriter, r *http.Request) {
 			record, dbErr := h.fileSvc.CreateFile(r.Context(), u.ID, f.Filename, f.MIMEType, f.StorageKey, f.Size)
 			if dbErr != nil {
 				logger.Warn("file_persist_failed", "file", header.Filename, "error", dbErr.Message)
+				uploadErrors = append(uploadErrors, UploadFileError{
+					Filename: header.Filename,
+					Error:    dbErr.Message,
+				})
+				continue
 			} else {
 				f.ID = record.ID
 			}
@@ -74,10 +95,12 @@ func (h *Handler) UploadFiles(w http.ResponseWriter, r *http.Request) {
 		uploaded = append(uploaded, *f)
 	}
 
-	response.OK(w, map[string]interface{}{
-		"files": uploaded,
-		"count": len(uploaded),
-	})
+	resp := UploadResponse{
+		Files:  uploaded,
+		Count:  len(uploaded),
+		Errors: uploadErrors,
+	}
+	response.OK(w, resp)
 }
 
 func (h *Handler) ListFiles(w http.ResponseWriter, r *http.Request) {

@@ -25,6 +25,7 @@ import {
   Hash,
 } from "lucide-react";
 import { useRef, useEffect, useState } from "react";
+import type { ReactNode, SVGProps } from "react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -34,7 +35,7 @@ function cn(...inputs: ClassValue[]) {
 }
 
 // --- Icons ---
-const ReactIcon = (props: any) => (
+const ReactIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg viewBox="-10.5 -9.45 21 18.9" fill="currentColor" {...props}>
     <circle cx="0" cy="0" r="2" fill="currentColor" />
     <g stroke="currentColor" strokeWidth="1" fill="none">
@@ -45,7 +46,7 @@ const ReactIcon = (props: any) => (
   </svg>
 );
 
-const JavaScriptIcon = (props: any) => (
+const JavaScriptIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 48 48" fill="currentColor" {...props}>
     <path d="M0 0h48v48H0z" fill="transparent" />
     <path d="M6 6h36v36H6z" fill="currentColor" fillOpacity="0.1" />
@@ -63,7 +64,7 @@ const JavaScriptIcon = (props: any) => (
   </svg>
 );
 
-const TypeScriptIcon = (props: any) => (
+const TypeScriptIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 48 48" fill="currentColor" {...props}>
     <path d="M0 0h48v48H0z" fill="transparent" />
     <path d="M6 6h36v36H6z" fill="currentColor" fillOpacity="0.1" />
@@ -81,7 +82,7 @@ const TypeScriptIcon = (props: any) => (
   </svg>
 );
 
-const PythonIcon = (props: any) => (
+const PythonIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 48 48" fill="currentColor" {...props}>
     <path
       d="M24 2C14 2 14 10 14 10h10v4h-14c-6 0-6 10-6 10s0 10 6 10h4v-4h-4v-6h12v6h-4v4h10c6 0 6-10 6-10s0-10-6-10h-4v4h4v6h-12v-6h4v-4h-10c-6 0-6-10-6-10z"
@@ -102,7 +103,7 @@ const PythonIcon = (props: any) => (
   </svg>
 );
 
-const HtmlIcon = (props: any) => (
+const HtmlIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 48 48" fill="currentColor" {...props}>
     <path d="M8 4h32l-4 36-12 4-12-4z" fill="currentColor" fillOpacity="0.1" />
     <text
@@ -119,7 +120,7 @@ const HtmlIcon = (props: any) => (
   </svg>
 );
 
-const CssIcon = (props: any) => (
+const CssIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 48 48" fill="currentColor" {...props}>
     <path d="M8 4h32l-4 36-12 4-12-4z" fill="currentColor" fillOpacity="0.1" />
     <text
@@ -136,7 +137,7 @@ const CssIcon = (props: any) => (
   </svg>
 );
 
-const JavaIcon = (props: any) => (
+const JavaIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
     <path
       d="M4.5 18.5C4.5 18.5 7.5 21 12 21C16.5 21 19.5 18.5 19.5 18.5"
@@ -159,7 +160,7 @@ const JavaIcon = (props: any) => (
   </svg>
 );
 
-const CppIcon = (props: any) => (
+const CppIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
     <path
       d="M6 8L2 12L6 16M18 8L22 12L18 16M14.5 4L9.5 20"
@@ -174,14 +175,14 @@ const CppIcon = (props: any) => (
   </svg>
 );
 
-const RustIcon = (props: any) => (
+const RustIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
     <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
     <path d="M12 6V18M6 12H18" stroke="currentColor" strokeWidth="1.5" />
   </svg>
 );
 
-const GoIcon = (props: any) => (
+const GoIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
     <text
       x="12"
@@ -196,7 +197,7 @@ const GoIcon = (props: any) => (
   </svg>
 );
 
-const RubyIcon = (props: any) => (
+const RubyIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
     <path
       d="M6 3L2 9L12 21L22 9L18 3H6Z"
@@ -207,7 +208,7 @@ const RubyIcon = (props: any) => (
   </svg>
 );
 
-const SwiftIcon = (props: any) => (
+const SwiftIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
     <path
       d="M4 4C8 4 8 10 14 10C20 10 21 5 21 5C21 5 20 14 15 17C10 20 4 18 4 18"
@@ -218,7 +219,7 @@ const SwiftIcon = (props: any) => (
   </svg>
 );
 
-const PhpIcon = (props: any) => (
+const PhpIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 48 48" fill="currentColor" {...props}>
     <text
       x="24"
@@ -234,7 +235,7 @@ const PhpIcon = (props: any) => (
   </svg>
 );
 
-const DockerIcon = (props: any) => (
+const DockerIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
     <path
       d="M2 14H5V11H2V14ZM6 14H9V11H6V14ZM10 14H13V11H10V14ZM14 14H17V11H14V14ZM6 10H9V7H6V10ZM10 10H13V7H10V10ZM14 10H17V7H14V10ZM10 6H13V3H10V6Z"
@@ -248,7 +249,7 @@ const DockerIcon = (props: any) => (
   </svg>
 );
 
-const GitIcon = (props: any) => (
+const GitIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
     <circle cx="6" cy="6" r="2" stroke="currentColor" strokeWidth="1.5" />
     <circle cx="6" cy="18" r="2" stroke="currentColor" strokeWidth="1.5" />
@@ -257,7 +258,15 @@ const GitIcon = (props: any) => (
   </svg>
 );
 
-// --- Components ---
+const HERO_STATS: ReadonlyArray<{
+  label: string;
+  value: string;
+  icon: typeof Layers;
+}> = [
+  { label: "Models", value: "100+", icon: Layers },
+  { label: "Uptime", value: "99.99%", icon: Activity },
+  { label: "p95 latency", value: "<50ms", icon: Zap },
+];
 
 // Glitch Text Component
 const GlitchText = ({
@@ -311,7 +320,7 @@ const CyberButton = ({
   onClick,
   primary = false,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
   onClick?: () => void;
   primary?: boolean;
@@ -320,33 +329,26 @@ const CyberButton = ({
     <button
       onClick={onClick}
       className={cn(
-        "relative group px-8 py-4 font-mono text-sm font-bold tracking-wider overflow-hidden",
-        "clip-path-slant transition-all duration-300",
-        primary ? "text-black" : "text-white",
+        "relative group px-8 py-4 rounded-2xl font-mono text-sm font-bold tracking-wider overflow-hidden",
+        "transition-all duration-300 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
+        primary
+          ? "bg-white text-black shadow-[0_20px_60px_-24px_rgba(255,255,255,0.85)] hover:bg-indigo-50"
+          : "border border-white/[0.10] bg-white/[0.045] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-md hover:border-white/25 hover:bg-white/[0.08]",
         className,
       )}
     >
-      {/* Background & Borders */}
       <div
         className={cn(
-          "absolute inset-0 transition-all duration-300",
+          "absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100",
           primary
-            ? "bg-white group-hover:bg-cyan-400"
-            : "bg-white/5 border border-white/10 group-hover:border-white/30 group-hover:bg-white/10",
+            ? "bg-[linear-gradient(110deg,transparent_20%,rgba(99,102,241,0.22)_45%,transparent_70%)]"
+            : "bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.14),transparent_55%)]",
         )}
       />
-
-      {/* Shine Effect */}
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-gradient-to-r from-transparent via-white to-transparent -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out" />
-
-      {/* Content */}
+      <div className="absolute inset-y-0 left-0 w-1/2 -translate-x-full bg-gradient-to-r from-transparent via-white/35 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-[220%]" />
       <div className="relative z-10 flex items-center justify-center gap-2">
         {children}
       </div>
-
-      {/* Corner Accents */}
-      <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-current opacity-50" />
-      <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-current opacity-50" />
     </button>
   );
 };
@@ -728,7 +730,7 @@ function FloatingLogos() {
       {icons.map((item, i) => (
         <motion.div
           key={i}
-          className={`absolute ${item.color} opacity-[0.05] blur-[0px] hover:opacity-30 hover:blur-0 transition-all duration-500`}
+          className={`absolute ${item.color} opacity-[0.07] blur-[0px] hover:opacity-30 hover:blur-0 transition-all duration-500`}
           style={{
             top: item.top,
             left: item.left,
@@ -780,31 +782,64 @@ function HeroBackground() {
 
   return (
     <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none bg-[#050505]">
-      {/* Moving Grid */}
+      {/* Ambient gradient field */}
+      <motion.div
+        aria-hidden="true"
+        className="absolute -top-40 left-[-10%] h-[34rem] w-[34rem] rounded-full bg-indigo-500/20 blur-[120px]"
+        animate={{ scale: [1, 1.14, 1], opacity: [0.35, 0.58, 0.35] }}
+        transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        aria-hidden="true"
+        className="absolute right-[-12%] top-1/4 h-[30rem] w-[30rem] rounded-full bg-violet-500/18 blur-[120px]"
+        animate={{ scale: [1.08, 0.95, 1.08], opacity: [0.28, 0.5, 0.28] }}
+        transition={{
+          duration: 10,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: 1.2,
+        }}
+      />
+      <motion.div
+        aria-hidden="true"
+        className="absolute bottom-[-18%] left-1/3 h-[28rem] w-[28rem] rounded-full bg-cyan-400/12 blur-[110px]"
+        animate={{ scale: [0.95, 1.12, 0.95], opacity: [0.22, 0.42, 0.22] }}
+        transition={{
+          duration: 11,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: 2,
+        }}
+      />
+
+      {/* Dimensional grid */}
       <div className="absolute inset-0 perspective-1000">
         <motion.div
-          animate={{ backgroundPosition: ["0px 0px", "0px 40px"] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-          className="absolute inset-0 bg-grid-white opacity-[0.15] transform-gpu rotate-x-12 scale-150 origin-top"
+          animate={{ backgroundPosition: ["0px 0px", "0px 44px"] }}
+          transition={{ duration: 7, repeat: Infinity, ease: "linear" }}
+          className="absolute inset-0 bg-grid-pattern opacity-[0.18] [mask-image:radial-gradient(ellipse_at_center,black_0%,transparent_72%)] transform-gpu rotate-x-12 scale-150 origin-top"
         />
       </div>
 
+      {/* Fine texture */}
+      <div className="absolute inset-0 opacity-[0.055] mix-blend-screen [background-image:url('data:image/svg+xml,%3Csvg_viewBox=%220_0_256_256%22_xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter_id=%22noise%22%3E%3CfeTurbulence_type=%22fractalNoise%22_baseFrequency=%220.78%22_numOctaves=%224%22_stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect_width=%22100%25%22_height=%22100%25%22_filter=%22url(%23noise)%22_opacity=%220.7%22/%3E%3C/svg%3E')]" />
+
       {/* Dynamic Spotlights */}
       <motion.div
-        className="absolute inset-0 opacity-40"
+        className="absolute inset-0 opacity-60"
         style={{
           background: useMotionTemplate`
                         radial-gradient(
-                            800px circle at ${mouseX}px ${mouseY}px,
-                            rgba(59, 130, 246, 0.08),
-                            transparent 80%
+                            820px circle at ${mouseX}px ${mouseY}px,
+                            rgba(99, 102, 241, 0.13),
+                            transparent 78%
                         )
                     `,
         }}
       />
 
       {/* Vignette */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#000_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_45%_42%,transparent_0%,rgba(0,0,0,0.38)_58%,#000_100%)]" />
 
       {/* Floating Icons */}
       <FloatingLogos />
@@ -845,7 +880,7 @@ function VideoModal({
             </button>
 
             {/* Placeholder Video Interface */}
-            <div className="absolute inset-0 flex items-center justify-center bg-grid-white/[0.02]">
+            <div className="absolute inset-0 flex items-center justify-center bg-grid-pattern opacity-80">
               <div className="text-center space-y-4">
                 <div className="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center mx-auto ring-1 ring-white/10 relative group cursor-pointer hover:bg-white/10 transition-all">
                   <Play className="w-10 h-10 text-white/50 ml-1 group-hover:scale-110 transition-transform" />
@@ -875,11 +910,11 @@ function VideoModal({
 
 // --- Live Ticker ---
 const updates = [
-  "User @alex_dev just completed Python Basics",
-  "New Badge Earned: Neural Architect",
-  "500+ users currently online",
-  "@sarah_codes deployed a new project",
-  "Server capacity upgraded to 99.9%",
+  "Claude Opus routed to us-east-1 in 14ms",
+  "GPT-4o stream completed at 847 tokens/s",
+  "New model: Gemini 2.5 Pro now available",
+  "12.4k active developer workspaces online",
+  "p95 latency: 47ms across all regions",
 ];
 
 function LiveTicker() {
@@ -972,14 +1007,38 @@ export function Hero() {
             </motion.div>
 
             {/* Animated Headline */}
-            <div className="space-y-2">
+            <div className="space-y-4">
               <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tighter leading-[0.9] text-white">
                 <TypewriterText text="Universal" delay={0.3} /> <br />
-                <GlitchText
-                  text="LLM GATEWAY"
-                  className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black"
-                />
+                <motion.span
+                  initial={{ opacity: 0, y: 22, filter: "blur(8px)" }}
+                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                  transition={{
+                    delay: 0.85,
+                    duration: 0.8,
+                    ease: [0.16, 1, 0.3, 1],
+                  }}
+                  className="inline-block bg-gradient-to-br from-white via-indigo-100 to-indigo-400 bg-clip-text text-5xl font-black text-transparent drop-shadow-[0_0_44px_rgba(99,102,241,0.22)] sm:text-6xl md:text-7xl lg:text-8xl"
+                >
+                  LLM GATEWAY
+                </motion.span>
               </h1>
+              <svg
+                className="mx-auto h-3 w-56 text-indigo-300/70 lg:mx-0"
+                viewBox="0 0 224 12"
+                fill="none"
+                aria-hidden="true"
+              >
+                <motion.path
+                  d="M2 10C38 2 74 2 111 7C151 12 184 9 222 2"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  initial={{ pathLength: 0, opacity: 0 }}
+                  animate={{ pathLength: 1, opacity: 1 }}
+                  transition={{ delay: 1.15, duration: 0.9, ease: "easeOut" }}
+                />
+              </svg>
             </div>
 
             {/* Description */}
@@ -1003,11 +1062,38 @@ export function Hero() {
               .
             </motion.p>
 
+            {/* Trust Badges */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.32 }}
+              className="flex w-full flex-wrap justify-center gap-3 lg:justify-start"
+            >
+              {HERO_STATS.map((stat, index) => {
+                const Icon = stat.icon;
+                return (
+                  <motion.div
+                    key={stat.label}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 1.38 + index * 0.08 }}
+                    className="group inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.035] px-3.5 py-2 text-xs font-mono text-white/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-md transition-all duration-300 hover:border-indigo-300/30 hover:bg-white/[0.06] hover:text-white"
+                  >
+                    <Icon className="h-3.5 w-3.5 text-indigo-300 transition-transform duration-300 group-hover:scale-110" />
+                    <span className="font-semibold text-white/90">
+                      {stat.value}
+                    </span>
+                    <span>{stat.label}</span>
+                  </motion.div>
+                );
+              })}
+            </motion.div>
+
             {/* Buttons */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.4 }}
+              transition={{ delay: 1.58 }}
               className="flex flex-col sm:flex-row gap-6 w-full sm:w-auto pt-4"
             >
               <Link href="/signup" className="w-full sm:w-auto">
@@ -1028,7 +1114,7 @@ export function Hero() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 1.6 }}
+              transition={{ delay: 1.75 }}
               className="pt-12 flex flex-col sm:flex-row items-center gap-6 text-muted-foreground text-sm border-t border-white/5 w-full"
             >
               <span className="uppercase tracking-widest text-[10px] font-mono opacity-50">
@@ -1071,7 +1157,7 @@ export function Hero() {
           <motion.div
             animate={{ height: [20, 40, 20], opacity: [0.2, 0.8, 0.2] }}
             transition={{ repeat: Infinity, duration: 2 }}
-            className="w-[1px] bg-white"
+            className="w-[1px] bg-gradient-to-b from-white/50 via-indigo-200/50 to-transparent"
           />
         </motion.div>
       </section>

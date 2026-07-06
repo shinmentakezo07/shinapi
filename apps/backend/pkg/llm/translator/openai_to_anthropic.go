@@ -211,11 +211,15 @@ func (t *OpenAIToAnthropicTranslator) TranslateStreamChunk(data []byte, model, p
 	// Handle different event types
 	switch chunk.Type {
 	case "message_start":
+		usage := &llm.Usage{
+			PromptTokens: chunk.Message.Usage.InputTokens,
+		}
 		return &llm.StreamChunk{
 			Object:   "chat.completion.chunk",
 			Created:  time.Now().Unix(),
 			Model:    model,
 			Provider: provider,
+			Usage:    usage,
 		}, nil
 	case "content_block_start":
 		content := ""
@@ -263,12 +267,16 @@ func (t *OpenAIToAnthropicTranslator) TranslateStreamChunk(data []byte, model, p
 			fr := llm.FinishReason(chunk.Delta.StopReason)
 			finishReason = &fr
 		}
+		usage := &llm.Usage{
+			CompletionTokens: chunk.Usage.OutputTokens,
+		}
 		return &llm.StreamChunk{
 			Object:       "chat.completion.chunk",
 			Created:      time.Now().Unix(),
 			Model:        model,
 			Provider:     provider,
 			FinishReason: finishReason,
+			Usage:        usage,
 		}, nil
 	case "message_stop":
 		return &llm.StreamChunk{

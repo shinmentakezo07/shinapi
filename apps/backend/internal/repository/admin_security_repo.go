@@ -116,22 +116,22 @@ func validateColumns(cols string) error {
 	return nil
 }
 
-func paginatedQuery(selectCols, from, where string, n int) (string, int) {
+func paginatedQuery(selectCols, from, where string, n int) (string, int, error) {
 	if err := validateTableName(from); err != nil {
-		panic(err)
+		return "", 0, err
 	}
 	if err := validateColumns(selectCols); err != nil {
-		panic(err)
+		return "", 0, err
 	}
 	q := fmt.Sprintf("SELECT %s FROM %s %s ORDER BY created_at DESC LIMIT $%d OFFSET $%d", selectCols, from, where, n, n+1)
-	return q, n + 2
+	return q, n + 2, nil
 }
 
-func countQuery(from, where string) string {
+func countQuery(from, where string) (string, error) {
 	if err := validateTableName(from); err != nil {
-		panic(err)
+		return "", err
 	}
-	return fmt.Sprintf("SELECT COUNT(*) FROM %s %s", from, where)
+	return fmt.Sprintf("SELECT COUNT(*) FROM %s %s", from, where), nil
 }
 
 func (r *AdminSecurityRepo) ListSuspicious(ctx context.Context, f domain.SuspiciousFilter) ([]domain.SuspiciousActivity, int, error) {
@@ -157,10 +157,19 @@ func (r *AdminSecurityRepo) ListSuspicious(ctx context.Context, f domain.Suspici
 		args = append(args, *f.Reviewed)
 		n++
 	}
+	cq, err := countQuery("suspicious_activities", w)
+	if err != nil {
+		return nil, 0, fmt.Errorf("count query: %w", err)
+	}
 	var total int
-	r.db.QueryRow(ctx, countQuery("suspicious_activities", w), args...).Scan(&total)
+	if err := r.db.QueryRow(ctx, cq, args...).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("count suspicious: %w", err)
+	}
 	cols := "id,category,severity,COALESCE(user_id,''),COALESCE(api_key_id,''),COALESCE(ip,''),details,auto_blocked,reviewed,resolved,created_at"
-	q, _ := paginatedQuery(cols, "suspicious_activities", w, n)
+	q, _, err := paginatedQuery(cols, "suspicious_activities", w, n)
+	if err != nil {
+		return nil, 0, fmt.Errorf("paginated query: %w", err)
+	}
 	rows, err := r.db.Query(ctx, q, append(args, f.Limit, offset)...)
 	if err != nil {
 		return nil, 0, fmt.Errorf("list suspicious: %w", err)
@@ -228,10 +237,19 @@ func (r *AdminSecurityRepo) ListIPAccessLogs(ctx context.Context, f domain.IPAcc
 		args = append(args, *f.Blocked)
 		n++
 	}
+	cq, err := countQuery("ip_access_logs", w)
+	if err != nil {
+		return nil, 0, fmt.Errorf("count query: %w", err)
+	}
 	var total int
-	r.db.QueryRow(ctx, countQuery("ip_access_logs", w), args...).Scan(&total)
+	if err := r.db.QueryRow(ctx, cq, args...).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("count ip access: %w", err)
+	}
 	cols := "id,ip_address,COALESCE(user_id,''),COALESCE(api_key_id,''),method,path,COALESCE(user_agent,''),COALESCE(country,''),is_proxy,blocked,rate_limited,created_at"
-	q, _ := paginatedQuery(cols, "ip_access_logs", w, n)
+	q, _, err := paginatedQuery(cols, "ip_access_logs", w, n)
+	if err != nil {
+		return nil, 0, fmt.Errorf("paginated query: %w", err)
+	}
 	rows, err := r.db.Query(ctx, q, append(args, f.Limit, offset)...)
 	if err != nil {
 		return nil, 0, fmt.Errorf("list ip access: %w", err)

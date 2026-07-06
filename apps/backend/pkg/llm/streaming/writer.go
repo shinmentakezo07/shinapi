@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -543,7 +544,11 @@ func (f *InternalStreamWriter) Flush() { f.sse.Flush() }
 // --- Helpers ---
 
 func marshal(v interface{}) []byte {
-	data, _ := json.Marshal(v)
+	data, err := json.Marshal(v)
+	if err != nil {
+		slog.Warn("marshal failed", "error", err.Error())
+		return []byte(`{"error":"marshal failed"}`)
+	}
 	return data
 }
 

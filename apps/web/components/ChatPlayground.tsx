@@ -242,6 +242,7 @@ export default function ChatPlayground() {
   };
 
   const handleNewChat = () => {
+    isSwitchingRef.current = true;
     const session: ChatSession = {
       id: newId(),
       title: "New Chat",
@@ -259,7 +260,10 @@ export default function ChatPlayground() {
     setActiveSessionId(session.id);
     setMessages([]);
     setInput("");
-    requestAnimationFrame(() => textareaRef.current?.focus());
+    requestAnimationFrame(() => {
+      isSwitchingRef.current = false;
+      textareaRef.current?.focus();
+    });
   };
 
   const handleDeleteChat = (id: string) => {

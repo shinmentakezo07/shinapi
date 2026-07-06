@@ -66,8 +66,8 @@ func (r *ConversationRepo) GetConversation(ctx context.Context, id string) (*Con
 	return &c, nil
 }
 
-// ListConversations lists conversations for a user.
-func (r *ConversationRepo) ListConversations(ctx context.Context, userID string, limit, offset int) ([]Conversation, error) {
+// ListConversations lists conversations for a user and returns the total count.
+func (r *ConversationRepo) ListConversations(ctx context.Context, userID string, limit, offset int) ([]Conversation, int, error) {
 	if limit <= 0 {
 		limit = 20
 	}
@@ -75,7 +75,7 @@ func (r *ConversationRepo) ListConversations(ctx context.Context, userID string,
 		`SELECT id, user_id, title, model, created_at, updated_at FROM conversations WHERE user_id = $1 ORDER BY updated_at DESC LIMIT $2 OFFSET $3`,
 		userID, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -83,17 +83,30 @@ func (r *ConversationRepo) ListConversations(ctx context.Context, userID string,
 	for rows.Next() {
 		var c Conversation
 		if err := rows.Scan(&c.ID, &c.UserID, &c.Title, &c.Model, &c.CreatedAt, &c.UpdatedAt); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		result = append(result, c)
 	}
-	return result, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+
+	var total int
+	_ = r.db.QueryRow(ctx, `SELECT COUNT(*) FROM conversations WHERE user_id = $1`, userID).Scan(&total)
+	return result, total, nil
 }
 
 // DeleteConversation removes a conversation and its messages.
+// Returns domain.ErrConversationNotFound if the conversation does not exist.
 func (r *ConversationRepo) DeleteConversation(ctx context.Context, userID, id string) error {
-	_, err := r.db.Exec(ctx, `DELETE FROM conversations WHERE id = $1 AND user_id = $2`, id, userID)
-	return err
+	tag, err := r.db.Exec(ctx, `DELETE FROM conversations WHERE id = $1 AND user_id = $2`, id, userID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return domain.ErrConversationNotFound
+	}
+	return nil
 }
 
 // AddMessage inserts a message into a conversation.

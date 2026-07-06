@@ -110,7 +110,9 @@ func (et *errorTracker) errorRate() float64 {
 	et.mu.RLock()
 	defer et.mu.RUnlock()
 	if et.total == 0 {
-		return 0
+		// No data means unknown reliability; return a moderate default
+		// so providers with actual data are preferred over untested ones.
+		return 0.5
 	}
 	return float64(et.failures) / float64(et.total)
 }
@@ -247,13 +249,45 @@ func (mr *ModelRouter) filterByCapability(providers []llm.Provider, req *llm.Cha
 	if len(req.Tools) > 0 {
 		var filtered []llm.Provider
 		for _, p := range providers {
-			if p.SupportsThinking() || strings.Contains(p.Name(), "openai") || strings.Contains(p.Name(), "anthropic") {
+			if supportsTools(p) {
 				filtered = append(filtered, p)
 			}
 		}
 		return filtered
 	}
 	return providers
+}
+
+// supportsTools checks whether a provider supports tool/function calling.
+// It first checks for an explicit SupportsTools() method, then falls back
+// to checking model metadata, and finally uses a known-provider name list.
+func supportsTools(p llm.Provider) bool {
+	if tp, ok := p.(interface{ SupportsTools() bool }); ok {
+		return tp.SupportsTools()
+	}
+	models, err := p.ListModels(context.Background())
+	if err == nil {
+		for _, m := range models {
+			if m.SupportsTools {
+				return true
+			}
+		}
+	}
+	name := strings.ToLower(p.Name())
+	for prefix := range toolCapableProviders {
+		if strings.Contains(name, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+var toolCapableProviders = map[string]bool{
+	"openai":    true,
+	"anthropic": true,
+	"groq":      true,
+	"nvidia":    true,
+	"gemini":    true,
 }
 
 func (mr *ModelRouter) allProviders() []llm.Provider {

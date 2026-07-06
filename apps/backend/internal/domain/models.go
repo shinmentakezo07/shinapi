@@ -223,11 +223,40 @@ type Webhook struct {
 	ID        string            `json:"id"`
 	UserID    string            `json:"userId"`
 	URL       string            `json:"url"`
+	Secret    string            `json:"-"`
+	Events    []string          `json:"events"`
+	Headers   map[string]string `json:"headers,omitempty"`
+	Active    bool              `json:"active"`
+	CreatedAt time.Time         `json:"createdAt"`
+}
+
+// WebhookWithSecret is used only at creation time to return the secret
+// to the caller once. Subsequent list/get responses use Webhook which
+// omits the secret via json:"-".
+type WebhookWithSecret struct {
+	ID        string            `json:"id"`
+	UserID    string            `json:"userId"`
+	URL       string            `json:"url"`
 	Secret    string            `json:"secret,omitempty"`
 	Events    []string          `json:"events"`
 	Headers   map[string]string `json:"headers,omitempty"`
 	Active    bool              `json:"active"`
 	CreatedAt time.Time         `json:"createdAt"`
+}
+
+// ToPublic converts a Webhook (with secret) into a WebhookWithSecret
+// suitable for the creation response.
+func (w *Webhook) ToPublic() *WebhookWithSecret {
+	return &WebhookWithSecret{
+		ID:        w.ID,
+		UserID:    w.UserID,
+		URL:       w.URL,
+		Secret:    w.Secret,
+		Events:    w.Events,
+		Headers:   w.Headers,
+		Active:    w.Active,
+		CreatedAt: w.CreatedAt,
+	}
 }
 
 type CreateWebhookRequest struct {
@@ -351,6 +380,13 @@ func (r *InviteMemberRequest) Validate() *AppError {
 	}
 	if r.Role == "" {
 		r.Role = "member"
+	}
+	// Validate that the role is one of the allowed values.
+	switch r.Role {
+	case "member", "admin":
+		// ok
+	default:
+		return NewError(ErrBadRequest, 400, "Role must be one of: member, admin")
 	}
 	return nil
 }

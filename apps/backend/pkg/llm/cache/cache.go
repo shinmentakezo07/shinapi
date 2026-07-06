@@ -130,9 +130,19 @@ func (c *MemoryCache) Set(ctx context.Context, key string, value *llm.ChatRespon
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	// Evict oldest entries if at capacity
+	// Evict a batch of oldest entries if at capacity.
+	// Evicting 10% at a time amortizes the O(n) sort cost in evictOldest
+	// across many inserts, instead of sorting on every single Set() call.
 	if len(c.entries) >= c.maxSize {
-		c.evictOldest(1)
+		evictBatch := c.maxSize / 10
+		if evictBatch < 1 {
+			evictBatch = 1
+		}
+		// Ensure we free at least one slot, even if batch is larger than needed.
+		if len(c.entries)-evictBatch < c.maxSize-1 {
+			evictBatch = len(c.entries) - c.maxSize + 1
+		}
+		c.evictOldest(evictBatch)
 	}
 
 	c.entries[key] = &Entry{

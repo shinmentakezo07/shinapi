@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Cpu } from "lucide-react";
 import { Section } from "@/components/docs/Section";
+import { DocsSubhead } from "@/components/docs/DocsCard";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 import { TipBox } from "@/components/docs/TipBox";
 
@@ -50,12 +51,17 @@ export default function ModelsPage() {
                 {
                   provider: "OpenAI",
                   prefix: "openai/",
-                  models: "GPT-4o, GPT-4o-mini, o3, o4-mini",
+                  models: "GPT-4o, GPT-4o-mini, GPT-4.1, o3-mini, o1",
                 },
                 {
                   provider: "Anthropic",
                   prefix: "anthropic/",
-                  models: "Claude 3.5 Sonnet, Claude 3 Opus, Claude 3.7 Sonnet",
+                  models: "Claude Sonnet 4, Claude Opus 4, Claude 3.5 Haiku",
+                },
+                {
+                  provider: "Google Gemini",
+                  prefix: "gemini/",
+                  models: "Gemini 2.5 Pro, Gemini 2.0 Flash",
                 },
                 {
                   provider: "Groq",
@@ -63,14 +69,24 @@ export default function ModelsPage() {
                   models: "Llama 3, Mixtral, Gemma 2",
                 },
                 {
-                  provider: "Gemini",
-                  prefix: "gemini/",
-                  models: "Gemini 2.0 Flash, Gemini 2.5 Pro",
-                },
-                {
                   provider: "NVIDIA NIM",
                   prefix: "nvidia/",
                   models: "Nemotron, Llama 3.1 NIM",
+                },
+                {
+                  provider: "Mistral",
+                  prefix: "mistral/",
+                  models: "Mistral Large, Mistral Small",
+                },
+                {
+                  provider: "DeepSeek",
+                  prefix: "deepseek/",
+                  models: "DeepSeek V3, DeepSeek R1",
+                },
+                {
+                  provider: "Meta",
+                  prefix: "meta/",
+                  models: "Llama 3.1, Llama 3.2",
                 },
               ].map((row) => (
                 <tr
@@ -93,10 +109,9 @@ export default function ModelsPage() {
         </div>
 
         <div className="mt-8">
-          <h3 className="text-white/95 font-semibold text-sm mb-4 flex items-center gap-2.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60" />
+          <DocsSubhead>
             Fetching models via API
-          </h3>
+          </DocsSubhead>
           <p className="text-sm text-white/50 mb-4">
             Use the API to get the complete, dynamically-updated list of
             supported models. This is useful for populating model selectors in
@@ -112,10 +127,9 @@ export default function ModelsPage() {
         </div>
 
         <div className="mt-8">
-          <h3 className="text-white/95 font-semibold text-sm mb-4 flex items-center gap-2.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60" />
+          <DocsSubhead>
             OpenAI-compatible endpoint
-          </h3>
+          </DocsSubhead>
           <p className="text-sm text-white/50 mb-4">
             Use{" "}
             <code className="px-1.5 py-0.5 rounded-md bg-white/[0.05] text-white/70 font-mono text-xs">
@@ -134,10 +148,9 @@ export default function ModelsPage() {
         </div>
 
         <div className="mt-8">
-          <h3 className="text-white/95 font-semibold text-sm mb-4 flex items-center gap-2.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60" />
+          <DocsSubhead>
             Response format
-          </h3>
+          </DocsSubhead>
           <CodeBlock
             language="json"
             code={`{
@@ -166,10 +179,9 @@ export default function ModelsPage() {
         </div>
 
         <div className="mt-8">
-          <h3 className="text-white/95 font-semibold text-sm mb-4 flex items-center gap-2.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60" />
+          <DocsSubhead>
             Provider-specific model listing
-          </h3>
+          </DocsSubhead>
           <p className="text-sm text-white/50 mb-4">
             Filter models by provider to see only the models available from a
             specific provider.

@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAdminSDK } from "@/lib/api/admin-sdk";
-import { Search, Check, Plus, Pencil, Trash2   Activity,
-} from "lucide-react";
+import { Search, Check, Plus, Pencil, Trash2, Activity } from "lucide-react";
 import type { ModelRegistry, ModelAlias, ModelStatus } from "@/types/admin";
 import AdminPageHeader from "../../AdminPageHeader";
 import {

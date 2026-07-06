@@ -236,8 +236,21 @@ func ToScoped(k *domain.APIKey) *ScopedAPIKey {
 	}
 }
 
+// quotaRecorder wraps http.ResponseWriter to capture status code for quota reconciliation.
+type quotaRecorder struct {
+	http.ResponseWriter
+	status int
+}
+
+func (r *quotaRecorder) WriteHeader(code int) {
+	r.status = code
+	r.ResponseWriter.WriteHeader(code)
+}
+
 // QuotaCheck is middleware that enforces quotas and API key scoping.
-func QuotaCheck(tracker QuotaTrackerInterface, getKey func(r *http.Request) *ScopedAPIKey, parseRequest func(r *http.Request) (model string, tokens int)) func(http.Handler) http.Handler {
+// After the request handler completes, it reconciles the monthly token
+// counter with actual token usage if a token extractor is provided.
+func QuotaCheck(tracker QuotaTrackerInterface, getKey func(r *http.Request) *ScopedAPIKey, parseRequest func(r *http.Request) (model string, tokens int), actualTokens func(r *http.Request) int) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			key := getKey(r)
@@ -274,6 +287,8 @@ func QuotaCheck(tracker QuotaTrackerInterface, getKey func(r *http.Request) *Sco
 
 			clientIP := clientIP(r)
 
+			estimatedTokens := tokens
+
 			if err := tracker.CheckRequest(r.Context(), key, model, tokens, clientIP); err != nil {
 				keyPrefix := key.Key
 				if len(keyPrefix) > 8 {
@@ -283,7 +298,20 @@ func QuotaCheck(tracker QuotaTrackerInterface, getKey func(r *http.Request) *Sco
 				response.Error(w, 429, err.Error())
 				return
 			}
-			next.ServeHTTP(w, r)
+
+			// Wrap the response writer so we can detect when the handler
+			// finishes and reconcile actual token usage against the estimate.
+			rec := &quotaRecorder{ResponseWriter: w, status: http.StatusOK}
+			next.ServeHTTP(rec, r)
+
+			// After the handler completes, reconcile actual vs estimated tokens.
+			if actualTokens != nil && key != nil && estimatedTokens > 0 {
+				actual := actualTokens(r)
+				delta := actual - estimatedTokens
+				if delta != 0 {
+					tracker.RecordUsage(r.Context(), key.Key, delta)
+				}
+			}
 		})
 	}
 }

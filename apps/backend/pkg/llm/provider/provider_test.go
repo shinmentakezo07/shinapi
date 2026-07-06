@@ -249,52 +249,121 @@ func TestRegistry_RouteStreamRequest_NoProvider(t *testing.T) {
 
 func TestReadSSE(t *testing.T) {
 	data := "data: hello\ndata: world\n\n"
-	var lines []string
+	var events []SSEEvent
 
-	ReadSSE(strings.NewReader(data), func(line string) bool {
-		lines = append(lines, line)
+	ReadSSE(strings.NewReader(data), func(evt SSEEvent) bool {
+		events = append(events, evt)
 		return true
 	})
 
-	if len(lines) != 2 {
-		t.Fatalf("got %d lines, want 2", len(lines))
+	if len(events) != 1 {
+		t.Fatalf("got %d events, want 1", len(events))
 	}
-	if lines[0] != "data: hello" {
-		t.Errorf("line[0] = %q", lines[0])
+	if events[0].Data != "hello\nworld" {
+		t.Errorf("data = %q, want %q", events[0].Data, "hello\nworld")
 	}
-	if lines[1] != "data: world" {
-		t.Errorf("line[1] = %q", lines[1])
+	if events[0].EventType != "message" {
+		t.Errorf("eventType = %q, want %q", events[0].EventType, "message")
+	}
+}
+
+func TestReadSSE_MultipleEvents(t *testing.T) {
+	data := "event: message_start\ndata: {\"type\":\"message_start\"}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\"}\n\n"
+	var events []SSEEvent
+
+	ReadSSE(strings.NewReader(data), func(evt SSEEvent) bool {
+		events = append(events, evt)
+		return true
+	})
+
+	if len(events) != 2 {
+		t.Fatalf("got %d events, want 2", len(events))
+	}
+	if events[0].EventType != "message_start" {
+		t.Errorf("events[0].EventType = %q, want %q", events[0].EventType, "message_start")
+	}
+	if events[0].Data != "{\"type\":\"message_start\"}" {
+		t.Errorf("events[0].Data = %q", events[0].Data)
+	}
+	if events[1].EventType != "content_block_delta" {
+		t.Errorf("events[1].EventType = %q, want %q", events[1].EventType, "content_block_delta")
+	}
+	if events[1].Data != "{\"type\":\"content_block_delta\"}" {
+		t.Errorf("events[1].Data = %q", events[1].Data)
 	}
 }
 
 func TestReadSSE_EarlyStop(t *testing.T) {
-	data := "data: first\ndata: second\ndata: third\n"
-	var lines []string
+	data := "data: first\n\ndata: second\n\ndata: third\n\n"
+	var events []SSEEvent
 
-	ReadSSE(strings.NewReader(data), func(line string) bool {
-		lines = append(lines, line)
-		return len(lines) < 2
+	ReadSSE(strings.NewReader(data), func(evt SSEEvent) bool {
+		events = append(events, evt)
+		return len(events) < 2
 	})
 
-	if len(lines) != 2 {
-		t.Fatalf("got %d lines, want 2", len(lines))
+	if len(events) != 2 {
+		t.Fatalf("got %d events, want 2", len(events))
 	}
 }
 
 func TestReadSSE_Done(t *testing.T) {
-	data := "data: hello\ndata: [DONE]\ndata: after\n"
-	var lines []string
+	data := "data: hello\n\ndata: [DONE]\n\ndata: after\n\n"
+	var events []SSEEvent
 
-	ReadSSE(strings.NewReader(data), func(line string) bool {
-		lines = append(lines, line)
-		return !strings.Contains(line, "[DONE]")
+	ReadSSE(strings.NewReader(data), func(evt SSEEvent) bool {
+		events = append(events, evt)
+		return evt.Data != "[DONE]"
 	})
 
-	if len(lines) != 2 {
-		t.Fatalf("got %d lines, want 2", len(lines))
+	if len(events) != 2 {
+		t.Fatalf("got %d events, want 2", len(events))
 	}
-	if lines[1] != "data: [DONE]" {
-		t.Errorf("line[1] = %q, want data: [DONE]", lines[1])
+	if events[1].Data != "[DONE]" {
+		t.Errorf("events[1].Data = %q, want [DONE]", events[1].Data)
+	}
+}
+
+func TestReadSSE_AnthropicStream(t *testing.T) {
+	data := "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_1\"}}\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"Hello\"}}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\n\n"
+	var events []SSEEvent
+
+	ReadSSE(strings.NewReader(data), func(evt SSEEvent) bool {
+		events = append(events, evt)
+		return true
+	})
+
+	if len(events) != 4 {
+		t.Fatalf("got %d events, want 4", len(events))
+	}
+	if events[0].EventType != "message_start" {
+		t.Errorf("events[0].EventType = %q, want message_start", events[0].EventType)
+	}
+	if events[1].EventType != "content_block_start" {
+		t.Errorf("events[1].EventType = %q, want content_block_start", events[1].EventType)
+	}
+	if events[2].EventType != "content_block_delta" {
+		t.Errorf("events[2].EventType = %q, want content_block_delta", events[2].EventType)
+	}
+	if events[3].EventType != "message_stop" {
+		t.Errorf("events[3].EventType = %q, want message_stop", events[3].EventType)
+	}
+}
+
+func TestReadSSE_IDField(t *testing.T) {
+	data := "id: 42\ndata: hello\n\n"
+	var events []SSEEvent
+
+	ReadSSE(strings.NewReader(data), func(evt SSEEvent) bool {
+		events = append(events, evt)
+		return true
+	})
+
+	if len(events) != 1 {
+		t.Fatalf("got %d events, want 1", len(events))
+	}
+	if events[0].ID != "42" {
+		t.Errorf("id = %q, want %q", events[0].ID, "42")
 	}
 }
 

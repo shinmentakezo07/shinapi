@@ -139,6 +139,7 @@ func registerRoutes(
 			}
 			return model, tokens
 		},
+		nil, // actualTokens: no post-request token extraction currently available
 	)
 
 	// --- Routes ---
