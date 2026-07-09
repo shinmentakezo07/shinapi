@@ -178,8 +178,9 @@ func fromOpenAIStreamChunk(chunk openai.ChatCompletionStreamResponse, model, pro
 		delta.ToolCalls = make([]llm.ToolCall, len(choice.Delta.ToolCalls))
 		for i, tc := range choice.Delta.ToolCalls {
 			delta.ToolCalls[i] = llm.ToolCall{
-				ID:   tc.ID,
-				Type: string(tc.Type),
+				ID:    tc.ID,
+				Type:  string(tc.Type),
+				Index: tc.Index,
 				Function: llm.ToolCallFunction{
 					Name:      tc.Function.Name,
 					Arguments: json.RawMessage(tc.Function.Arguments),

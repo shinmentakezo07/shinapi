@@ -598,7 +598,12 @@ class DraSDK {
 
   public async paginatedRequest<T>(
     path: string,
-    query: { page?: number; limit?: number } = {},
+    query: {
+      page?: number;
+      limit?: number;
+      query?: string;
+      status?: string;
+    } = {},
   ): Promise<PaginatedResult<T>> {
     let url = `${this.baseUrl}${path}`;
     const params = new URLSearchParams();
@@ -863,10 +868,17 @@ class DraSDK {
   }
 
   // Admin
-  adminListUsers(page?: number, limit?: number) {
+  adminListUsers(
+    page?: number,
+    limit?: number,
+    query?: string,
+    status?: string,
+  ) {
     return this.paginatedRequest<User>("/api/admin/users", {
       page,
       limit,
+      query,
+      status,
     });
   }
 

@@ -307,6 +307,44 @@ func (h *Handler) fetchModelsFromUpstream(ctx context.Context, baseURL, apiKey s
 	modelsURL := normalized + "/v1/models"
 
 	client := &http.Client{Timeout: 15 * time.Second}
+
+	// Resolve and validate the host up front, then pin the outbound connection to
+	// the validated IP. This closes the DNS-rebinding TOCTOU window: previously the
+	// SSRF guard resolved the hostname once, but client.Do() re-resolved it at
+	// request time, allowing a public->private rebind between the two lookups.
+	// The Host header and TLS SNI stay on the original hostname (set by the client
+	// from the URL), so virtual-host routing still works.
+	var dialIP net.IP
+	if !skipSSRFCheck {
+		u, perr := url.Parse(modelsURL)
+		if perr != nil {
+			return nil, 500, fmt.Errorf("invalid models URL: %w", perr)
+		}
+		ips, verr := resolveAndValidateHost(u.Hostname())
+		if verr != nil {
+			return nil, 400, fmt.Errorf("baseUrl resolves to a private or reserved IP address")
+		}
+		if len(ips) == 0 {
+			return nil, 400, fmt.Errorf("baseUrl resolves to no IP addresses")
+		}
+		dialIP = ips[0]
+		port := u.Port()
+		if port == "" {
+			if u.Scheme == "https" {
+				port = "443"
+			} else {
+				port = "80"
+			}
+		}
+		client.Transport = &http.Transport{
+			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+				dialAddr := net.JoinHostPort(dialIP.String(), port)
+				d := net.Dialer{Timeout: 10 * time.Second}
+				return d.DialContext(ctx, network, dialAddr)
+			},
+		}
+	}
+
 	httpReq, err := http.NewRequestWithContext(ctx, "GET", modelsURL, nil)
 	if err != nil {
 		return nil, 500, fmt.Errorf("create request: %w", err)
@@ -355,7 +393,36 @@ func SetSkipSSRFCheck(skip bool) {
 	skipSSRFCheck = skip
 }
 
+// resolveAndValidateHost resolves the given hostname to IPs and validates that
+// none of them are private, loopback, or link-local. The returned validated IPs
+// can then be pinned for the outbound connection to avoid DNS-rebinding TOCTOU.
+func resolveAndValidateHost(host string) ([]net.IP, error) {
+	if host == "" {
+		return nil, fmt.Errorf("missing hostname")
+	}
+	if skipSSRFCheck {
+		ips, err := net.LookupIP(host)
+		if err != nil {
+			return nil, fmt.Errorf("cannot resolve hostname: %w", err)
+		}
+		return ips, nil
+	}
+
+	ips, err := net.LookupIP(host)
+	if err != nil {
+		return nil, fmt.Errorf("cannot resolve hostname: %w", err)
+	}
+	for _, ip := range ips {
+		if ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
+			return nil, fmt.Errorf("URL resolves to private/reserved IP %s", ip)
+		}
+	}
+	return ips, nil
+}
+
 // validateNotPrivateURL blocks requests to private, loopback, and link-local IPs to prevent SSRF.
+// NOTE: this alone is not sufficient against DNS rebinding — callers must pin the
+// resolved IP for the actual outbound connection (see fetchModelsFromUpstream).
 func validateNotPrivateURL(rawURL string) error {
 	if skipSSRFCheck {
 		return nil
@@ -365,19 +432,6 @@ func validateNotPrivateURL(rawURL string) error {
 	if err != nil {
 		return fmt.Errorf("invalid URL")
 	}
-	host := u.Hostname()
-	if host == "" {
-		return fmt.Errorf("missing hostname")
-	}
-	// Resolve hostname to IP — this catches DNS rebinding attempts too
-	ips, err := net.LookupIP(host)
-	if err != nil {
-		return fmt.Errorf("cannot resolve hostname: %w", err)
-	}
-	for _, ip := range ips {
-		if ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
-			return fmt.Errorf("URL resolves to private/reserved IP %s", ip)
-		}
-	}
-	return nil
+	_, err = resolveAndValidateHost(u.Hostname())
+	return err
 }

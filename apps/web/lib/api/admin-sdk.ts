@@ -70,6 +70,8 @@ export class AdminSDK {
     return this.api.adminListUsers(
       params?.page,
       params?.limit,
+      params?.query,
+      params?.status,
     ) as unknown as PaginatedResult<AdminUserDetail>;
   }
 

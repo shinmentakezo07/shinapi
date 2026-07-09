@@ -187,7 +187,10 @@ func (r *AdminSecurityRepo) ListSuspicious(ctx context.Context, f domain.Suspici
 }
 
 func (r *AdminSecurityRepo) ReviewSuspicious(ctx context.Context, id int64, action string, _ string) error {
-	_, err := r.db.Exec(ctx, `UPDATE suspicious_activities SET reviewed=true,resolved=$2 WHERE id=$1`, id, action == "dismiss")
+	// A reviewed item is resolved when the action is "resolve" or "dismiss"; any
+	// other action (e.g. "escalate") leaves it unresolved but still reviewed.
+	resolved := action == "resolve" || action == "dismiss"
+	_, err := r.db.Exec(ctx, `UPDATE suspicious_activities SET reviewed=true,resolved=$2 WHERE id=$1`, id, resolved)
 	if err != nil {
 		return fmt.Errorf("review: %w", err)
 	}

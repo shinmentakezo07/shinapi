@@ -24,14 +24,17 @@ func NewStreamPump(w StreamWriter) *StreamPump {
 func (p *StreamPump) Pump(ctx context.Context, ch <-chan llm.StreamChunk) (llm.Message, *llm.Usage, error) {
 	acc := NewAccumulator()
 	var lastUsage *llm.Usage
-	finished := false
+	finishWritten := false
 
 	for {
 		select {
 		case chunk, ok := <-ch:
 			if !ok {
 				msg, _ := acc.Message()
-				if !finished {
+				// Emit finish exactly once. If the finish event was already
+				// written (finish chunk arrived earlier), skip it here so we
+				// don't double-emit [DONE]/message_stop.
+				if !finishWritten {
 					if err := p.writer.WriteFinish(acc.FinishReason(), lastUsage); err != nil {
 						return msg, lastUsage, err
 					}
@@ -42,7 +45,7 @@ func (p *StreamPump) Pump(ctx context.Context, ch <-chan llm.StreamChunk) (llm.M
 
 			acc.Add(chunk)
 
-			// Track usage from chunks
+			// Track usage from chunks (may arrive in a chunk after finish_reason).
 			if chunk.Usage != nil {
 				lastUsage = chunk.Usage
 			}
@@ -53,12 +56,17 @@ func (p *StreamPump) Pump(ctx context.Context, ch <-chan llm.StreamChunk) (llm.M
 				return msg, lastUsage, err
 			}
 			if chunk.FinishReason != nil {
-				finished = true
+				finishWritten = true
 			}
 			p.writer.Flush()
 
 		case <-ctx.Done():
 			msg, _ := acc.Message()
+			// Best-effort finish on cancellation (only if not already written).
+			if !finishWritten {
+				_ = p.writer.WriteFinish(acc.FinishReason(), lastUsage)
+				p.writer.Flush()
+			}
 			return msg, lastUsage, ctx.Err()
 		}
 	}
@@ -75,14 +83,18 @@ func (p *StreamPump) writeChunk(chunk llm.StreamChunk) error {
 
 	// Write tool call deltas
 	for i, tc := range chunk.Delta.ToolCalls {
+		idx := tc.Index
+		if idx == 0 && i != 0 {
+			idx = i
+		}
 		if tc.ID != "" {
 			// New tool call starting
-			if err := p.writer.WriteToolCallStart(i, &tc); err != nil {
+			if err := p.writer.WriteToolCallStart(idx, &tc); err != nil {
 				return err
 			}
 		}
 		if len(tc.Function.Arguments) > 0 {
-			if err := p.writer.WriteToolCallDelta(i, string(tc.Function.Arguments)); err != nil {
+			if err := p.writer.WriteToolCallDelta(idx, string(tc.Function.Arguments)); err != nil {
 				return err
 			}
 		}
