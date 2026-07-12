@@ -4875,3 +4875,522 @@ export async function signOutAction() {
 ### Notes
 - Did not rewrite CLAUDE.md from scratch; structure, commands, hard constraints, and UPDATE.md mandate were already correct.
 - `apps/web/CLAUDE.md` remains a thin `@AGENTS.md` import and was left alone.
+
+## [FAQ-UI]. feat(pricing): enhance FAQ section visuals on pricing page
+
+**Session**: pricing-faq-ui-2026-07-12
+**Date**: 2026-07-12 20:13
+
+### Why
+The pricing page FAQ looked thinner than the surrounding avant-garde sections (CreditPackages / PricingCTA). Needed stronger hierarchy, glass/HUD atmosphere, accordion polish, a11y, and a richer support rail so the FAQ matches the rest of `/pricing`.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/components/pricing/PricingFAQ.tsx | L1-553 | modified |
+
+### Before
+```tsx
+// apps/web/components/pricing/PricingFAQ.tsx — multi-open local state, lighter sidebar
+function FAQItem({ item, index }: { item: ...; index: number }) {
+  const [isOpen, setIsOpen] = useState(false);
+  // ... basic gradient border + chevron accordion
+}
+// Support rail: mail card + two plain stat tiles only
+```
+
+### After
+```tsx
+// apps/web/components/pricing/PricingFAQ.tsx — single-open accordion, HUD atmosphere
+// - useReducedMotion, aria ids, sticky support rail
+// - category chips with counts, glass contact card + docs/gateway links
+// - left accent rail, gradient border on open/hover, trust strip
+function FAQItem({ item, index, isOpen, onToggle, reduce }) { ... }
+export function PricingFAQ() {
+  const [openKey, setOpenKey] = useState(FAQ_WITH_CATEGORIES[0]?.question ?? null);
+  // atmosphere: glow orbs + grid + vignette + HUD corners
+}
+```
+
+### Notes
+- Content still sourced from `pricingFAQ` in `lib/pricing-data.ts` (no copy changes).
+- First FAQ item opens by default for a fuller first paint.
+- Links: `/docs`, `/gateway`, `mailto:support@yapapa.dev`.
+
+## [LOGIN-UI]. feat(login): avant-garde visual overhaul of /login
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 20:25
+
+### Why
+`/login` felt thinner than the rest of the marketing/dashboard visual language. Needed a full dual-panel polish: richer atmosphere, stronger brand editorial, glass auth card, improved fields/social buttons, and trust callouts — without changing auth actions (`authenticate` / `authenticateSocial`).
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/login/page.tsx | L1-end | modified |
+
+### Before
+```tsx
+// apps/web/app/login/page.tsx — minimal dual column
+// MeshOrbs + Particles + underline-only fields
+// Form card: subtle glass, social outline buttons, basic error text
+// Left: typewriter headline + short copy + operational footer
+```
+
+### After
+```tsx
+// apps/web/app/login/page.tsx — dual panel avant-garde
+// Atmosphere (mesh + grid + vignette + noise) + violet particles + HUD corners
+// Left: badge, typewriter ("One gateway." / "Every model." / "Zero friction."),
+//       feature cards, stats strip (100+ / SSE / $5)
+// Right: gradient-ring glass card, Secure badge, icon fields,
+//        richer error alert, free-credits callout, rounded social/submit CTAs
+// Auth: still useActionState(authenticate) + authenticateSocial
+```
+
+### Notes
+- No changes to `app/lib/actions.ts` or NextAuth wiring.
+- Reduced-motion respected for mesh, particles, typewriter, and entrance motion.
+
+## [LOGIN-UI-2]. feat(login): replace generic dual-panel with intentional minimal stage
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 20:35
+
+### Why
+Previous `/login` still read as a SaaS dual-column template (feature cards, glass card, particle canvas, social button grid). Rebuilt as asymmetric single-stage composition: serif/italic display type, underline fields, text social links, structural frame lines — less chrome, higher hierarchy, lower cognitive load. Auth wiring unchanged.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/login/page.tsx | L1-end | modified |
+
+### Before
+```tsx
+// Dual panel + MeshOrbs/Particles + glass card + icon fields + social outline buttons
+// FEATURES cards, stats tiles, Secure badge, free-credits callout box
+```
+
+### After
+```tsx
+// Single stage: vertical/horizontal frame lines, one light source, partial grid
+// 12-col asymmetric main: editorial (Sign + italic "in.") vs form instrument
+// Underline FieldShell, Button primitive (default/lg), text SocialRow (GitHub / Google)
+// Typographic metrics (font-display italic), index footer — no particle canvas
+// useActionState(authenticate) + authenticateSocial preserved
+```
+
+### Notes
+- Uses existing `Button` from `@/components/ui/button` (library discipline).
+- Reduced motion respected; no continuous canvas rAF.
+- Focus: auto-focus email; WCAG focus labels, aria-invalid, role=alert error.
+
+## [LOGIN-UI-3]. feat(login): restyle to match site glass/HUD/cyber visual system
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 20:50
+
+### Why
+User feedback: previous intentional-minimal login looked unattractive and mismatched site components. Rebuilt `/login` to use the same visual language as signup, hero, pricing, and header: mesh gradient, HUD corners, glass-card shell, blue/violet glows, cyber Button, feature chips, brand mark aligned with CyberpunkLogo.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/login/page.tsx | L1-end | modified |
+
+### Before
+```tsx
+// Austere single-stage: frame lines, underline fields, text social links
+// bg #030304, no glass-card, no mesh-gradient, no HUD
+```
+
+### After
+```tsx
+// Dual column matching signup/hero:
+// Atmosphere: mesh-gradient + glow orbs + bg-grid-pattern + vignette
+// DynamicSpotlight (mousemove), HUDOverlay corners + mono labels
+// BrandMark (cyber logo tile), feature cards, mono stats
+// Form: glass-card rounded-[28px] → #0A0A0A inner, corner accents
+// Fields: rounded-xl icon inputs, Button variant="cyber"
+// Social outline buttons, free-credits callout
+// Auth: authenticate / authenticateSocial unchanged
+```
+
+### Notes
+- Uses project utilities: `glass-card`, `mesh-gradient`, `bg-grid-pattern`, `animate-glow-pulse`, `Button` cyber variant.
+- Reduced motion gates spotlight + glow pulse + entrance motion.
+
+## [LOGIN-UI-4]. feat(login): elevate LIVE / Universal LLM Gateway status badge
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 20:55
+
+### Why
+User asked to elevate the "LIVE · Universal LLM Gateway" chip. Previous flat blue pill felt weak next to site glass/HUD chrome. Rebuilt as glass capsule with emerald live pulse, spectral wash, and mono product label.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/login/page.tsx | LIVE badge block (~L376-L420) | modified |
+
+### Before
+```tsx
+// flat rounded-full blue pill: Zap + LIVE chip + gray "Universal LLM Gateway"
+className="... rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1.5"
+```
+
+### After
+```tsx
+// glass capsule: p-[3px] black/40 backdrop-blur, gradient wash, hover glow
+// emerald Live chip with ping dot + ring; divider; Zap + mono product label
+```
+
+### Notes
+- Reduced motion still disables ping via `!reduce && "animate-ping"`.
+
+## [LOGIN-UI-5]. feat(login): use icon/Nervous Cat logo in brand mark
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 21:00
+
+### Why
+User asked to add the repo `icon/` logo on the login page. Site already serves the same asset as `/nervous-cat.jpg` (copy of `icon/Nervous Cat.jpg`). Replaced the letter-"Y" brand tile with Next/Image of that logo inside the cyber frame, matching CyberpunkLogo / header usage.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/login/page.tsx | BrandMark + Image import | modified |
+
+### Before
+```tsx
+// Letter "Y" placeholder inside blue-bordered tile
+<span className="... text-xl font-black italic text-[#3b82f6]">Y</span>
+```
+
+### After
+```tsx
+// next/image src="/nervous-cat.jpg" (icon/Nervous Cat.jpg) inside tech-grid tile
+// BrandMark supports compact prop for mobile form header
+```
+
+### Notes
+- Asset path used site-wide: `apps/web/public/nervous-cat.jpg` (same file as `icon/Nervous Cat.jpg`).
+- No new public file copy required; public asset already present.
+
+## [LOGIN-UI-6]. feat(login): replace form-card lock icon with icon/ logo
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 21:05
+
+### Why
+User asked to put the `icon/` logo inside the login form card header instead of the lock icon. Swapped Lucide `Lock` tile for `/nervous-cat.jpg` (same asset as `icon/Nervous Cat.jpg`) in a cyber-framed square matching the brand mark.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/login/page.tsx | form card header icon (~L581) | modified |
+
+### Before
+```tsx
+<div className="... rounded-2xl bg-gradient-to-br from-violet-600 to-blue-600 ...">
+  <Lock className="h-5 w-5 text-white" />
+</div>
+```
+
+### After
+```tsx
+<div className="... rounded-2xl border border-[#3b82f6]/30 bg-black ...">
+  <Image src="/nervous-cat.jpg" alt="Yapapa" width={40} height={40} className="... object-cover" priority />
+</div>
+```
+
+### Notes
+- Password field still uses Lock icon (input affordance, not brand).
+- Public path: `apps/web/public/nervous-cat.jpg` ≡ `icon/Nervous Cat.jpg`.
+
+## [LOGIN-UI-7]. style(login): void black page background
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 21:10
+
+### Why
+User requested pure void black background on `/login`. Removed mesh gradient, glow orbs, grid pattern, vignette, mouse spotlight, and card outer color wash so the stage reads as absolute black.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/login/page.tsx | Atmosphere, page shell, card glow | modified |
+
+### Before
+```tsx
+bg-[#050505] + mesh-gradient + blue/violet blur orbs + bg-grid-pattern + DynamicSpotlight + card rainbow blur
+```
+
+### After
+```tsx
+bg-black + Atmosphere() => absolute inset-0 bg-black
+// DynamicSpotlight removed; card outer gradient wash removed
+```
+
+### Notes
+- Form card remains `#0A0A0A` glass shell for contrast on pure black.
+- HUD corner brackets retained (hairline white, not color fill).
+
+## [LOGIN-UI-8]. fix(login): pin form card on scroll + compact content fit
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 21:15
+
+### Why
+User: form should stay in place while scrolling; card content must fit cleanly. Desktop shell is now viewport-locked (`h-screen overflow-hidden`); left brand column scrolls independently; right form column stays centered/pinned. Card padding/gaps tightened so social + fields + CTA + signup fit without overflow.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/login/page.tsx | page shell + form section + card spacing | modified |
+
+### Before
+```tsx
+// min-h-screen overflow-hidden full page — tall left content forced page scroll and form could leave view
+// card p-7/sm:p-9, mb-8/mb-7, space-y-5, max-w-[440px]
+```
+
+### After
+```tsx
+// lg:h-screen lg:overflow-hidden; left lg:overflow-y-auto; right lg:h-full centered pin
+// card max-w-[400px], p-5/sm:p-6, tighter mb/gap, py-3 inputs, break-words on error
+// form wrapper lg:max-h-full lg:overflow-y-auto as safety valve on short viewports
+```
+
+### Notes
+- Mobile still stacks and scrolls naturally (form not sticky on small screens).
+- Auth fields/actions unchanged.
+
+## [LOGIN-UI-8]. style(login): fit entire login composition in one viewport
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 21:15
+
+### Why
+User required everything on `/login` to fit one page (no desktop scroll). Compressed dual-column layout into `h-dvh` with tighter type, features, form paddings, and input heights while keeping void black + glass form.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/login/page.tsx | shell, left column, form card, Field/Submit/Social | modified |
+
+### Before
+```tsx
+// min-h-screen stacked content, large type (4.25rem), py-12/p-14, py-3.5 inputs, mt-7 footers
+// left brand always visible and tall → page scroll on laptop heights
+```
+
+### After
+```tsx
+// h-dvh max-h-dvh overflow-hidden
+// left: hidden on mobile, flex on lg; denser badge/h1/features/stats
+// form: max-w-[400px], p-5/6, py-2.5 inputs, h-11 submit, compact free-credits + signup
+// form section: overflow-y-auto only if mobile keyboard overflows
+```
+
+### Notes
+- Auth wiring unchanged.
+- Mobile: brand column hidden; compact BrandMark above form; form section can scroll if needed.
+
+## [LOGIN-UI-9]. style(login): enhance Sign in button inside form card
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 21:20
+
+### Why
+User asked to enhance the Sign in button UI inside the login card. Replaced plain cyber variant with a premium gradient CTA: outer glow halo, specular edge, hover sheen, cyber corner ticks, and arrow chip.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/login/page.tsx | SubmitButton | modified |
+
+### Before
+```tsx
+// Button variant="cyber" h-11, simple sheen, text + ArrowRight
+```
+
+### After
+```tsx
+// group/submit wrapper + gradient glow halo
+// blue→violet→fuchsia fill, inset specular, corner ticks
+// arrow in white/15 chip; hover scale + brighter glow; reduced-motion sheen gate
+```
+
+### Notes
+- Still uses shared `Button` primitive (library discipline).
+- Pending state dims glow and shows Loader2 "Verifying…".
+
+## [LOGIN-UI-10]. style(login): simplify Sign in button to match void-black card
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 21:25
+
+### Why
+User preferred a simple Sign in button matching the login page (void black + glass card) over the glowing gradient CTA. Removed halo, spectral fill, corner ticks, and scale effects.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/login/page.tsx | SubmitButton | modified |
+
+### Before
+```tsx
+// gradient blue→violet→fuchsia + outer glow blur + corner ticks + arrow chip
+```
+
+### After
+```tsx
+// solid white button, black text, subtle border, quiet hover sheen, ArrowRight
+// matches form fields' quiet chrome on #0A0A0A card
+```
+
+### Notes
+- Still uses shared `Button` primitive.
+
+## [SIGNUP-UI-1]. feat(signup): parity with login void-black / glass / one-viewport UI
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 21:35
+
+### Why
+User asked to apply everything done on `/login` to `/signup`. Rebuilt signup for visual parity: void black stage, h-dvh single-page fit, nervous-cat logo brand + form header, glass card, Live/Free status capsule, dense feature/stats rail, simple white CTA (no glow), compact social/fields. Kept signup-specific fields (name, password strength) and `signup` / `authenticateSocial` auth.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/signup/page.tsx | L1-end | rewritten |
+
+### Before
+```tsx
+// mesh Atmosphere + DynamicSpotlight + Glitch/Typewriter + RegistrationTerminal
+// letter-Y BrandMark, cyber SubmitButton, tall min-h-screen layout
+// User icon in form header; terminal-prefix fields
+```
+
+### After
+```tsx
+// void black Atmosphere, HUD only, h-dvh overflow-hidden
+// BrandMark with /nervous-cat.jpg (icon logo), Free badge capsule
+// glass-card form, logo tile header, Field inputs (login style)
+// white Create account CTA; password strength retained
+// signup action + field names unchanged
+```
+
+### Notes
+- Removed glitch text, typewriter, registration terminal, mesh/spotlight for density + parity.
+- Mobile: left column hidden; compact BrandMark above form; form scrolls if needed.
+
+## [SIGNUP-UI-2]. style(signup): deepen visual polish for parity with login
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 21:45
+
+### Why
+User asked to enhance signup UI/visuals further after parity rewrite. Refined hierarchy and micro-details without abandoning void-black / h-dvh / glass system.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/signup/page.tsx | left editorial + form card + social | modified |
+
+### Before
+```tsx
+// Headline "One gateway. / Every model." (same as login)
+// Feature list single fade-in; plain social hover; form card without top specular
+// Password label row with separate Show text button + icon toggle
+```
+
+### After
+```tsx
+// Signup-specific headline: "Start free. / Ship faster."
+// 01 Register → 02 Get key → 03 Ship path
+// Staggered feature cards; glass form top specular wash
+// Social hover wash; password eye toggle only (no duplicate Show text)
+// Stats tiles with subtle gradient fill
+```
+
+### Notes
+- Auth (`signup`, field names) unchanged.
+- Still one-viewport desktop (`h-dvh`), void black, nervous-cat logo, white Create account CTA.
+
+## [AUTH-UI-1]. style(auth): redesign $5 free credits callout on login + signup
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 21:50
+
+### Why
+User asked to enhance the "$5 free credits…" strip on both auth pages. Replaced flat icon+paragraph with a compact value tile: $5/free chip, title+subtitle, Gift mono tag, soft violet wash — quieter than glow CTAs, stronger hierarchy.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/login/page.tsx | free-credits callout | modified |
+| apps/web/app/signup/page.tsx | free-credits callout | modified |
+
+### Before
+```tsx
+// sparkles icon + single paragraph "$5 free credits when you create..."
+```
+
+### After
+```tsx
+// card: $5 / FREE tile · title + subtitle · Gift chip
+// login copy: "Free credits on signup" / "Create an account to claim — no card required."
+// signup copy: "Free credits included" / "Claimed on signup — no card required."
+```
+
+### Notes
+- No glow CTA styling; matches void-black glass form language.
+
+## [AUTH-UI-2]. style(auth): simplify free-credits strip to match form card
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 21:55
+
+### Why
+Previous free-credits callout looked noisy (stacked $5 tile, Gift chip, blur wash) and clashed with the quiet glass form card. Simplified to field-matching chrome: soft border, white/02 fill, sparkles icon, single line of copy.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/login/page.tsx | free-credits strip | modified |
+| apps/web/app/signup/page.tsx | free-credits strip | modified |
+
+### Before
+```tsx
+// $5/FREE value tile + title/subtitle + Gift chip + violet blur wash
+```
+
+### After
+```tsx
+// rounded-xl border-white/08 bg-white/02 · sparkles icon ·
+// "$5 free credits · … No card required."
+// Same visual language as form inputs / social buttons
+```
+
+### Notes
+- Login: "when you create an account"
+- Signup: "included on signup"
