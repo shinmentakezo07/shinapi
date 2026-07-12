@@ -92,7 +92,9 @@ func (r *ConversationRepo) ListConversations(ctx context.Context, userID string,
 	}
 
 	var total int
-	_ = r.db.QueryRow(ctx, `SELECT COUNT(*) FROM conversations WHERE user_id = $1`, userID).Scan(&total)
+	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM conversations WHERE user_id = $1`, userID).Scan(&total); err != nil {
+		return nil, 0, err
+	}
 	return result, total, nil
 }
 

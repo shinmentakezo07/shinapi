@@ -377,8 +377,12 @@ export class AdminSDK {
     return this.api.adminListUserKeys(userId) as unknown as unknown[];
   }
 
-  async listUserUsage(userId: string): Promise<UsageRecord[]> {
-    return this.api.adminListUserUsage(userId) as unknown as UsageRecord[];
+  async listUserUsage(
+    userId: string,
+    page?: number,
+    limit?: number,
+  ): Promise<PaginatedResult<UsageRecord>> {
+    return this.api.adminListUserUsage(userId, page, limit) as unknown as PaginatedResult<UsageRecord>;
   }
 
   async listIPAccessLogs(params?: {

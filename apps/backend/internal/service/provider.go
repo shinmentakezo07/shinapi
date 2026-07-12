@@ -442,5 +442,6 @@ func toLLMChatRequest(req domain.ChatRequest) *llm.ChatRequest {
 		Model:    req.Model,
 		Messages: messages,
 		System:   system,
+		Metadata: req.Metadata,
 	}
 }

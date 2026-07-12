@@ -33,7 +33,9 @@ func (r *TransactionRepo) ByUser(ctx context.Context, userID string, page, limit
 	}
 
 	var total int
-	r.db.QueryRow(ctx, `SELECT COUNT(*) FROM credit_transactions WHERE user_id = $1`, userID).Scan(&total)
+	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM credit_transactions WHERE user_id = $1`, userID).Scan(&total); err != nil {
+		return nil, 0, err
+	}
 	return txs, total, rows.Err()
 }
 

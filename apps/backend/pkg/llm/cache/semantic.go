@@ -44,7 +44,9 @@ func NewSemanticCache(maxSize int, similarityThreshold float64) *SemanticCache {
 }
 
 // Get retrieves a semantically similar cached response.
-func (c *SemanticCache) Get(ctx context.Context, key string) (*llm.ChatResponse, error) {
+// model is the request model; a cached entry from a different model is
+// never returned (cross-model poisoning guard).
+func (c *SemanticCache) Get(ctx context.Context, key, model string) (*llm.ChatResponse, error) {
 	// For semantic cache, the key is a JSON-encoded embedding vector
 	queryEmbedding, err := decodeEmbedding(key)
 	if err != nil {
@@ -67,6 +69,17 @@ func (c *SemanticCache) Get(ctx context.Context, key string) (*llm.ChatResponse,
 			bestScore = score
 			bestEntry = &c.entries[i]
 		}
+	}
+
+	// Cross-model poisoning guard: never return a cached response from a
+	// different model. The semantic embedding key is currently unwired
+	// (callers pass a sha256 hex string rather than a JSON embedding, so
+	// Set errors and Get always misses). Until BuildSemanticKey is wired
+	// into callers, we still must not serve an entry that belongs to a
+	// different model. If the best entry carries a model and it differs
+	// from the requested model, treat it as a miss.
+	if bestEntry != nil && bestEntry.Model != "" && bestEntry.Model != model {
+		return nil, ErrCacheMiss
 	}
 
 	if bestEntry != nil && bestScore >= c.similarityThreshold {

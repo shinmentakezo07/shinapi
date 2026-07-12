@@ -12,6 +12,15 @@ import (
 	"github.com/sashabaranov/go-openai"
 )
 
+// derefInt safely converts a *int (as used by the go-openai streaming
+// ToolCall.Index) into a plain int, returning 0 for a nil pointer.
+func derefInt(p *int) int {
+	if p == nil {
+		return 0
+	}
+	return *p
+}
+
 // toOpenAIMessage converts an llm.Message to an OpenAI SDK message.
 func toOpenAIMessage(m llm.Message) openai.ChatCompletionMessage {
 	msg := openai.ChatCompletionMessage{
@@ -180,7 +189,7 @@ func fromOpenAIStreamChunk(chunk openai.ChatCompletionStreamResponse, model, pro
 			delta.ToolCalls[i] = llm.ToolCall{
 				ID:    tc.ID,
 				Type:  string(tc.Type),
-				Index: tc.Index,
+				Index: derefInt(tc.Index),
 				Function: llm.ToolCallFunction{
 					Name:      tc.Function.Name,
 					Arguments: json.RawMessage(tc.Function.Arguments),

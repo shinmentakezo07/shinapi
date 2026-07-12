@@ -159,6 +159,8 @@ func (a *Accumulator) Add(chunk llm.StreamChunk) {
 }
 
 // mergeToolCall merges a tool call delta into accumulated state.
+// Tool call deltas are matched by Index (falling back to ID) so parallel
+// tool calls do not have their arguments interleaved.
 func (a *Accumulator) mergeToolCall(delta llm.ToolCall) {
 	if delta.ID != "" {
 		for _, existing := range a.toolCalls {
@@ -172,6 +174,17 @@ func (a *Accumulator) mergeToolCall(delta llm.ToolCall) {
 			Type:     delta.Type,
 			Function: delta.Function,
 		})
+		return
+	}
+
+	// Match by Index when no ID is present (common for argument deltas).
+	idx := delta.Index
+	if idx >= 0 {
+		// Pad the slice if the provider sent an index beyond the current set.
+		for len(a.toolCalls) <= idx {
+			a.toolCalls = append(a.toolCalls, &llm.ToolCall{})
+		}
+		applyDelta(a.toolCalls[idx], delta)
 		return
 	}
 
@@ -216,11 +229,17 @@ func (a *Accumulator) Message() (llm.Message, bool) {
 		})
 	}
 	if len(a.toolCalls) > 0 {
-		calls := make([]llm.ToolCall, len(a.toolCalls))
-		for i, tc := range a.toolCalls {
-			calls[i] = *tc
+		calls := make([]llm.ToolCall, 0, len(a.toolCalls))
+		for _, tc := range a.toolCalls {
+			// Omit padded/empty placeholders that never received data.
+			if tc.ID == "" && tc.Type == "" && tc.Function.Name == "" && len(tc.Function.Arguments) == 0 {
+				continue
+			}
+			calls = append(calls, *tc)
 		}
-		msg.ToolCalls = calls
+		if len(calls) > 0 {
+			msg.ToolCalls = calls
+		}
 	}
 
 	return msg, a.finishReason != ""

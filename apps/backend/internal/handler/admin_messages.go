@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"dra-platform/backend/internal/middleware"
+	"dra-platform/backend/internal/pkg/logger"
 	"dra-platform/backend/internal/pkg/response"
 
 	"github.com/go-chi/chi/v5"
@@ -61,9 +62,14 @@ func (h *Handler) AdminListMessages(w http.ResponseWriter, r *http.Request) {
 		var m msg
 		if err := rows.Scan(&m.ID, &m.Title, &m.Body, &m.Priority, &m.TargetType, &m.TargetIds,
 			&m.SentBy, &m.SenderEmail, &m.SentAt, &m.ExpiresAt, &m.CreatedAt, &m.ReadCount); err != nil {
+			logger.Warn("admin_list_messages_scan_failed", "error", err.Error())
 			continue
 		}
 		messages = append(messages, m)
+	}
+	if err := rows.Err(); err != nil {
+		response.Error(w, 500, "failed to list messages")
+		return
 	}
 	if messages == nil {
 		messages = []msg{}
@@ -295,9 +301,14 @@ func (h *Handler) GetUserAnnouncements(w http.ResponseWriter, r *http.Request) {
 		var a userAnnouncement
 		var targetType string
 		if err := rows.Scan(&a.ID, &a.Title, &a.Body, &a.Priority, &targetType, &a.StartDate, &a.EndDate, &a.CreatedAt); err != nil {
+			logger.Warn("admin_get_announcements_scan_failed", "error", err.Error())
 			continue
 		}
 		announcements = append(announcements, a)
+	}
+	if err := rows.Err(); err != nil {
+		response.Error(w, 500, "failed to fetch announcements")
+		return
 	}
 	if announcements == nil {
 		announcements = []userAnnouncement{}
@@ -358,9 +369,14 @@ func (h *Handler) GetUserMessages(w http.ResponseWriter, r *http.Request) {
 		var createdAt time.Time
 		if err := rows.Scan(&m.ID, &m.Title, &m.Body, &m.Priority, &targetType, &targetIds,
 			&sentBy, &m.SenderEmail, &m.SentAt, &m.ExpiresAt, &createdAt, &m.IsRead); err != nil {
+			logger.Warn("admin_get_messages_scan_failed", "error", err.Error())
 			continue
 		}
 		messages = append(messages, m)
+	}
+	if err := rows.Err(); err != nil {
+		response.Error(w, 500, "failed to fetch messages")
+		return
 	}
 	if messages == nil {
 		messages = []userMsg{}

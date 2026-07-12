@@ -127,9 +127,14 @@ func (r *AdminProviderRepo) List(ctx context.Context) ([]domain.Provider, error)
 func (r *AdminProviderRepo) Update(ctx context.Context, p *domain.Provider) error {
 	_, err := r.db.Exec(ctx, `
 		UPDATE providers SET display_name=$2, base_url=$3, status=$4, priority=$5,
-			timeout_ms=$6, max_retries=$7, metadata=$8, updated_at=NOW()
+			timeout_ms=$6, max_retries=$7, metadata=$8,
+			circuit_breaker_enabled=$9, circuit_breaker_threshold=$10,
+			circuit_breaker_recovery_ms=$11, circuit_breaker_half_open_max=$12,
+			rate_limit_rpm=$13, rate_limit_tpm=$14, updated_at=NOW()
 		WHERE id=$1`, p.ID, p.DisplayName, p.BaseURL, p.Status, p.Priority,
-		p.TimeoutMS, p.MaxRetries, p.Metadata)
+		p.TimeoutMS, p.MaxRetries, p.Metadata, p.CircuitBreakerEnabled,
+		p.CircuitBreakerThreshold, p.CircuitBreakerRecoveryMS, p.CircuitBreakerHalfOpenMax,
+		p.RateLimitRPM, p.RateLimitTPM)
 	if err != nil {
 		return fmt.Errorf("update provider: %w", err)
 	}

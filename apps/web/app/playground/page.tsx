@@ -95,6 +95,7 @@ function enrichModels(models: any[]): EnrichedModel[] {
 
 export default function PlaygroundPage() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const sessionsRef = useRef<ChatSession[]>(sessions);
   const [selectedModels, setSelectedModels] = useState<EnrichedModel[]>([]);
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [inputMessage, setInputMessage] = useState("");
@@ -163,6 +164,10 @@ export default function PlaygroundPage() {
   useEffect(() => {
     isLoadingRef.current = isLoading;
   }, [isLoading]);
+
+  useEffect(() => {
+    sessionsRef.current = sessions;
+  }, [sessions]);
 
   useEffect(() => {
     function handleMouseMove({
@@ -296,8 +301,18 @@ export default function PlaygroundPage() {
 
     // Fire all model streams in parallel
     const promises = selectedModels.map(async (model) => {
-      const messages: ChatMessage[] = sharedMessages
-        .filter((m) => m.role === "user" || m.role === "assistant")
+      // Always read the latest sessions so assistant replies from prior
+      // turns are included in the next request's history.
+      const currentSessions = sessionsRef.current;
+      const targetSession = currentSessions.find((s) => s.id === model.id);
+      const priorMessages = targetSession
+        ? targetSession.messages.filter(
+            (m) => m.role === "user" || m.role === "assistant",
+          )
+        : sharedMessages.filter(
+            (m) => m.role === "user" || m.role === "assistant",
+          );
+      const messages: ChatMessage[] = priorMessages
         .map((m) => ({ role: m.role, content: m.content }))
         .concat({ role: "user", content: inputMessage });
 
@@ -353,7 +368,7 @@ export default function PlaygroundPage() {
     // Wait for all streams, then clear loading
     await Promise.all(promises);
     setIsLoading(false);
-  }, [inputMessage, selectedModels, sharedMessages]);
+  }, [inputMessage, selectedModels]);
 
   if (!isMounted) return null;
 

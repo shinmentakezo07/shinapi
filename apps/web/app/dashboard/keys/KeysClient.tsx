@@ -129,11 +129,9 @@ export default function KeysClient() {
             <div>
               <h3 className="text-sm font-medium text-red-400 mb-1">Error</h3>
               <p className="text-xs text-red-300/80">{errorMessage}</p>
-              {sdk.lastRequestId() && (
-                <p className="text-xs text-red-400/60 mt-1 font-mono">
-                  Request ID: {sdk.lastRequestId()}
-                </p>
-              )}
+              <p className="text-xs text-red-400/60 mt-1 font-mono">
+                Request IDs are available in response headers for individual requests.
+              </p>
             </div>
           </div>
         )}

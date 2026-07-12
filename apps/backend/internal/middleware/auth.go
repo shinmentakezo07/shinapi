@@ -45,16 +45,16 @@ func Auth(cfg *config.Config, apiKeyLookup APIKeyLookup, userLookup UserLookup) 
 			// 2. Try JWT session
 			tokenStr := extractBearer(r)
 			if tokenStr == "" {
-				for _, name := range []string{"authjs.session-token", "__Secure-authjs.session-token", "next-auth.session-token", "__Secure-next-auth.session-token"} {
-					if c, err := r.Cookie(name); err == nil {
-						tokenStr = c.Value
-						break
-					}
+				// Dedicated backend token cookie set by the frontend on login.
+				// NextAuth's own session cookies are encrypted with a different
+				// secret and must NOT be parsed as backend JWTs.
+				if c, err := r.Cookie("dra_backend_token"); err == nil {
+					tokenStr = c.Value
 				}
 			}
 
 			if tokenStr == "" {
-				response.Error(w, 401, "Authentication required. Pass session cookie, Bearer token, or x-api-key.")
+				response.Error(w, 401, "Authentication required. Pass Bearer token, x-api-key, or dra_backend_token cookie.")
 				return
 			}
 

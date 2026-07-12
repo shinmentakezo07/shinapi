@@ -127,8 +127,7 @@ func (g *Guard) CheckRequest(ctx context.Context, req *llm.ChatRequest) (*CheckR
 	}
 	if g.maxPromptLength > 0 && totalLength > g.maxPromptLength {
 		result.Allowed = false
-		result.Reason = fmt.Sprintf("prompt exceeds maximum length of %d characters", g.maxPromptLength)
-		return result, nil
+		result.Violations = append(result.Violations, fmt.Sprintf("prompt exceeds maximum length of %d characters", g.maxPromptLength))
 	}
 
 	// Check each message for violations
@@ -147,10 +146,15 @@ func (g *Guard) CheckRequest(ctx context.Context, req *llm.ChatRequest) (*CheckR
 		}
 
 		// Prompt injection detection
-		if risk := g.detectInjection(content); risk > 0.5 {
+		// A single confirmed injection phrase must block even though its risk
+		// ratio (matches/len(promptInjection)) is well below the 0.5 threshold.
+		matches := g.countInjection(content)
+		risk := g.detectInjection(content)
+		if risk > 0.5 || matches > 0 {
 			result.InjectionRisk = risk
 			result.Violations = append(result.Violations, fmt.Sprintf("message %d: potential prompt injection detected (risk: %.2f)", i, risk))
-			if risk > 0.8 {
+			// Block on any confirmed injection phrase, or a high aggregate risk.
+			if matches > 0 || risk > 0.15 {
 				result.Allowed = false
 			}
 		}
@@ -167,10 +171,13 @@ func (g *Guard) CheckRequest(ctx context.Context, req *llm.ChatRequest) (*CheckR
 							result.Violations = append(result.Violations, fmt.Sprintf("message %d tool_use %s: blocked content pattern matched in arguments", i, cb.ToolUse.Name))
 						}
 					}
-					if risk := g.detectInjection(toolContent); risk > 0.5 {
+					// Prompt injection detection (single phrase must block).
+					matches := g.countInjection(toolContent)
+					risk := g.detectInjection(toolContent)
+					if risk > 0.5 || matches > 0 {
 						result.InjectionRisk = risk
 						result.Violations = append(result.Violations, fmt.Sprintf("message %d tool_use %s: potential prompt injection in arguments (risk: %.2f)", i, cb.ToolUse.Name, risk))
-						if risk > 0.8 {
+						if matches > 0 || risk > 0.15 {
 							result.Allowed = false
 						}
 					}
@@ -184,10 +191,13 @@ func (g *Guard) CheckRequest(ctx context.Context, req *llm.ChatRequest) (*CheckR
 							result.Violations = append(result.Violations, fmt.Sprintf("message %d tool_result: blocked content pattern matched in result", i))
 						}
 					}
-					if risk := g.detectInjection(toolContent); risk > 0.5 {
+					// Prompt injection detection (single phrase must block).
+					matches := g.countInjection(toolContent)
+					risk := g.detectInjection(toolContent)
+					if risk > 0.5 || matches > 0 {
 						result.InjectionRisk = risk
 						result.Violations = append(result.Violations, fmt.Sprintf("message %d tool_result: potential prompt injection in result (risk: %.2f)", i, risk))
-						if risk > 0.8 {
+						if matches > 0 || risk > 0.15 {
 							result.Allowed = false
 						}
 					}
@@ -196,7 +206,7 @@ func (g *Guard) CheckRequest(ctx context.Context, req *llm.ChatRequest) (*CheckR
 		}
 	}
 
-	if len(result.Violations) > 0 && result.Reason == "" {
+	if len(result.Violations) > 0 {
 		result.Reason = strings.Join(result.Violations, "; ")
 	}
 
@@ -221,10 +231,30 @@ func (g *Guard) CheckResponse(ctx context.Context, resp *llm.ChatResponse) (*Che
 			content = llm.MergeContentBlocks(c.Message.ContentBlocks)
 		}
 
+		// Blocked content patterns in output
+		for _, re := range g.blockedPatterns {
+			if re.MatchString(content) {
+				result.Allowed = false
+				result.Violations = append(result.Violations, fmt.Sprintf("choice %d: blocked content pattern matched in output", i))
+			}
+		}
+
+		// Prompt injection detection in output
+		matches := g.countInjection(content)
+		risk := g.detectInjection(content)
+		if risk > 0.5 || matches > 0 {
+			result.InjectionRisk = risk
+			result.Violations = append(result.Violations, fmt.Sprintf("choice %d: potential prompt injection detected in output (risk: %.2f)", i, risk))
+			if matches > 0 || risk > 0.15 {
+				result.Allowed = false
+			}
+		}
+
 		// PII detection in output
 		for _, re := range g.piiPatterns {
 			if re.MatchString(content) {
 				result.PIIDetected = true
+				result.Allowed = false
 				result.Violations = append(result.Violations, fmt.Sprintf("choice %d: PII detected in output", i))
 			}
 		}
@@ -254,6 +284,10 @@ func (g *Guard) CheckResponse(ctx context.Context, resp *llm.ChatResponse) (*Che
 				}
 			}
 		}
+	}
+
+	if len(result.Violations) > 0 {
+		result.Reason = strings.Join(result.Violations, "; ")
 	}
 
 	return result, nil
@@ -289,6 +323,20 @@ func (g *Guard) detectInjection(text string) float64 {
 		risk = 1
 	}
 	return risk
+}
+
+// countInjection returns the number of injection phrases found in text.
+// Used to block immediately on any match (a single phrase yields a low
+// ratio against the full phrase list and must still be treated as an attack).
+func (g *Guard) countInjection(text string) int {
+	lower := strings.ToLower(text)
+	var matches int
+	for _, phrase := range g.promptInjection {
+		if strings.Contains(lower, phrase) {
+			matches++
+		}
+	}
+	return matches
 }
 
 // SandboxProvider returns mock responses without calling real providers.

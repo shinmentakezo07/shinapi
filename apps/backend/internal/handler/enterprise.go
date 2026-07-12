@@ -122,7 +122,19 @@ func (h *Handler) ListVirtualKeys(w http.ResponseWriter, r *http.Request) {
 		response.Error(w, 503, "virtual key manager not configured")
 		return
 	}
-	keys, err := h.vkeyManager.List()
+	u := middleware.GetUser(r)
+	if u == nil {
+		response.Error(w, 401, "not authenticated")
+		return
+	}
+	var keys []*virtualkeys.VirtualKey
+	var err error
+	// Admins may list all keys; regular users only see their own.
+	if u.IsAdmin() {
+		keys, err = h.vkeyManager.List()
+	} else {
+		keys, err = h.vkeyManager.GetByUser(u.ID)
+	}
 	if err != nil {
 		response.Error(w, 500, "failed to list virtual keys")
 		return
@@ -188,7 +200,35 @@ func (h *Handler) DeactivateVirtualKey(w http.ResponseWriter, r *http.Request) {
 		response.Error(w, 503, "virtual key manager not configured")
 		return
 	}
+	u := middleware.GetUser(r)
+	if u == nil {
+		response.Error(w, 401, "not authenticated")
+		return
+	}
 	id := chi.URLParam(r, "id")
+	if id == "" {
+		response.Error(w, 400, "virtual key id required")
+		return
+	}
+	// Non-admins may only deactivate their own keys.
+	if !u.IsAdmin() {
+		owned, err := h.vkeyManager.GetByUser(u.ID)
+		if err != nil {
+			response.Error(w, 500, "failed to verify key ownership")
+			return
+		}
+		found := false
+		for _, vk := range owned {
+			if vk.ID == id {
+				found = true
+				break
+			}
+		}
+		if !found {
+			response.Error(w, 403, "cannot deactivate a virtual key you do not own")
+			return
+		}
+	}
 	if err := h.vkeyManager.Deactivate(id); err != nil {
 		adminErrorWithStatus(w, r, err, 400, "deactivate_virtual_key_failed")
 		return

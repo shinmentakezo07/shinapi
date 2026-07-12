@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { getSDK } from "@/lib/api/sdk";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getSDK, ExportJob } from "@/lib/api/sdk";
 import {
   Download,
   FileText,
@@ -13,33 +13,13 @@ import {
   Filter,
   Calendar,
   Trash2,
-  RefreshCw,
   Table,
   FileSpreadsheet,
-  Search,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-type ExportType = "logs" | "usage" | "audit";
-type ExportStatus = "pending" | "processing" | "completed" | "failed";
-type ExportFormat = "csv" | "json";
-
-interface ExportJob {
-  id: string;
-  type: ExportType;
-  format: ExportFormat;
-  status: ExportStatus;
-  createdAt: string;
-  completedAt?: string;
-  downloadUrl?: string;
-  recordCount?: number;
-  error?: string;
-  dateFrom?: string;
-  dateTo?: string;
-}
-
 const EXPORT_TYPES: {
-  key: ExportType;
+  key: ExportJob["type"];
   label: string;
   icon: typeof FileText;
   desc: string;
@@ -64,7 +44,7 @@ const EXPORT_TYPES: {
   },
 ];
 
-const EXPORT_FORMATS: { key: ExportFormat; label: string }[] = [
+const EXPORT_FORMATS: { key: ExportJob["format"]; label: string }[] = [
   { key: "csv", label: "CSV" },
   { key: "json", label: "JSON" },
 ];
@@ -76,7 +56,7 @@ const DATE_RANGES = [
   { key: "custom", label: "Custom range" },
 ];
 
-function statusIcon(status: ExportStatus) {
+function statusIcon(status: ExportJob["status"]) {
   switch (status) {
     case "pending":
       return <Clock className="w-4 h-4 text-gray-400" />;
@@ -89,8 +69,8 @@ function statusIcon(status: ExportStatus) {
   }
 }
 
-function statusLabel(status: ExportStatus) {
-  const colors: Record<ExportStatus, string> = {
+function statusLabel(status: ExportJob["status"]) {
+  const colors: Record<ExportJob["status"], string> = {
     pending: "bg-gray-500/10 text-gray-400",
     processing: "bg-blue-500/10 text-blue-400",
     completed: "bg-emerald-500/10 text-emerald-400",
@@ -106,59 +86,91 @@ function statusLabel(status: ExportStatus) {
   );
 }
 
+function getDateRange(range: string) {
+  const now = new Date();
+  const to = now.toISOString().split("T")[0];
+  let from: string;
+  switch (range) {
+    case "30d":
+      from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+      break;
+    case "90d":
+      from = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+      break;
+    case "7d":
+    default:
+      from = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+      break;
+  }
+  return { from, to };
+}
+
 export default function ExportJobsPage() {
-  const [exportType, setExportType] = useState<ExportType>("logs");
-  const [exportFormat, setExportFormat] = useState<ExportFormat>("csv");
+  const queryClient = useQueryClient();
+  const [exportType, setExportType] = useState<ExportJob["type"]>("logs");
+  const [exportFormat, setExportFormat] = useState<ExportJob["format"]>("csv");
   const [dateRange, setDateRange] = useState("7d");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const [showForm, setShowForm] = useState(false);
 
-  const jobs = useRef<ExportJob[]>([]);
-  const [jobList, setJobList] = useState<ExportJob[]>([]);
-
-  const { data: logsData } = useQuery({
-    queryKey: ["logs-export-preview"],
-    queryFn: () => getSDK().listLogs(1, 1),
-    refetchInterval: 30000,
+  const { data: jobsData, isLoading } = useQuery({
+    queryKey: ["export-jobs"],
+    queryFn: () => getSDK().listExportJobs(1, 50),
+    refetchInterval: (query) => {
+      const jobs = query.state.data?.data ?? [];
+      return jobs.some((j) => j.status === "pending" || j.status === "processing")
+        ? 5000
+        : false;
+    },
   });
 
   const createExport = useMutation({
     mutationFn: async () => {
-      const dateFrom = dateRange === "custom" ? customFrom : undefined;
-      const dateTo = dateRange === "custom" ? customTo : undefined;
-
-      const job: ExportJob = {
-        id: `exp_${Date.now()}`,
+      const { from, to } =
+        dateRange === "custom"
+          ? { from: customFrom, to: customTo }
+          : getDateRange(dateRange);
+      return getSDK().createExportJob({
         type: exportType,
         format: exportFormat,
-        status: "processing",
-        createdAt: new Date().toISOString(),
-        dateFrom,
-        dateTo,
-      };
-
-      jobs.current = [job, ...jobs.current];
-      setJobList([...jobs.current]);
-
-      await new Promise((r) => setTimeout(r, 2000 + Math.random() * 3000));
-
-      job.status = "completed";
-      job.completedAt = new Date().toISOString();
-      job.recordCount = Math.floor(Math.random() * 5000) + 100;
-      job.downloadUrl = `/api/exports/${job.id}/download`;
-
-      jobs.current = [...jobs.current];
-      setJobList([...jobs.current]);
+        dateFrom: from,
+        dateTo: to,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["export-jobs"] });
     },
   });
 
-  const deleteJob = (id: string) => {
-    jobs.current = jobs.current.filter((j) => j.id !== id);
-    setJobList([...jobs.current]);
+  const deleteJob = useMutation({
+    mutationFn: (id: string) => getSDK().deleteExportJob(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["export-jobs"] });
+    },
+  });
+
+  const handleCreate = () => {
+    createExport.mutate(undefined, {
+      onSuccess: () => {
+        setShowForm(false);
+      },
+    });
   };
 
-  const totalRecords = logsData?.total ?? 0;
+  const handleDownload = async (id: string) => {
+    const res = await getSDK().downloadExport(id);
+    if (!res.ok) throw new Error("Download failed");
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `export-${id}`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const jobList = jobsData?.data ?? [];
 
   return (
     <div className="p-6 lg:p-10 space-y-6">
@@ -168,8 +180,7 @@ export default function ExportJobsPage() {
           <div>
             <h1 className="text-2xl font-bold text-white">Export Jobs</h1>
             <p className="text-sm text-gray-400">
-              Export logs, usage data, and audit trails —{" "}
-              {totalRecords.toLocaleString()} records available
+              Export logs, usage data, and audit trails
             </p>
           </div>
         </div>
@@ -295,10 +306,7 @@ export default function ExportJobsPage() {
 
               <div className="flex flex-col justify-end">
                 <button
-                  onClick={() => {
-                    createExport.mutate();
-                    setShowForm(false);
-                  }}
+                  onClick={handleCreate}
                   disabled={createExport.isPending}
                   className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium bg-primary/20 text-primary rounded-lg hover:bg-primary/30 transition-colors disabled:opacity-50"
                 >
@@ -326,7 +334,18 @@ export default function ExportJobsPage() {
           <span className="text-xs text-gray-500">{jobList.length} jobs</span>
         </div>
 
-        {jobList.length === 0 ? (
+        {isLoading ? (
+          <div className="divide-y divide-white/5 animate-pulse">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="px-4 py-3 flex items-center gap-4">
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-white/5 rounded w-1/3" />
+                  <div className="h-3 bg-white/5 rounded w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : jobList.length === 0 ? (
           <div className="text-center py-16 text-gray-500">
             <Download className="w-8 h-8 mx-auto mb-3 opacity-40" />
             <p className="text-sm">No export jobs yet</p>
@@ -353,32 +372,23 @@ export default function ExportJobsPage() {
                       {new Date(job.createdAt).toLocaleDateString()}{" "}
                       {new Date(job.createdAt).toLocaleTimeString()}
                     </span>
-                    {job.recordCount != null && (
-                      <span>{job.recordCount.toLocaleString()} records</span>
-                    )}
-                    {job.dateFrom && (
-                      <span className="flex items-center gap-1">
-                        <Filter className="w-3 h-3" />
-                        {job.dateFrom} → {job.dateTo ?? "now"}
-                      </span>
-                    )}
                   </div>
                 </div>
 
                 {statusLabel(job.status)}
 
                 <div className="flex items-center gap-1">
-                  {job.status === "completed" && job.downloadUrl && (
-                    <a
-                      href={job.downloadUrl}
+                  {job.status === "completed" && (
+                    <button
+                      onClick={() => handleDownload(job.id)}
                       className="p-1.5 rounded-lg text-emerald-400 hover:bg-emerald-500/10 transition-colors"
                       title="Download"
                     >
                       <Download className="w-4 h-4" />
-                    </a>
+                    </button>
                   )}
                   <button
-                    onClick={() => deleteJob(job.id)}
+                    onClick={() => deleteJob.mutate(job.id)}
                     className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                     title="Delete"
                   >

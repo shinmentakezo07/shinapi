@@ -54,11 +54,21 @@ func registerRoutes(
 
 	// CORS
 	corsOrigins := cfg.AllowedOrigins
+	allowCredentials := true
+	// Security: if any origin is the wildcard "*", credentials must be
+	// disabled — browsers reject wildcard + credentials, and allowing it
+	// would be a CSRF/credential-leak footgun. Normalize at CORS setup.
+	for _, o := range corsOrigins {
+		if o == "*" {
+			allowCredentials = false
+			break
+		}
+	}
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   corsOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Api-Key", "X-Sandbox", "X-Request-ID", "X-Webhook-Signature", "X-Webhook-ID", "X-Event-Type", "X-Idempotency-Key"},
-		AllowCredentials: true,
+		AllowCredentials: allowCredentials,
 		MaxAge:           300,
 	}))
 
@@ -119,7 +129,16 @@ func registerRoutes(
 	quotaMW := appmiddleware.QuotaCheck(
 		quotaTracker,
 		func(r *http.Request) *appmiddleware.ScopedAPIKey {
-			return appmiddleware.ToScoped(appmiddleware.GetAPIKey(r))
+			if key := appmiddleware.GetAPIKey(r); key != nil {
+				return appmiddleware.ToScoped(key)
+			}
+			// No API key present (Bearer/JWT/session-cookie path): resolve the
+			// quota subject from the authenticated user so session/JWT requests
+			// are also quota-enforced rather than silently unlimited.
+			if u := appmiddleware.GetUser(r); u != nil {
+				return appmiddleware.ToScopedUser(u)
+			}
+			return nil
 		},
 		func(r *http.Request) (string, int) {
 			var req struct {
@@ -381,7 +400,7 @@ func registerRoutes(
 
 		r.Get("/api/admin/admins", appmiddleware.RequireAdmin(h.AdminListAdminUsers))
 		r.Post("/api/admin/admins", appmiddleware.RequireAdmin(h.AdminCreateAdminUser))
-		r.Delete("/api/admin/admins/{id}", appmiddleware.RequireAdmin(h.AdminRemoveAdmin))
+		r.Delete("/api/admin/admins/{id}", appmiddleware.RequirePermission("superadmin")(h.AdminRemoveAdmin))
 
 		r.Get("/api/admin/sso", appmiddleware.RequireAdmin(h.AdminListSSOConfigs))
 
@@ -445,9 +464,9 @@ func registerRoutes(
 		r.Use(tokenBlacklistMW)
 
 		// Virtual Keys
-		r.Get("/api/virtual-keys", h.ListVirtualKeys)
+		r.Get("/api/virtual-keys", appmiddleware.RequireAdmin(h.ListVirtualKeys))
 		r.Post("/api/virtual-keys", h.CreateVirtualKey)
-		r.Post("/api/virtual-keys/{id}/deactivate", h.DeactivateVirtualKey)
+		r.Post("/api/virtual-keys/{id}/deactivate", appmiddleware.RequireAdmin(h.DeactivateVirtualKey))
 
 		// WebSocket
 		r.Get("/ws", h.WebSocketHandler)

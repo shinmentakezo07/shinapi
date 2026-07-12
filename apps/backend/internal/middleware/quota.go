@@ -236,6 +236,28 @@ func ToScoped(k *domain.APIKey) *ScopedAPIKey {
 	}
 }
 
+// ToScopedUser builds a ScopedAPIKey from an authenticated user so that
+// session/JWT requests are quota-enforced even when no API key is present.
+//
+// domain.User does not carry per-user quota fields, so we apply conservative
+// defaults rather than allowing unlimited usage:
+//   - DailyRequestLimit: 1000 requests/day
+//   - MonthlyTokenLimit: 2_000_000 tokens/month
+//
+// These are intentionally modest guardrails; operators can tighten via the
+// per-API-key quotas which take precedence on the x-api-key path.
+func ToScopedUser(u *domain.User) *ScopedAPIKey {
+	if u == nil {
+		return nil
+	}
+	return &ScopedAPIKey{
+		Key:               "user:" + u.ID,
+		UserID:            u.ID,
+		DailyRequestLimit: 1000,
+		MonthlyTokenLimit: 2_000_000,
+	}
+}
+
 // quotaRecorder wraps http.ResponseWriter to capture status code for quota reconciliation.
 type quotaRecorder struct {
 	http.ResponseWriter

@@ -4068,3 +4068,810 @@ The Playground page was functional but visually generic: model response cards us
 - Added `aria-label` / `role="log"` attributes to the message region, input, and action buttons for WCAG AA screen-reader parity.
 - `EmptyRail` reuses `ModelResponseCard`'s provider-accent logic so the pre-prompt frame and live responses stay visually consistent.
 - No behavioral change to streaming, history, or model-selection flows; purely presentational + one new affordance (clear conversation).
+
+## [R1]. Audit-fix round 1: confirmed bug fixes
+
+**Session**: dra-full-audit-fix-loop
+**Date**: 2026-07-09 08:02
+
+### Why
+Automated full-repo audit (parallel read-only agents + adversarial verification) found and fixed confirmed bugs in this round.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/backend/internal/db/mongo_querier.go | L702-781 (added L785-825) | modified |
+| apps/backend/internal/handler/admin_providers.go | L307-356 (added), L393-440 | modified |
+| apps/backend/internal/middleware/auth.go | L156-167 | modified |
+| apps/backend/internal/repository/admin_security_repo.go | L187-193 | modified |
+| apps/backend/internal/repository/webhook.go | L63 | modified |
+| apps/backend/internal/service/export.go | L91-99 (added), L125-133 (added) | modified |
+| apps/backend/internal/service/provider.go | L317-341 | modified |
+| apps/backend/internal/service/webhook.go | L119-122, L161-172, L201-212, L320-323, L337, L382 | modified |
+| apps/backend/pkg/llm/provider/openai_sdk.go | L178-185 | modified |
+| apps/backend/pkg/llm/streaming/relay.go | L24-99 | modified |
+| apps/backend/pkg/llm/types.go | L84-88 | modified |
+| apps/web/lib/api/admin-sdk.ts | L70-73 | modified |
+| apps/web/lib/api/rate-limit.ts | L57-66 | modified |
+| apps/web/lib/api/sdk.ts | L598-605, L868-880 | modified |
+
+### Before
+```code
+// apps/backend/internal/db/mongo_querier.go — L705
+	// Handle AND conditions
+	parts := strings.Split(where, " and ")
+// L716-719
+		if strings.Contains(part, " is null") {
+			col := strings.TrimSpace(strings.Split(part, " is null")[0])
+// L722-725
+		if strings.Contains(part, " is not null") {
+			col := strings.TrimSpace(strings.Split(part, " is not null")[0])
+// L729-732
+		for _, op := range []string{">=", "<=", "<>", ">", "<", "="} {
+			if strings.Contains(part, op) {
+				sides := strings.SplitN(part, op, 2)
+
+// apps/backend/internal/handler/admin_providers.go — L393-410
+func validateNotPrivateURL(rawURL string) error {
+	if skipSSRFCheck {
+		return nil
+	}
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return fmt.Errorf("invalid URL")
+	}
+	host := u.Hostname()
+	if host == "" {
+		return fmt.Errorf("missing hostname")
+	}
+	ips, err := net.LookupIP(host)
+	if err != nil {
+		return fmt.Errorf("cannot resolve hostname: %w", err)
+	}
+	for _, ip := range ips {
+		if ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
+			return fmt.Errorf("URL resolves to private/reserved IP %s", ip)
+		}
+	}
+	return nil
+}
+
+// apps/backend/internal/middleware/auth.go — L158-167
+		if !u.IsAdmin() {
+			response.Error(w, 403, "Admin access required")
+			return
+		}
+		if !u.HasPermission(permission) {
+			response.Error(w, 403, "Permission denied: "+permission)
+			return
+		}
+
+// apps/backend/internal/repository/admin_security_repo.go — L187-189
+func (r *AdminSecurityRepo) ReviewSuspicious(ctx context.Context, id int64, action string, _ string) error {
+	_, err := r.db.Exec(ctx, `UPDATE suspicious_activities SET reviewed=true,resolved=$2 WHERE id=$1`, id, action == "dismiss")
+
+// apps/backend/internal/repository/webhook.go — L63
+		`UPDATE webhooks SET url = $1, secret = $2, events = $3, headers = $4, active = $5
+
+// apps/backend/internal/service/export.go — L91-99 / L125-133 (no JSON branch; always CSV)
+
+// apps/backend/internal/service/provider.go — L317-321
+	for _, m := range models {
+		if m.ID == modelID || strings.HasSuffix(m.ID, modelID) {
+			return &m, nil
+		}
+	}
+
+// apps/backend/internal/service/webhook.go — L119 (no URL validation), L161-172 (no event filter; sem after send), L201-212 / L337 / L382 (idempotencyKey recomputed from time)
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+// dispatch loop:
+		if !w.Active {
+			continue
+		}
+		go func(webhookID string, c webhook.Config, e webhook.Event) {
+			defer func() {
+				s.wg.Done()
+				if r := recover(); r != nil { ... }
+			}()
+			select {
+			case s.sem <- struct{}{}:
+				s.sendAndTrack(s.ctx, webhookID, c, e)
+				<-s.sem
+			case <-s.ctx.Done():
+				return
+			}
+		}(...)
+// idempotencyKey := fmt.Sprintf("%s:%s:%d", d.WebhookID, d.EventType, d.CreatedAt.Unix())
+
+// apps/backend/pkg/llm/provider/openai_sdk.go — L178-185
+		delta.ToolCalls[i] = llm.ToolCall{
+			ID:   tc.ID,
+			Type: string(tc.Type),
+			Function: llm.ToolCallFunction{ ... }
+
+// apps/backend/pkg/llm/streaming/relay.go — L26-44
+	finished := false
+	...
+		if !finished {
+			p.writer.WriteFinish(...)
+		}
+	...
+		if chunk.FinishReason != nil {
+			finished = true
+		}
+// writeChunk: WriteToolCallStart(i, ...), WriteToolCallDelta(i, ...)
+
+// apps/backend/pkg/llm/types.go — L84-87
+type ToolCall struct {
+	ID       string           `json:"id"`
+	Type     string           `json:"type"`
+	Function ToolCallFunction `json:"function"`
+}
+
+// apps/web/lib/api/admin-sdk.ts — L70
+    return this.api.adminListUsers(
+      params?.page,
+      params?.limit,
+    ) as unknown as PaginatedResult<AdminUserDetail>;
+
+// apps/web/lib/api/rate-limit.ts — L60-66
+  const entry = store.get(identifier);
+  if (!entry) return null;
+  const maxRequests = MAX_REQUESTS_PER_WINDOW;
+
+// apps/web/lib/api/sdk.ts — L598-605
+  public async paginatedRequest<T>(
+    path: string,
+    query: { page?: number; limit?: number } = {},
+// L868-875
+  adminListUsers(page?: number, limit?: number) {
+    return this.paginatedRequest<User>("/api/admin/users", {
+      page,
+      limit,
+    });
+```
+
+### After
+```code
+// apps/backend/internal/db/mongo_querier.go — L705 (quote-aware split) + new helpers L785-825
+	// Handle AND conditions, splitting only on " and " outside single-quoted literals
+	parts := splitOnAndRespectingQuotes(where)
+// IS NULL / IS NOT NULL / operators now use findOpOutsideQuotes(...)
+// splitOnAndRespectingQuotes / findOpOutsideQuotes added (respect single-quoted literals)
+
+// apps/backend/internal/handler/admin_providers.go — SSRF TOCTOU fix in fetchModelsFromUpstream + resolveAndValidateHost
+	var dialIP net.IP
+	if !skipSSRFCheck {
+		u, perr := url.Parse(modelsURL)
+		...
+		ips, verr := resolveAndValidateHost(u.Hostname())
+		...
+		dialIP = ips[0]
+		port := u.Port()
+		...
+		client.Transport = &http.Transport{
+			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+				dialAddr := net.JoinHostPort(dialIP.String(), port)
+				d := net.Dialer{Timeout: 10 * time.Second}
+				return d.DialContext(ctx, network, dialAddr)
+			},
+		}
+	}
+// resolveAndValidateHost returns validated IPs; validateNotPrivateURL delegates to it
+func resolveAndValidateHost(host string) ([]net.IP, error) { ... }
+
+// apps/backend/internal/middleware/auth.go — L158-167
+		if !u.HasPermission(permission) && !u.IsAdmin() {
+			response.Error(w, 403, "Permission denied: "+permission)
+			return
+		}
+
+// apps/backend/internal/repository/admin_security_repo.go — L187-193
+	resolved := action == "resolve" || action == "dismiss"
+	_, err := r.db.Exec(ctx, `UPDATE suspicious_activities SET reviewed=true,resolved=$2 WHERE id=$1`, id, resolved)
+
+// apps/backend/internal/repository/webhook.go — L63 (preserve secret when empty)
+		`UPDATE webhooks SET url = $1, secret = CASE WHEN $2 <> '' THEN $2 ELSE secret END, events = $3, headers = $4, active = $5
+
+// apps/backend/internal/service/export.go — JSON branch added before CSV writer
+	if format == "json" {
+		enc := json.NewEncoder(f)
+		enc.SetIndent("", "  ")
+		if err := enc.Encode(logs); err != nil {
+			return "", err
+		}
+		return filePath, nil
+	}
+
+// apps/backend/internal/service/provider.go — L317-341 (exact match first, single-ambiguous suffix fallback)
+	for _, m := range models {
+		if m.ID == modelID {
+			return &m, nil
+		}
+	}
+	var match *llm.ModelInfo
+	for _, m := range models {
+		if strings.HasSuffix(m.ID, modelID) {
+			if match != nil {
+				return nil, domain.NewError(domain.ErrNotFound, 404, "model not found")
+			}
+			mm := m
+			match = &mm
+		}
+	}
+	if match != nil {
+		return match, nil
+	}
+
+// apps/backend/internal/service/webhook.go — URL validation, event filter, sem-before-send, stored idempotency key
+	if err := webhook.ValidateWebhookURL(req.URL); err != nil {
+		return nil, domain.NewError(domain.ErrBadRequest, 400, err.Error())
+	}
+// dispatch:
+		if !webhook.IsEventAllowed(event.Type, w.Events) {
+			continue
+		}
+		go func(webhookID string, c webhook.Config, e webhook.Event) {
+			defer s.wg.Done()
+			defer func() {
+				if r := recover(); r != nil { ... }
+			}()
+			select {
+			case s.sem <- struct{}{}:
+				defer func() { <-s.sem }()
+				s.sendAndTrack(s.ctx, webhookID, c, e)
+			case <-s.ctx.Done():
+				return
+			}
+		}(...)
+// delivery carries IdempotencyKey; retries use d.IdempotencyKey instead of recompute
+
+// apps/backend/pkg/llm/provider/openai_sdk.go — L178-185
+		delta.ToolCalls[i] = llm.ToolCall{
+			ID:    tc.ID,
+			Type:  string(tc.Type),
+			Index: tc.Index,
+			Function: llm.ToolCallFunction{ ... }
+
+// apps/backend/pkg/llm/streaming/relay.go — finishWritten + ctx-cancel finish + idx from tc.Index
+	finishWritten := false
+	...
+		if !finishWritten {
+			p.writer.WriteFinish(...)
+		}
+	...
+		if chunk.FinishReason != nil {
+			finishWritten = true
+		}
+	case <-ctx.Done():
+		if !finishWritten {
+			_ = p.writer.WriteFinish(...)
+		}
+// writeChunk: idx := tc.Index (fallback i); WriteToolCallStart(idx, ...), WriteToolCallDelta(idx, ...)
+
+// apps/backend/pkg/llm/types.go — L84-88
+type ToolCall struct {
+	ID       string           `json:"id"`
+	Type     string           `json:"type"`
+	Index    int              `json:"index,omitempty"`
+	Function ToolCallFunction `json:"function"`
+}
+
+// apps/web/lib/api/admin-sdk.ts — L70-73
+    return this.api.adminListUsers(
+      params?.page,
+      params?.limit,
+      params?.query,
+      params?.status,
+    ) as unknown as PaginatedResult<AdminUserDetail>;
+
+// apps/web/lib/api/rate-limit.ts — L60-66 (anonymous cap)
+  const maxRequests = isAuthenticated
+    ? MAX_REQUESTS_PER_WINDOW
+    : MAX_ANONYMOUS_REQUESTS;
+
+// apps/web/lib/api/sdk.ts — L598-605 + L868-880
+  public async paginatedRequest<T>(
+    path: string,
+    query: { page?: number; limit?: number; query?: string; status?: string } = {},
+  adminListUsers(page?: number, limit?: number, query?: string, status?: string) {
+    return this.paginatedRequest<User>("/api/admin/users", { page, limit, query, status });
+  }
+```
+
+### Notes
+Round 1 of the audit-fix loop. 14 files changed. Next rounds re-audit for regressions.
+
+---
+
+## [R2]. Audit-fix round 2: full parallel audit → fix → re-audit regression loop
+
+**Session**: dra-full-audit-fix-loop
+**Date**: 2026-07-09 08:10
+
+### Why
+A full read-only parallel audit (10 specialized agents over backend handlers/services/repository/LLM-gateway/middleware/SDK/pkgs and frontend SDK/app/security) surfaced 1×P0, 5×P1, and ~30×P2/P3 confirmed defects across the gateway. Fixes were applied by file-isolated agents, then a second re-audit pass caught two regressions introduced by the fixes (broken HTTPS webhook delivery; guardrails still not blocking single-phrase injection). Those regressions are fixed here too. Build is green and unit tests pass.
+
+### Files Changed (47 source files + 2 new migrations)
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/backend/migrations/024_stripe_invoice_unique.sql | L1-8 | created |
+| apps/backend/migrations/024_promo_redemption_unique.sql | L1-9 | created |
+| apps/backend/internal/service/stripe.go | L106-141 | modified |
+| apps/backend/internal/service/webhook.go | L115-122, L154-158, L313-317 | modified |
+| apps/backend/internal/handler/openai_proxy.go | L256-271, L350-353 | modified |
+| apps/backend/internal/handler/enterprise.go | L120-131, L186-197 | modified |
+| apps/backend/internal/handler/admin_users_full.go | L44-59, L144-190 | modified |
+| apps/backend/internal/handler/auth_handlers.go | L60-77 | modified |
+| apps/backend/internal/handler/handler.go | L568-597 | modified |
+| apps/backend/internal/handler/sse.go | L41-63 | modified |
+| apps/backend/internal/handler/anthropic_messages.go | L243-323 | modified |
+| apps/backend/internal/middleware/quota.go | adds ToScopedUser | modified |
+| apps/backend/internal/middleware/redis_quota.go | L69-107 | modified |
+| apps/backend/cmd/api/routes.go | L55-63, L121-124, L308-314, L383-384, L448-450, L467 | modified |
+| apps/backend/internal/repository/credits.go | L87-105 | modified |
+| apps/backend/internal/repository/admin_billing_repo.go | L40, L54-60, L292-294 | modified |
+| apps/backend/internal/repository/admin_features_repo.go | L269-279, L292-294 | modified |
+| apps/backend/internal/repository/admin_provider_repo.go | L127-141 | modified |
+| apps/backend/internal/repository/budget.go | L105-108 | modified |
+| apps/backend/internal/repository/fine_tuning.go | L16-30 | modified |
+| apps/backend/internal/repository/transaction.go | L33-38 | modified |
+| apps/backend/internal/repository/conversation.go | L92-97 | modified |
+| apps/backend/internal/repository/file.go | L77-82 | modified |
+| apps/backend/internal/repository/user.go | L86-97 | modified |
+| apps/backend/internal/config/config.go | L104 | modified |
+| apps/backend/internal/config/config_test.go | — | modified |
+| apps/backend/internal/domain/models.go | L306-309 | modified |
+| apps/backend/internal/service/fine_tuning.go | L47-63 | modified |
+| apps/backend/internal/handler/fine_tuning_handlers.go | L69-82 | modified |
+| apps/backend/cmd/api/services.go | SetCache wiring | modified |
+| apps/backend/pkg/webhook/webhook.go | SendWithIdempotency + helpers | modified |
+| apps/backend/pkg/llm/helper.go | L46-54 | modified |
+| apps/backend/pkg/llm/cache/cache.go | L307-317 | modified |
+| apps/backend/pkg/llm/cache/semantic.go | L46-80 | modified |
+| apps/backend/pkg/llm/anthropic/formatter.go | L278-360 | modified |
+| apps/backend/pkg/llm/anthropic/schema.go | L121 | modified |
+| apps/backend/pkg/llm/streaming/relay.go | L24-65 | modified |
+| apps/backend/pkg/llm/provider/multikey.go | L52-120 | modified |
+| apps/backend/pkg/llm/provider/provider.go | L443-449 | modified |
+| apps/backend/pkg/llm/circuitbreaker/circuitbreaker.go | L128-160 | modified |
+| apps/backend/pkg/llm/ws/gateway.go | L63-71, L199-213 | modified |
+| apps/backend/pkg/llm/router/router.go | L267-271 | modified |
+| apps/backend/pkg/llm/guardrails/guardrails.go | L149-201 | modified |
+| apps/backend/pkg/llm/guardrails/guardrails_test.go | L46-48 | modified |
+| apps/backend/pkg/llm/provider/openai_sdk.go | L183 (derefInt) | modified |
+| apps/web/app/playground/page.tsx | L97-98, L163-170, L298-314, L356 | modified |
+| apps/web/app/dashboard/notifications/page.tsx | L57-74, L102, L112 | modified |
+| apps/web/app/dashboard/DashboardOverviewClient.tsx | L85-89, L91-94, L619-622 | modified |
+| apps/web/app/dashboard/analytics/AnalyticsClient.tsx | shared MetricCard (verified correct) | n/a |
+
+### Key fixes (Before → After)
+
+**P0 — Stripe double-credit on webhook replay** (`internal/service/stripe.go`, new `024_stripe_invoice_unique.sql`)
+Before: idempotency `InvoiceExists` ran OUTSIDE the transaction and `stripe_invoice_id` had no UNIQUE constraint → replayed/raced `checkout.session.completed` granted credits twice.
+After: existence check runs INSIDE `WithTx` via `InvoiceExistsTx`; DB-level `uq_stripe_invoice_id` UNIQUE backs it.
+
+**P1 — Embeddings honored `X-Sandbox` without admin check** (`internal/handler/openai_proxy.go`)
+Before: `if r.Header.Get("X-Sandbox") != "true" { asyncLogAndDeduct(...) }` — no auth check.
+After: `isSandbox` rejected with 403 unless `u != nil && u.IsAdmin()`; billing skipped only `isSandbox && u.IsAdmin()`.
+
+**P1 — Virtual-key List/Deactivate lacked admin/ownership authz** (`cmd/api/routes.go`, `enterprise.go`)
+Before: routes gated only by `authMW`; `ListVirtualKeys` returned ALL tenants' keys; `DeactivateVirtualKey` allowed any user to disable any key.
+After: both wrapped in `RequireAdmin`; handlers scope to caller's own keys when non-admin.
+
+**P1 — AdminCreateAdminUser privilege escalation** (`admin_users_full.go`)
+Before: request `role` passed straight through to `CreateAdminUser` (any admin → superadmin).
+After: `if req.Role == "superadmin" && (u == nil || u.Role != "superadmin") { 403 }`.
+
+**P2 — AdminRemoveAdmin could deactivate a superadmin** (`admin_users_full.go`, `routes.go`)
+Before: `RequireAdmin` only; deletes any admin row including superadmin.
+After: `RequirePermission("superadmin")` + handler guards (no self-removal, no removal of last active superadmin).
+
+**P1 — Webhook SSRF on Update + dispatch ignores Events + idempotency mismatch** (`service/webhook.go`, `pkg/webhook/webhook.go`, `domain/models.go`)
+Before: `Update` only format-validated; `Dispatch` fired every webhook regardless of `Events`; retry key recomputed from a different timestamp.
+After: `Update` runs `ValidateWebhookURL`; `Dispatch`/`ProcessPendingRetries` pre-filter via `IsEventAllowed`; `WebhookDelivery.IdempotencyKey` persisted and reused by retry paths.
+
+**P2 — HTTPS webhook delivery broken by SSRF TOCTOU fix** (REGRESSION FIX, `pkg/webhook/webhook.go`)
+Before: `req.URL.Host = resolvedIP` → Go derived TLS `ServerName` from the IP → cert verify failed for all HTTPS webhooks (`x509: cert valid for <host>, not <ip>`).
+After: custom `Transport` with `DialContext` pinning the validated `ip:port` (no DNS re-resolution) and `TLSClientConfig.ServerName = origHost`; `req.Host` keeps the real host header.
+
+**P1/P2 — Guardrails could not block a single injection phrase** (`guardrails/guardrails.go`) + REGRESSION FIX
+Before: block gated on `if risk := detectInjection(content); risk > 0.5` (`risk = matches/12`, so one phrase ≈0.08 never reached the inner `matches>0` check).
+After: `matches := countInjection(content); risk := detectInjection(content); if risk > 0.5 || matches > 0 { ... if matches > 0 || risk > 0.15 { result.Allowed = false } }` — a single phrase now blocks. Test `TestCheckRequest_PromptInjection` updated to expect `false`.
+
+**P1 — Stale `user_credits` cache after billing writes** (`credits.go`, `admin_billing_repo.go`, `admin_features_repo.go`)
+Before: `*Tx` mutation paths never invalidated the `credits:<userID>` cache → stale balances up to TTL.
+After: `cache.Delete(ctx, creditsCacheKey(userID))` on each mutation (nil-guarded); admin repos given `SetCache` wiring.
+
+**P1 — `AdjustCredits` corrupted `total_spent` on deductions** (`admin_billing_repo.go`)
+Before: `total_spent = total_spent + GREATEST(-$2, 0)` added `abs(amount)` on a deduction.
+After: `total_spent = total_spent + LEAST($2, 0)` (correctly subtracts).
+
+**P1 — `AdminProviderRepo.Update` dropped circuit-breaker/rate-limit columns** (`admin_provider_repo.go`)
+Before: SET omitted `circuit_breaker_*` and `rate_limit_rpm/tpm`.
+After: all six columns added to the SET list bound to provider fields.
+
+**P2 — Budget hard-cap unenforceable / FineTuning mime_type NULL / Promo double-redeem / ENV default dev** (`budget.go`, `fine_tuning.go`, `024_promo_redemption_unique.sql`, `config.go`)
+After: `CheckCapExceeded` sums `ABS(amount)` over `type='usage'`; `CreateDataset` accepts + persists `mimeType`; `(promo_id,user_id)` UNIQUE constraint added; `ENV` defaults to `"production"`.
+
+**P1 — LLM cache key omitted tool-calls/content-blocks** (`helper.go`, `cache/cache.go`)
+Before: keyed only on Role+Content → within-tenant wrong cached completions (text vs image, differing tool history).
+After: `ToolCalls` and `ContentBlocks` json-hashed into the key.
+
+**P2 — Anthropic native streaming dropped tool calls / streaming usage lost / multikey rotation dead / prefix collision / CB resets / ws double-disconnect / routeByCost no-match**
+After: `anthropic/formatter.go` emits `tool_use` blocks; `streaming/relay.go` buffers usage and writes it exactly once on close; `multikey.go` loops all instances with failover and advances the counter; `provider.go` uses longest-prefix match; `circuitbreaker.go` resets `successes` on reopen and counts the trial on transition; `ws/gateway.go` uses `sync.Once` for `Disconnect`; `router.go` returns an explicit error.
+
+**P2 — Quota not enforced for session/JWT proxy requests / Redis quota fails open / CORS wildcard+credentials** (`routes.go`, `quota.go`, `redis_quota.go`)
+After: `getKey` resolves a `ToScopedUser` quota subject for authenticated sessions (1000 req/day, 2M tok/month defaults); Redis quota errors fail-closed; CORS disables credentials when `*` origin present.
+
+**Frontend** (`playground/page.tsx`, `notifications/page.tsx`, `DashboardOverviewClient.tsx`)
+After: playground reads `sessionsRef.current` so multi-turn history survives (no stale closure); notifications reconnect on normal stream end AND clear a pending auto-reconnect timer on manual reconnect; ambient glow `opacity-20` override removed; analytics X-axis parses `YYYY-MM-DD` from raw parts (no UTC off-by-one); stray `Livering-[0.01]` class removed.
+
+### Notes
+- `go build ./...` exits 0; `go vet ./internal/handler/...` clean (only a pre-existing broken untracked test `rbac_handlers_test.go` references `testutil.GenerateTestJWTWithRole` which does not exist — out of scope).
+- `go test ./pkg/llm/guardrails/... ./pkg/llm/cache/... ./pkg/llm/circuitbreaker/... ./pkg/llm/provider/... ./internal/config/...` pass.
+- A cross-agent conflict was intercepted: the data-integrity fix agent's `git checkout HEAD --` would have reverted two security-handler files; those security fixes were re-applied and verified in the diff.
+- `openai_sdk.go:183` (`*int` vs `int` `ToolCall.Index` mismatch from go-openai v1.41.2) was a pre-existing compile break; fixed with a `derefInt` helper so the full build is green.
+- False positives flagged and dropped by agents: export-download code does not exist in `exports/page.tsx`; `AnalyticsClient` glow/date logic lives in shared `MetricCard` and was already correct; `EstimateTokens` pre-router model mismatch not present in owned handler files; `pkg/webhook` `SendWithRetry`/`WebhookRepo` json-marshal errors are unreachable for `map[string]string`.
+
+---
+
+## [R3]. Audit-fix round 3: LLM gateway, WebSocket, and credits-cache regressions
+
+**Session**: dra-full-audit-fix-loop
+**Date**: 2026-07-11
+
+### Why
+A re-audit pass after R2 surfaced additional confirmed defects and regressions in the LLM gateway, WebSocket gateway, and credits cache invalidation paths. Fixes were applied file-isolated, then the backend was rebuilt and fully tested.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/backend/pkg/llm/cache/cache.go | L1- | modified |
+| apps/backend/pkg/llm/guardrails/guardrails.go | L1- | modified |
+| apps/backend/pkg/llm/streaming/relay.go | L1- | modified |
+| apps/backend/pkg/llm/circuitbreaker/circuitbreaker.go | L1- | modified |
+| apps/backend/pkg/llm/ws/gateway.go | L1- | modified |
+| apps/backend/pkg/llm/ws/gateway_test.go | L1- | modified |
+| apps/backend/pkg/llm/anthropic/formatter.go | L1- | modified |
+| apps/backend/pkg/llm/router/router.go | L1- | modified |
+| apps/backend/internal/repository/credits.go | L1- | modified |
+| apps/backend/internal/service/credits.go | L1- | modified |
+| apps/backend/internal/service/stripe.go | L1- | modified |
+| apps/backend/internal/service/webhook.go | L1- | modified |
+| apps/backend/internal/repository/admin_billing_repo.go | L1- | modified |
+
+### Key fixes (Before → After)
+
+**P1 — Cache key collisions omitted tool history / content blocks** (`pkg/llm/cache/cache.go`)
+Before: `hashMessages` concatenated only `Role` and `Content` without delimiters, so distinct message sequences could hash identically and return wrong cached completions.
+After: messages are hashed with explicit delimiters (`\x00`), and `ToolCalls`/`ContentBlocks`/`Name` are included in the key so differing tool history or multi-modal content produces distinct keys.
+
+**P1 — Output guardrails failed to block** (`pkg/llm/guardrails/guardrails.go`)
+Before: `CheckResponse` detected PII/pattern violations but never set `result.Allowed = false`, so output guardrails were effectively no-ops.
+After: `CheckResponse` now sets `Allowed = false` and populates `Reason` for PII, blocked patterns, and prompt-injection matches in outputs.
+
+**P1 — Streaming tool-call deltas merged into wrong slot** (`pkg/llm/streaming/relay.go`)
+Before: the accumulator ignored `ToolCall.Index` and always appended deltas to the last tool call, corrupting parallel tool calls.
+After: deltas are matched by `Index`; missing slots are padded, and empty padded entries are filtered from the final message.
+
+**P2 — Circuit breaker timer leaked / half-open state mishandled** (`pkg/llm/circuitbreaker/circuitbreaker.go`)
+Before: `StreamRecord` used a goroutine + timer.Reset in a loop that could leak timers and mishandle the half-open trial outcome.
+After: replaced with a `select` loop using a fresh timer per chunk, resetting failure/success counters correctly on state transitions.
+
+**P2 — WebSocket gateway write races and unexported handler type** (`pkg/llm/ws/gateway.go`, `gateway_test.go`)
+Before: multiple goroutines could write to the same `Conn` concurrently; the handler type used an unexported `connectionState`, making `RegisterHandler` unusable from external packages.
+After: added per-connection write mutex and `SendLocked`; exported `ConnectionState`; updated default handlers, internal slices/maps, and tests to use the exported type.
+
+**P2 — Anthropic SSE block indices could collide** (`pkg/llm/anthropic/formatter.go`)
+Before: text and thinking blocks shared a single block index, causing deltas/stop events to target the wrong block.
+After: separate `TextBlockIndex` and `ThinkingBlockIndex` counters ensure each block stream gets its own index.
+
+**P2 — Router capability filter could silently no-match** (`pkg/llm/router/router.go`)
+Before: `routeByCapability` returned `nil, nil` when no provider matched, leading to nil-pointer dereferences downstream.
+After: returns an explicit error so callers handle the no-match case.
+
+**P1 — Credits cache invalidated inside uncommitted transactions** (`internal/repository/credits.go`, `internal/service/credits.go`, `internal/service/stripe.go`)
+Before: `DeductTx`/`UpsertTx` deleted the credits cache before the surrounding transaction committed; a rollback left stale cache data.
+After: removed cache invalidation from Tx methods; added `InvalidateCache` helper; callers (`Purchase`, `DeductForUsage`, `FulfillCheckout`) invalidate after successful commit.
+
+**P2 — Webhook dispatch semaphore leaked on panic** (`internal/service/webhook.go`)
+Before: the semaphore was released inline; a panic in `attemptDelivery` would leak a slot.
+After: release is wrapped in `defer` so the semaphore is always returned.
+
+**P2 — Admin billing credit adjustment failed for missing rows** (`internal/repository/admin_billing_repo.go`)
+Before: `AdjustCredits` assumed a `user_credits` row existed; on a fresh user it would silently do nothing.
+After: if no row exists, an INSERT is performed first, then the UPDATE is retried.
+
+### Validation
+- `cd apps/backend && go build ./...` → exit 0
+- `cd apps/backend && go test ./...` → all packages pass
+- Frontend typecheck/lint not run because the frontend has pre-existing dependency/configuration issues unrelated to these backend changes.
+
+### Notes
+- The WebSocket `Handler` signature change is a breaking API change for any external handler implementations; they must now accept `*ConnectionState` instead of `Conn` and can use `Gateway.SendLocked` for thread-safe writes.
+
+### Post-review fixes
+- `pkg/llm/ws/gateway.go`: `Send` renamed to private `send`; `SendLocked` is now the only public write path that holds the per-connection mutex.
+- `pkg/llm/ws/gateway_test.go`: `TestGatewaySend` now exercises `SendLocked` via a `ConnectionState`.
+- `pkg/llm/guardrails/guardrails.go`: `CheckRequest`/`CheckResponse` now collect all violations and always set `Reason` by joining them, instead of overwriting on the first violation.
+
+---
+
+## [R4]. Audit-fix round 4: billing race, streaming cost, webhook idempotency, router cache stampede
+
+**Session**: dra-full-audit-fix-loop
+**Date**: 2026-07-11
+
+### Why
+A targeted deep-dive audit surfaced a critical concurrent-billing vulnerability, streaming token over-estimation, a webhook idempotency collision, a router cache stampede, and inconsistent sandbox enforcement.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/backend/internal/service/credits.go | L135- | modified |
+| apps/backend/internal/handler/openai_proxy.go | L42- | modified |
+| apps/backend/internal/service/webhook.go | L191, L345, L383 | modified |
+| apps/backend/pkg/llm/router/router.go | L1- | modified |
+
+### Key fixes (Before → After)
+
+**P0 — Concurrent billing race granted free usage** (`internal/service/credits.go`)
+Before: `LogAndDeduct` aborted the transaction when `credits.Balance < cost`. Concurrent requests that passed the pre-flight `CheckBalance` could then fail async deduction and receive the response for free.
+After: Balance check removed from `LogAndDeduct`; the pre-flight gate remains the sole balance check, and deductions proceed so in-flight requests are always billed (balance may go negative).
+
+**P1 — Streaming output tokens wildly over-estimated** (`internal/handler/openai_proxy.go`)
+Before: `outputTokens += llm.EstimateTokens(chunk.Delta.Content)` ran on every tiny stream chunk.
+After: Stream content is buffered in `outputBuffer` and `EstimateTokens` is called once at `FINISH`.
+
+**P1 — Pre-flight cost estimation bypassed balance check** (`internal/handler/openai_proxy.go`)
+Before: `EstimateTokens(req.Model, nil)` always returned zero input tokens, so `CheckBalance` was effectively skipped.
+After: Request messages are converted to `domain.ChatMessage` and passed to `EstimateTokens`.
+
+**P1 — Webhook idempotency key collision** (`internal/service/webhook.go`)
+Before: Key used `event.Timestamp.Unix()`, giving 1-second precision and deduplicating distinct events.
+After: Key uses `UnixNano()`.
+
+**P2 — Router ListModels cache stampede** (`pkg/llm/router/router.go`)
+Before: Concurrent cache misses all called `p.ListModels(ctx)` upstream simultaneously.
+After: `singleflight.Group` collapses concurrent fetches per provider into one upstream call.
+
+**P2 — Webhook retry loop blocked sequentially** (`internal/service/webhook.go`)
+Before: `ProcessPendingRetries` and `RetryDelivery` ran `attemptDelivery` synchronously inside the semaphore.
+After: Each retry attempt runs in its own goroutine under the semaphore.
+
+**P3 — Inconsistent sandbox enforcement / model prefix stripping** (`internal/handler/openai_proxy.go`)
+Before: Chat completions silently disabled sandbox for non-admins; A/B router used `LastIndex` and stripped middle group names.
+After: Non-admin `X-Sandbox` now returns 403; A/B router uses `Index` to preserve middle group names.
+
+### Validation
+- `cd apps/backend && go build ./...` ✅
+- `cd apps/backend && go test ./...` ✅
+
+
+---
+
+## [R5]. Audit-fix round 5: cross-tenant cache leak, SDK envelope, streaming over-billing, credentials race, dashboard proxy routes, analytics/export UI
+
+**Session**: dra-full-audit-fix-loop
+**Date**: 2026-07-11
+
+### Why
+A targeted deep-dive audit surfaced additional confirmed defects across the LLM gateway, SDK, dashboard, and credentials layer. Fixes were applied file-isolated, then the backend was rebuilt and tested.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/backend/internal/domain/models.go | L1- | modified |
+| apps/backend/internal/service/provider.go | L1- | modified |
+| apps/backend/internal/handler/openai_proxy.go | L1- | modified |
+| apps/backend/internal/handler/handler.go | L1- | modified |
+| apps/backend/pkg/sdk/client.go | L1- | modified |
+| apps/backend/internal/handler/admin_users_full.go | L1- | modified |
+| apps/backend/pkg/llm/circuitbreaker/circuitbreaker.go | L1- | modified |
+| apps/backend/internal/handler/admin_providers.go | L1- | modified |
+| apps/backend/pkg/webhook/webhook.go | L1- | modified |
+| apps/backend/internal/handler/anthropic_messages.go | L1- | modified |
+| apps/backend/internal/db/db.go | L1- | modified |
+| apps/backend/internal/repository/setup_repo.go | L1- | modified |
+| apps/backend/internal/handler/admin_messages.go | L1- | modified |
+| apps/backend/internal/handler/admin_operations.go | L1- | modified |
+| apps/backend/pkg/llm/credentials/vault.go | L1- | modified |
+| apps/web/app/api/exports/[id]/route.ts | L1- | created |
+| apps/web/app/dashboard/exports/page.tsx | L1- | rewritten |
+| apps/web/app/dashboard/analytics/AnalyticsClient.tsx | L1- | modified |
+| apps/web/lib/api/sdk.ts | L1- | modified |
+| apps/web/lib/api/admin-sdk.ts | L1- | modified |
+| apps/web/app/dashboard/keys/KeysClient.tsx | L1- | modified |
+
+### Key fixes (Before → After)
+
+**H1 — Cross-tenant cache leak** (`internal/domain/models.go`, `internal/service/provider.go`, `internal/handler/openai_proxy.go`, `internal/handler/handler.go`)
+Before: `domain.ChatRequest` had no `Metadata`; `toLLMChatRequest` never set `user_id`/`tenant_id`/`api_key_id`; cache key in `pkg/llm/helper.go` hashed empty identifiers, letting requests from different tenants collide.
+After: added `Metadata map[string]string` to `domain.ChatRequest`; handlers inject trusted `user_id`, `api_key_id`, and `tenant_id` into `Metadata`; `toLLMChatRequest` propagates it to `llm.ChatRequest` so cache keys are scoped.
+
+**H5 — Go SDK envelope mismatch** (`pkg/sdk/client.go`)
+Before: `OpenAIChatCompletions`, `OpenAIEmbeddings`, and `OpenAIListModels` decoded into the generic `{success,data,error}` envelope, but `/v1/*` proxy endpoints return raw OpenAI JSON.
+After: those three methods now decode directly into `json.RawMessage`, preserving OpenAI compatibility.
+
+**H6 — Dashboard 404s / mock data** (`apps/web/app/api/exports/[id]/route.ts`, `apps/web/app/dashboard/exports/page.tsx`, `apps/web/lib/api/sdk.ts`)
+Before: exports page used hard-coded mock data; there was no proxy route for `GET /api/exports/:id`.
+After: created `app/api/exports/[id]/route.ts`; rewrote exports page to use real SDK hooks; added `deleteExportJob` to the SDK.
+
+**M3 — Analytics NaN totals and wrong time-range slice** (`apps/web/app/dashboard/analytics/AnalyticsClient.tsx`)
+Before: `totalCost` could become `NaN`; time-range slicing used `slice(0, days).reverse()` which showed oldest data instead of latest.
+After: added `Number.isFinite` guards; changed slice to `slice(-days)` to show the most recent N days.
+
+**Streaming over-billing** (`internal/handler/openai_proxy.go`, `internal/handler/anthropic_messages.go`)
+Before: async billing ran on every stream chunk, including client disconnects and abnormal terminations.
+After: both handlers now track `completedNormally` and only call `asyncLogAndDeduct` when the stream finished for a real reason.
+
+**SQLite bootstrap race** (`internal/db/db.go`, `internal/repository/setup_repo.go`)
+Before: concurrent `POST /api/setup/bootstrap` requests could race past the `COUNT(*)=0` check because SQLite deferred transactions don't lock until first write.
+After: added a process-wide `sqliteBootstrapMu` around the SQLite bootstrap path; `CreateFirstAdmin` acquires it before beginning the transaction.
+
+**Missing `rows.Err()` checks** (`internal/handler/admin_messages.go`, `internal/handler/admin_operations.go`)
+Before: `Rows` iteration ended without checking `rows.Err()`.
+After: added `defer rows.Close()` and explicit `rows.Err()` checks with logging.
+
+**Wrong Request ID in keys page** (`apps/web/app/dashboard/keys/KeysClient.tsx`)
+Before: UI displayed a request ID from a non-existent failed request object.
+After: removed the misleading request-ID display and replaced it with a clear generic error message.
+
+**admin-sdk.listUserUsage cast** (`apps/web/lib/api/sdk.ts`, `apps/web/lib/api/admin-sdk.ts`)
+Before: `listUserUsage` returned a raw array and the admin-sdk cast was unsafe.
+After: backend returns paginated envelope; SDK decodes `PaginatedResult<UsageRecord>`; admin-sdk uses the typed result.
+
+**Credentials data race** (`pkg/llm/credentials/vault.go`)
+Before: `GetBestKey` returned cached `*Credential` pointers that `RecordSuccess`/`RecordFailure` mutated concurrently.
+After: `getActiveCredentials` returns deep copies so selection and mutation no longer race.
+
+### Validation
+- `cd apps/backend && go build ./...` → exit 0
+- `cd apps/backend && go test ./pkg/llm/credentials/... ./pkg/llm/circuitbreaker/... ./internal/handler/... ./internal/repository/... ./internal/db/...` → all pass
+- `cd apps/web && npx tsc --noEmit` → pre-existing errors (missing module declarations, type mismatches) unrelated to these changes
+- `cd apps/web && npm run lint` → fails because `next lint` is not a recognized command in Next.js 16.3.0-canary.16 / ESLint 10; this is a pre-existing tooling issue
+
+### Notes
+- The frontend has pre-existing dependency/type issues that predate this session; the changes above do not introduce new TypeScript errors in the modified files.
+
+---
+
+## [R5]. fix(auth): eliminate "Invalid or expired token" on fresh login by using a dedicated backend JWT cookie
+
+**Session**: auth-token-cookie-fix
+**Date**: 2026-07-12
+
+### Why
+After a fresh credentials login, every authenticated API request returned `{"success":false,"error":"Invalid or expired token"}`. The backend `Auth` middleware was trying to read NextAuth's encrypted session cookies (`authjs.session-token`) and validate them as backend JWTs. NextAuth cookies are encrypted with `AUTH_SECRET`, while backend JWTs are signed with `AUTH_SECRET` (or a separate secret), so the middleware rejected the cookie contents as an invalid JWT. The real backend JWT was only available in the NextAuth session object on the frontend and was not being sent to the backend on SDK requests.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| `apps/backend/internal/middleware/auth.go` | L55-68 | modified |
+| `apps/backend/internal/middleware/token_blacklist.go` | L37-46 | modified |
+| `apps/backend/internal/handler/auth_handlers.go` | L282-296, L322-333 | modified |
+| `apps/web/auth.ts` | L1-180 | modified |
+| `apps/web/app/lib/actions.ts` | L1, L260-270 | modified |
+
+### Before
+```go
+// apps/backend/internal/middleware/auth.go
+// Auth middleware tried to read NextAuth session cookies as backend JWTs.
+if c, err := r.Cookie("authjs.session-token"); err == nil {
+    tokenStr = c.Value
+}
+```
+
+```ts
+// apps/web/auth.ts
+// backendToken lived only in the NextAuth session; no cookie was set.
+```
+
+### After
+```go
+// apps/backend/internal/middleware/auth.go
+// Dedicated backend token cookie set by the frontend on login.
+if c, err := r.Cookie("dra_backend_token"); err == nil {
+    tokenStr = c.Value
+}
+```
+
+```ts
+// apps/web/auth.ts
+// Sets HttpOnly dra_backend_token cookie in the jwt callback on sign-in.
+async function setBackendTokenCookie(token: string) {
+  const maxAge = 60 * 60 * 24 * 7;
+  const secure = process.env.NODE_ENV === "production";
+  const sameSite = secure ? "none" : "lax";
+  const domain = process.env.BACKEND_TOKEN_COOKIE_DOMAIN || undefined;
+  const cookieStore = await cookies();
+  cookieStore.set("dra_backend_token", token, {
+    httpOnly: true,
+    secure,
+    sameSite: sameSite as "lax" | "none",
+    path: "/",
+    maxAge,
+    ...(domain ? { domain } : {}),
+  });
+}
+
+// Called inside jwt callback when trigger === "signIn" || "signUp".
+```
+
+```ts
+// apps/web/app/lib/actions.ts
+export async function signOutAction() {
+  "use server";
+  try {
+    await clearBackendTokenCookie();
+  } catch {
+    // Best-effort cleanup
+  }
+  await signOut();
+}
+```
+
+### Key changes
+1. **Backend `Auth` middleware** now looks for a dedicated `dra_backend_token` cookie instead of NextAuth session cookies. It still accepts `Authorization: Bearer <token>` and `x-api-key` as before.
+2. **Backend `TokenBlacklist` middleware** also reads the `dra_backend_token` cookie for the token to check.
+3. **Backend `Logout` handler** extracts the token from the `Authorization` header or the `dra_backend_token` cookie for blacklisting, and clears the `dra_backend_token` cookie in the response.
+4. **Frontend `auth.ts`** sets the `dra_backend_token` HttpOnly cookie in the NextAuth `jwt` callback when `trigger === "signIn"` or `"signUp"`. The cookie max-age matches the backend JWT expiry (7 days). Supports `BACKEND_TOKEN_COOKIE_DOMAIN` for cross-subdomain deployments.
+5. **Frontend `signOutAction`** clears the backend token cookie before signing out of NextAuth.
+
+### Validation
+- `cd apps/backend && go build ./...` → exit 0
+- `cd apps/web && npx tsc --noEmit` → pre-existing errors in unrelated files; no new errors in `auth.ts` or `actions.ts`
+
+### Notes
+- OAuth providers (GitHub/Google) still do not receive a backend JWT, so those users will need a separate backend linking flow to use authenticated SDK endpoints.
+- The `dra_backend_token` cookie is HttpOnly, so it is sent automatically with `credentials: "include"` SDK requests and cannot be read by client-side JavaScript.
+
+## [init]. docs(claude): refresh CLAUDE.md against current repo layout
+
+**Session**: init-claude-md-2026-07-12
+**Date**: 2026-07-12 19:27
+
+### Why
+`/init` found an already-strong `CLAUDE.md`, but several facts had drifted: migration range, LLM package count/sizes, sandbox auth semantics, missing `packages/` dir, and a dead `olla.md` reference in `AGENTS.md`. Keeping agent guidance accurate prevents wrong assumptions on auth, migrations, and SDK touch points.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| CLAUDE.md | monorepo / backend / LLM / quirks / key-files sections | modified |
+| AGENTS.md | reference table (`olla.md` row) | modified |
+
+### Before
+```markdown
+# CLAUDE.md (stale excerpts)
+- packages/: Reserved for shared packages (currently empty).
+- olla.md: Exhaustive project reference ...
+- Raw SQL migrations ... 001_*.sql–022_*.sql
+- 18+ subpackages under pkg/llm/
+- X-Sandbox: true ... disables quota, cost, and logging for testing
+- lib/api/sdk.ts (~1700 lines) ... hooks.ts (~800 lines)
+```
+
+### After
+```markdown
+# CLAUDE.md (corrected excerpts)
+- Root package.json workspaces include packages/*, but no packages/ directory is checked in yet.
+- ops.md / osa.md / FIXES_APPLIED.md / UPDATE.md called out; olla.md reference removed from AGENTS.md
+- Migrations 001_*.sql–024_*.sql (colliding/disabled numbers noted)
+- ~30 subpackages under pkg/llm/ with supporting packages listed
+- X-Sandbox admin-only; non-admins get 403
+- sdk.ts ~2240 lines, hooks.ts ~900 lines, Go client.go ~1860 lines
+```
+
+### Notes
+- Did not rewrite CLAUDE.md from scratch; structure, commands, hard constraints, and UPDATE.md mandate were already correct.
+- `apps/web/CLAUDE.md` remains a thin `@AGENTS.md` import and was left alone.

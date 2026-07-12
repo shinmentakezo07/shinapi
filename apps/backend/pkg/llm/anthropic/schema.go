@@ -123,6 +123,7 @@ type StreamDelta struct {
 	Text            string `json:"text,omitempty"`
 	Thinking        string `json:"thinking,omitempty"`
 	PartialThinking string `json:"partial_thinking,omitempty"`
+	PartialJSON     string `json:"partial_json,omitempty"`
 	StopReason      string `json:"stop_reason,omitempty"`
 	StopSequence    string `json:"stop_sequence,omitempty"`
 }

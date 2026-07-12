@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -9,11 +10,32 @@ import (
 	"dra-platform/backend/internal/domain"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
-type AdminFeaturesRepo struct{ db *db.DB }
+// isUniqueViolation reports whether err is a PostgreSQL unique-constraint
+// violation (SQLSTATE 23505). It unwraps errors wrapped by fmt.Errorf via
+// errors.As, which works because *pgconn.PgError implements Unwrap.
+func isUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		return pgErr.Code == "23505"
+	}
+	return false
+}
+
+type AdminFeaturesRepo struct {
+	db    *db.DB
+	cache RepoCache
+	ttl   time.Duration
+}
 
 func NewAdminFeaturesRepo(d *db.DB) *AdminFeaturesRepo { return &AdminFeaturesRepo{db: d} }
+
+func (r *AdminFeaturesRepo) SetCache(c RepoCache, ttl time.Duration) {
+	r.cache = c
+	r.ttl = ttl
+}
 
 func (r *AdminFeaturesRepo) CreateAnnouncement(ctx context.Context, a *domain.Announcement) error {
 	_, err := r.db.Exec(ctx, `INSERT INTO announcements(id,title,body,priority,target_type,target_ids,starts_at,ends_at,show_in_app,send_email,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
@@ -247,6 +269,11 @@ func (r *AdminFeaturesRepo) RedeemPromo(ctx context.Context, code, userID string
 		p.ID, userID, p.Value, p.Value).
 		Scan(&redemption.ID, &redemption.PromoID, &redemption.UserID, &redemption.Discount, &redemption.CreditsAwarded, &redemption.RedeemedAt)
 	if err != nil {
+		// A unique-constraint violation (promo_id, user_id) means this user already
+		// redeemed the code; surface it as the same "already redeemed" error.
+		if isUniqueViolation(err) {
+			return nil, 0, fmt.Errorf("promo code already redeemed by this user")
+		}
 		return nil, 0, fmt.Errorf("create redemption: %w", err)
 	}
 
@@ -264,6 +291,9 @@ func (r *AdminFeaturesRepo) RedeemPromo(ctx context.Context, code, userID string
 
 	if err := tx.Commit(ctx); err != nil {
 		return nil, 0, fmt.Errorf("commit: %w", err)
+	}
+	if r.cache != nil {
+		_ = r.cache.Delete(ctx, creditsCacheKey(userID))
 	}
 	return &redemption, p.Value, nil
 }

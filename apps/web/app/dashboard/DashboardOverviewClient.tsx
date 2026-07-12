@@ -85,12 +85,12 @@ function MetricCard({
         className={`absolute -inset-px rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl ${accent.replace(
           "from-",
           "bg-"
-        )} opacity-20`}
+        )}`}
       />
 
       <div
         className="relative h-full flex flex-col justify-between p-5 rounded-2xl border border-white/[0.06] bg-[#0A0A0A] overflow-hidden
-          hover:border-white/[0.12] Livering-[0.01] transition-all duration-300"
+          hover:border-white/[0.12] transition-all duration-300"
       >
         {/* Top edge sheen */}
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -617,8 +617,8 @@ export default function DashboardOverviewClient() {
                           axisLine={false}
                           tickLine={false}
                           tickFormatter={(v) => {
-                            const d = new Date(v);
-                            return `${d.getMonth() + 1}/${d.getDate()}`;
+                            const [y, m, d] = String(v).split("-");
+                            return `${Number(m)}/${Number(d)}`;
                           }}
                           interval={Math.floor(dailyUsage.length / 6)}
                         />

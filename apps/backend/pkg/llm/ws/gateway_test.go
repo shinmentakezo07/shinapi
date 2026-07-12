@@ -56,10 +56,11 @@ func (m *mockConn) messageCount() int {
 func TestGatewaySend(t *testing.T) {
 	gw := NewGateway(100)
 	conn := &mockConn{}
+	cs := &ConnectionState{conn: conn, id: "c1", createdAt: time.Now()}
 
 	msg := &Message{Type: TypeChatChunk, RequestID: "req-1"}
-	if err := gw.Send(conn, msg); err != nil {
-		t.Fatalf("Send: %v", err)
+	if err := gw.SendLocked(cs, msg); err != nil {
+		t.Fatalf("SendLocked: %v", err)
 	}
 
 	received := conn.lastMessage()
@@ -82,13 +83,13 @@ func TestGatewayBroadcast(t *testing.T) {
 
 	// Simulate connections with subscriptions
 	gw.mu.Lock()
-	gw.connections["c1"] = &connectionState{
+	gw.connections["c1"] = &ConnectionState{
 		conn:          conn1,
 		id:            "c1",
 		subscriptions: map[string]bool{"model-updates": true},
 		createdAt:     time.Now(),
 	}
-	gw.connections["c2"] = &connectionState{
+	gw.connections["c2"] = &ConnectionState{
 		conn:          conn2,
 		id:            "c2",
 		subscriptions: map[string]bool{"other-topic": true},
@@ -115,10 +116,10 @@ func TestGatewaySendToUser(t *testing.T) {
 	conn2 := &mockConn{}
 
 	gw.mu.Lock()
-	gw.connections["c1"] = &connectionState{
+	gw.connections["c1"] = &ConnectionState{
 		conn: conn1, id: "c1", userID: "user-1", createdAt: time.Now(),
 	}
-	gw.connections["c2"] = &connectionState{
+	gw.connections["c2"] = &ConnectionState{
 		conn: conn2, id: "c2", userID: "user-2", createdAt: time.Now(),
 	}
 	gw.connCount.Store(2)
@@ -139,7 +140,7 @@ func TestGatewayDisconnect(t *testing.T) {
 
 	conn := &mockConn{}
 	gw.mu.Lock()
-	gw.connections["c1"] = &connectionState{
+	gw.connections["c1"] = &ConnectionState{
 		conn: conn, id: "c1", createdAt: time.Now(),
 	}
 	gw.connCount.Store(1)
@@ -162,8 +163,8 @@ func TestGatewayStop(t *testing.T) {
 	conn2 := &mockConn{}
 
 	gw.mu.Lock()
-	gw.connections["c1"] = &connectionState{conn: conn1, id: "c1", createdAt: time.Now()}
-	gw.connections["c2"] = &connectionState{conn: conn2, id: "c2", createdAt: time.Now()}
+	gw.connections["c1"] = &ConnectionState{conn: conn1, id: "c1", createdAt: time.Now()}
+	gw.connections["c2"] = &ConnectionState{conn: conn2, id: "c2", createdAt: time.Now()}
 	gw.connCount.Store(2)
 	gw.mu.Unlock()
 
@@ -178,7 +179,7 @@ func TestGatewayConnectionInfo(t *testing.T) {
 	gw := NewGateway(100)
 
 	gw.mu.Lock()
-	gw.connections["c1"] = &connectionState{
+	gw.connections["c1"] = &ConnectionState{
 		conn: &mockConn{}, id: "c1", userID: "user-1", createdAt: time.Now(),
 	}
 	gw.connCount.Store(1)

@@ -104,7 +104,7 @@ func Load() (*Config, error) {
 		GeminiSecondaryAPIKeys:    getEnvSlice("GEMINI_API_KEY_2"),
 		YapaAPIKey:                getEnv("YAPA_API_KEY", ""),
 		ShinwayAPIKey:             getEnv("SHINWAY_API_KEY", ""),
-		Env:                       getEnv("ENV", "development"),
+		Env:                       getEnv("ENV", "production"),
 		AllowedOrigins:            getEnvSlice("ALLOWED_ORIGINS"),
 		RateLimitRPM:              getEnvInt("RATE_LIMIT_RPM", 60),
 		RateLimitWindow:           time.Minute,

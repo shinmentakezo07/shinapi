@@ -34,8 +34,6 @@ import (
 	"dra-platform/backend/pkg/llm/ws"
 	"dra-platform/backend/pkg/webhook"
 
-	"golang.org/x/sync/errgroup"
-
 	"github.com/go-chi/chi/v5"
 )
 
@@ -450,6 +448,16 @@ func (h *Handler) ChatProxy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Populate metadata for cache-key isolation and auditability. Always use
+	// the trusted authenticated identity so clients cannot spoof another user.
+	if req.Metadata == nil {
+		req.Metadata = make(map[string]string)
+	}
+	req.Metadata["user_id"] = u.ID
+	if apiKey := middleware.GetAPIKey(r); apiKey != nil {
+		req.Metadata["api_key_id"] = apiKey.ID
+	}
+
 	if req.Model == "" {
 		req.Model = h.providerSvc.DefaultModel()
 	}
@@ -491,7 +499,6 @@ func (h *Handler) ChatProxy(w http.ResponseWriter, r *http.Request) {
 	span.SetTag("model", req.Model)
 	defer span.Finish()
 
-	start := time.Now()
 	ch, err := h.providerSvc.ChatStream(r.Context(), req)
 	if err != nil {
 		response.JSON(w, err.Status, response.Body{Success: false, Error: err.Message})
@@ -552,7 +559,6 @@ FINISH:
 		outputTokens = inputTokens / 2
 	}
 	cost := h.calculateCost(req.Model, inputTokens, outputTokens)
-	latency := int(time.Since(start).Milliseconds())
 
 	apiKeyID := ""
 	if k := middleware.GetAPIKey(r); k != nil {
@@ -565,35 +571,34 @@ FINISH:
 	userID := u.ID
 	model := req.Model
 
-	eg, ctx := errgroup.WithContext(context.Background())
-	eg.Go(func() error {
-		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-		defer cancel()
-		if _, logErr := h.creditSvc.LogAndDeduct(ctx, userID, akID, model, inputTokens, outputTokens, cost, latency); logErr != nil {
-			logger.Error("post_chat_billing_failed", "error", logErr.Error(), "user_id", userID)
-			return logErr
-		}
-		return nil
-	})
-	eg.Go(func() error {
-		if h.webhookSvc == nil {
-			return nil
-		}
-		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-		defer cancel()
-		h.webhookSvc.Dispatch(ctx, userID, webhook.Event{
-			Type:      "request.completed",
-			Timestamp: time.Now(),
-			Payload: map[string]interface{}{
-				"user_id":       userID,
-				"model":         model,
-				"input_tokens":  inputTokens,
-				"output_tokens": outputTokens,
-				"cost":          cost,
-				"api_key_id":    apiKeyID,
-			},
-		})
-		return nil
-	})
-	go eg.Wait()
+	// The /api/chat proxy does not support sandbox mode; billing is always on.
+	// Reuse the resilient billing path shared by the OpenAI/Anthropic proxies —
+	// it runs in its own goroutine with panic recovery so a transient DB error
+	// cannot crash the request or silently drop a deduction (the previous
+	// unawaited errgroup.Go had no recovery and could lose deductions).
+	h.asyncLogAndDeduct(r.Context(), userID, akID, model, inputTokens, outputTokens)
+
+	if h.webhookSvc != nil {
+		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					logger.Error("webhook_dispatch_panic", "recover", r, "user_id", userID)
+				}
+			}()
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			h.webhookSvc.Dispatch(ctx, userID, webhook.Event{
+				Type:      "request.completed",
+				Timestamp: time.Now(),
+				Payload: map[string]interface{}{
+					"user_id":       userID,
+					"model":         model,
+					"input_tokens":  inputTokens,
+					"output_tokens": outputTokens,
+					"cost":          cost,
+					"api_key_id":    apiKeyID,
+				},
+			})
+		}()
+	}
 }

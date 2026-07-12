@@ -307,10 +307,27 @@ func (kb *KeyBuilder) BuildWithThinking(req *llm.ChatRequest) string {
 func hashMessages(messages []llm.Message) string {
 	h := sha256.New()
 	for _, m := range messages {
-		h.Write([]byte(m.Role))
-		h.Write([]byte(m.Content))
+		// Use delimiters so adjacent fields cannot be concatenated to form
+		// the same hash as a different message sequence.
+		h.Write([]byte(m.Role + "\x00"))
+		h.Write([]byte(m.Name + "\x00"))
+		h.Write([]byte(m.Content + "\x00"))
 		if m.ToolCallID != "" {
-			h.Write([]byte(m.ToolCallID))
+			h.Write([]byte(m.ToolCallID + "\x00"))
+		}
+		// Hash tool calls so requests differing only in tool-call history
+		// (e.g. assistant tool_use vs. tool result) don't collide.
+		if len(m.ToolCalls) > 0 {
+			tcJSON, _ := json.Marshal(m.ToolCalls)
+			h.Write([]byte("|toolcalls|"))
+			h.Write(tcJSON)
+		}
+		// Hash content blocks so text-vs-image (or any multimodal) requests
+		// don't share a cache entry.
+		if len(m.ContentBlocks) > 0 {
+			cbJSON, _ := json.Marshal(m.ContentBlocks)
+			h.Write([]byte("|contentblocks|"))
+			h.Write(cbJSON)
 		}
 	}
 	return hex.EncodeToString(h.Sum(nil))

@@ -77,9 +77,15 @@ func (h *Handler) AdminListOptimizations(w http.ResponseWriter, r *http.Request)
 	for rows.Next() {
 		var o opt
 		if err := rows.Scan(&o.ID, &o.Type, &o.Title, &o.EstimatedSavings, &o.UserID, &o.Applied, &o.CreatedAt); err != nil {
+			logger.Warn("admin_list_optimizations_scan_failed", "error", err.Error())
 			continue
 		}
 		opts = append(opts, o)
+	}
+	if err := rows.Err(); err != nil {
+		logger.Error("admin_list_optimizations_rows_err", "error", err.Error())
+		response.Error(w, 500, "failed to list optimizations")
+		return
 	}
 	response.OK(w, opts)
 }
@@ -114,11 +120,17 @@ func (h *Handler) AdminGetForecast(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var t trend
 		if err := rows.Scan(&t.Date, &t.Cost); err != nil {
+			logger.Warn("admin_get_forecast_scan_failed", "error", err.Error())
 			continue
 		}
 		trends = append(trends, t)
 		total += t.Cost
 		count++
+	}
+	if err := rows.Err(); err != nil {
+		logger.Error("admin_get_forecast_rows_err", "error", err.Error())
+		response.Error(w, 500, "failed to retrieve forecast")
+		return
 	}
 	avgDaily := 0.0
 	if count > 0 {
@@ -157,9 +169,15 @@ func (h *Handler) AdminCostBreakdown(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var b breakdownItem
 		if err := rows.Scan(&b.Name, &b.Count, &b.Total); err != nil {
+			logger.Warn("admin_cost_breakdown_scan_failed", "error", err.Error())
 			continue
 		}
 		byModel = append(byModel, b)
+	}
+	if err := rows.Err(); err != nil {
+		logger.Error("admin_cost_breakdown_rows_err", "error", err.Error())
+		response.Error(w, 500, "failed to retrieve cost breakdown")
+		return
 	}
 
 	response.OK(w, map[string]interface{}{

@@ -1008,30 +1008,36 @@ func (c *Client) NotificationsStream(ctx context.Context) (<-chan NotificationEv
 // OpenAI-Compatible Proxy
 
 // OpenAIChatCompletions calls the OpenAI-compatible chat completions endpoint.
+// The backend proxy returns a raw OpenAI response, not the {success,data} envelope,
+// so we decode directly into json.RawMessage.
 func (c *Client) OpenAIChatCompletions(ctx context.Context, req json.RawMessage) (json.RawMessage, error) {
-	var r envelope
+	var r json.RawMessage
 	if err := c.post(ctx, "/v1/chat/completions", req, &r); err != nil {
 		return nil, err
 	}
-	return r.Data, nil
+	return r, nil
 }
 
 // OpenAIEmbeddings calls the OpenAI-compatible embeddings endpoint.
+// The backend proxy returns a raw OpenAI response, not the {success,data} envelope,
+// so we decode directly into json.RawMessage.
 func (c *Client) OpenAIEmbeddings(ctx context.Context, req json.RawMessage) (json.RawMessage, error) {
-	var r envelope
+	var r json.RawMessage
 	if err := c.post(ctx, "/v1/embeddings", req, &r); err != nil {
 		return nil, err
 	}
-	return r.Data, nil
+	return r, nil
 }
 
 // OpenAIListModels calls the OpenAI-compatible models list endpoint.
+// The backend proxy returns a raw OpenAI response, not the {success,data} envelope,
+// so we decode directly into json.RawMessage.
 func (c *Client) OpenAIListModels(ctx context.Context) (json.RawMessage, error) {
-	var r envelope
+	var r json.RawMessage
 	if err := c.get(ctx, "/v1/models", nil, &r); err != nil {
 		return nil, err
 	}
-	return r.Data, nil
+	return r, nil
 }
 
 // Admin — Extended

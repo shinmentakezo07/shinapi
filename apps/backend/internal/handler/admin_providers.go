@@ -306,7 +306,12 @@ func (h *Handler) fetchModelsFromUpstream(ctx context.Context, baseURL, apiKey s
 	}
 	modelsURL := normalized + "/v1/models"
 
-	client := &http.Client{Timeout: 15 * time.Second}
+	client := &http.Client{
+		Timeout: 15 * time.Second,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
 
 	// Resolve and validate the host up front, then pin the outbound connection to
 	// the validated IP. This closes the DNS-rebinding TOCTOU window: previously the
@@ -413,7 +418,7 @@ func resolveAndValidateHost(host string) ([]net.IP, error) {
 		return nil, fmt.Errorf("cannot resolve hostname: %w", err)
 	}
 	for _, ip := range ips {
-		if ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
+		if ip.IsUnspecified() || ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
 			return nil, fmt.Errorf("URL resolves to private/reserved IP %s", ip)
 		}
 	}

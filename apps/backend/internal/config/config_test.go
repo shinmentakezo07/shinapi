@@ -149,12 +149,10 @@ func TestLoad_MissingAuthSecret(t *testing.T) {
 	os.Unsetenv("DATABASE_URL")
 	os.Unsetenv("DB_TYPE")
 
-	defer func() {
-		if r := recover(); r == nil {
-			t.Fatal("Load() with missing AUTH_SECRET: expected panic, got none")
-		}
-	}()
-	Load()
+	_, err := Load()
+	if err == nil {
+		t.Fatal("Load() with missing AUTH_SECRET: expected error, got nil")
+	}
 }
 
 func TestLoad_MissingDatabaseURL(t *testing.T) {
@@ -184,7 +182,8 @@ func TestLoad_Defaults(t *testing.T) {
 	os.Setenv("DATABASE_URL", "postgres://localhost/test")
 	os.Setenv("DB_TYPE", "postgres")
 	os.Unsetenv("ENV")
-	os.Unsetenv("ALLOWED_ORIGINS")
+	// ENV now defaults to production, so ALLOWED_ORIGINS is required.
+	os.Setenv("ALLOWED_ORIGINS", "http://localhost:3000")
 
 	cfg, err := Load()
 	if err != nil {
@@ -202,13 +201,17 @@ func TestLoad_Defaults(t *testing.T) {
 	if cfg.RouterStrategy != "cost" {
 		t.Errorf("RouterStrategy = %q, want cost", cfg.RouterStrategy)
 	}
-	if len(cfg.AllowedOrigins) != 2 {
-		t.Errorf("AllowedOrigins size = %d, want 2", len(cfg.AllowedOrigins))
+	if cfg.Env != "production" {
+		t.Errorf("Env = %q, want production", cfg.Env)
+	}
+	if len(cfg.AllowedOrigins) != 1 {
+		t.Errorf("AllowedOrigins size = %d, want 1", len(cfg.AllowedOrigins))
 	}
 
 	os.Unsetenv("AUTH_SECRET")
 	os.Unsetenv("DATABASE_URL")
 	os.Unsetenv("DB_TYPE")
+	os.Unsetenv("ALLOWED_ORIGINS")
 }
 
 func TestLoad_AllowedOriginsInProduction(t *testing.T) {

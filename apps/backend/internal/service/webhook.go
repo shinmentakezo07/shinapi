@@ -190,7 +190,7 @@ func (s *WebhookService) Dispatch(ctx context.Context, userID string, event webh
 func (s *WebhookService) sendAndTrack(ctx context.Context, webhookID string, cfg webhook.Config, event webhook.Event) {
 	payload, _ := json.Marshal(event)
 
-	idempotencyKey := fmt.Sprintf("%s:%s:%d", webhookID, event.Type, event.Timestamp.Unix())
+	idempotencyKey := fmt.Sprintf("%s:%s:%d", webhookID, event.Type, event.Timestamp.UnixNano())
 	isDup, err := s.repo.HasSuccessfulIdempotencyKey(ctx, idempotencyKey)
 	if err != nil {
 		logger.Error("webhook_idempotency_check_failed", "error", err.Error())
@@ -341,8 +341,10 @@ func (s *WebhookService) ProcessPendingRetries(ctx context.Context) error {
 
 		select {
 		case s.sem <- struct{}{}:
-			s.attemptDelivery(ctx, &d, cfg, event, idempotencyKey)
-			<-s.sem
+			go func(delivery domain.WebhookDelivery) {
+				defer func() { <-s.sem }()
+				s.attemptDelivery(ctx, &delivery, cfg, event, idempotencyKey)
+			}(d)
 		case <-ctx.Done():
 			return ctx.Err()
 		}
@@ -386,8 +388,10 @@ func (s *WebhookService) RetryDelivery(ctx context.Context, deliveryID string) *
 
 	select {
 	case s.sem <- struct{}{}:
-		s.attemptDelivery(ctx, d, cfg, event, idempotencyKey)
-		<-s.sem
+		go func(delivery *domain.WebhookDelivery) {
+			defer func() { <-s.sem }()
+			s.attemptDelivery(ctx, delivery, cfg, event, idempotencyKey)
+		}(d)
 	case <-ctx.Done():
 		return domain.NewError(domain.ErrServiceUnavailable, 503, "Context cancelled")
 	}

@@ -1545,6 +1545,13 @@ class DraSDK {
     );
   }
 
+  deleteExportJob(id: string) {
+    return this.request<{ deleted: boolean }>(
+      "DELETE",
+      `/api/exports/${encodeURIComponent(id)}`,
+    );
+  }
+
   // Promo Codes
 
   redeemPromoCode(code: string) {
@@ -1614,10 +1621,10 @@ class DraSDK {
     );
   }
 
-  adminListUserUsage(userId: string) {
-    return this.request<AnalyticsData>(
-      "GET",
+  adminListUserUsage(userId: string, page?: number, limit?: number) {
+    return this.paginatedRequest<UsageRecord>(
       `/api/admin/users/${encodeURIComponent(userId)}/usage`,
+      { page, limit },
     );
   }
 

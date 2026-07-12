@@ -460,6 +460,8 @@ func initAdminServices(ctx context.Context, database *db.DB, repoCache repositor
 	adminProviderRepo.SetCache(repoCache, cfg.CacheDefaultTTL)
 	adminModelRepo.SetCache(repoCache, cfg.CacheDefaultTTL)
 	adminSettingsRepo.SetCache(repoCache, cfg.CacheDefaultTTL)
+	adminBillingRepo.SetCache(repoCache, cfg.CacheDefaultTTL)
+	adminFeaturesRepo.SetCache(repoCache, cfg.CacheDefaultTTL)
 
 	adminAuditSvc := service.NewAuditService(adminAuditRepo, 1000)
 	adminSvc := service.NewAdminService(adminUserRepo, adminProviderRepo, adminModelRepo,

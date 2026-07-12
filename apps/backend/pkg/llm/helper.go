@@ -51,6 +51,20 @@ func CacheKey(req *ChatRequest) string {
 		if m.ToolCallID != "" {
 			h.Write([]byte(m.ToolCallID))
 		}
+		// Hash tool calls so requests differing only in tool-call history
+		// (e.g. assistant tool_use vs. tool result) don't collide.
+		if len(m.ToolCalls) > 0 {
+			tcJSON, _ := json.Marshal(m.ToolCalls)
+			h.Write([]byte("|toolcalls|"))
+			h.Write(tcJSON)
+		}
+		// Hash content blocks so text-vs-image (or any multimodal) requests
+		// don't share a cache entry.
+		if len(m.ContentBlocks) > 0 {
+			cbJSON, _ := json.Marshal(m.ContentBlocks)
+			h.Write([]byte("|contentblocks|"))
+			h.Write(cbJSON)
+		}
 	}
 
 	// Hash tools if present

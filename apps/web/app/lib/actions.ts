@@ -1,7 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import { signIn, signOut, auth } from "@/auth";
+import { signIn, signOut, auth, clearBackendTokenCookie } from "@/auth";
 import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -308,6 +308,11 @@ export async function forgotPassword(prevState: any, formData: FormData) {
 
 export async function signOutAction() {
   "use server";
+  try {
+    await clearBackendTokenCookie();
+  } catch {
+    // Best-effort cleanup; the backend token cookie will expire naturally.
+  }
   await signOut();
 }
 
