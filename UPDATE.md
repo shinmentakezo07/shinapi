@@ -1,3 +1,89 @@
+## [56]. Enhance docs sidebar UI — layered ambient glow, gradient nav items, refined footer
+
+**Session**: `docs-sidebar-ui-2026-07-16`
+**Date**: 2026-07-16 06:55
+
+### Why
+The `/docs` sidebar was functional but visually flat — the active item used a uniform indigo fill, group headers lacked visual anchors, icons had no container treatment, and the header/footer had only a single ambient glow. Enhancing the sidebar to match the avant-garde polish already present in the playground and dashboard by adding layered ambient gradients, a cyan secondary accent, icon containers with active-state gradients, refined group headers with accent dots, scroll-driven gradient scrollbar, and a gradient top-border footer accent.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/docs/layout.tsx | L174-198 | modified (desktop sidebar: ambient gradient fades + overflow-hidden) |
+| apps/web/app/docs/layout.tsx | L153-170 | modified (mobile sidebar: top ambient gradient) |
+| apps/web/app/docs/layout.tsx | L257-292 | modified (header: layered indigo+cyan glows, animated sweep, gradient version badge) |
+| apps/web/app/docs/layout.tsx | L294-305 | modified (filter: enhanced focus glow) |
+| apps/web/app/docs/layout.tsx | L320-390 | modified (nav groups: accent dot headers, gradient icon containers, hover translate-x, active gradient bg) |
+| apps/web/app/docs/layout.tsx | L395-435 | modified (footer: gradient top-border accent, gradient hover bg, status dot glow) |
+| apps/web/app/globals.css | L136-154 | created (sidebar-specific gradient scrollbar CSS) |
+
+### Before
+```tsx
+// Desktop sidebar: plain border, no ambient fades
+<aside className="hidden lg:flex flex-col fixed left-0 top-[58px] bottom-0 w-[260px] border-r border-white/[0.07] bg-[#06060a]/85 backdrop-blur-xl z-20">
+
+// Header: single ambient glow
+<div className="absolute -top-8 -left-6 w-28 h-28 rounded-full opacity-50 ..." />
+
+// Nav items: icon as bare element, no container
+<item.icon className={`w-[14px] h-[14px] ...`} />
+// Active item: uniform bg-indigo-500/[0.09]
+isActive ? `text-white bg-indigo-500/[0.09] border border-indigo-500/25 ...`
+
+// Group header: no accent dot
+<span className="text-[9px] font-mono font-semibold uppercase ...">{group.label}</span>
+
+// Footer: no gradient top-border, plain status dot
+<div className="px-3 py-3 border-t border-white/[0.06] bg-white/[0.01]">
+<span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
+
+// Scrollbar: uniform indigo-only thumb
+.docs-scroll::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.14); }
+```
+
+### After
+```tsx
+// Desktop sidebar: ambient gradient fades + overflow-hidden
+<aside className="... overflow-hidden">
+  <div className="absolute top-0 left-0 right-0 h-32 ... opacity-60" style={{ background: "linear-gradient(to bottom, rgba(99,102,241,0.07), transparent)" }} />
+  <div className="absolute bottom-0 left-0 right-0 h-24 ... opacity-40" style={{ background: "linear-gradient(to top, rgba(34,211,238,0.04), transparent)" }} />
+
+// Header: layered indigo + cyan glows + animated gradient sweep
+<div className="absolute -top-10 -left-10 w-32 h-32 ... opacity-60" style={{ background: "radial-gradient(circle, rgba(99,102,241,0.18), transparent 70%)" }} />
+<div className="absolute -bottom-8 right-0 w-24 h-24 ... opacity-30" style={{ background: "radial-gradient(circle, rgba(34,211,238,0.12), transparent 70%)" }} />
+// Version badge: gradient bg
+<span className="... bg-gradient-to-r from-indigo-500/10 to-cyan-500/[0.06] border border-indigo-500/20">
+
+// Nav items: icon in gradient container for active, hover translate-x
+<span className={`flex-shrink-0 w-5 h-5 rounded-md ... ${isActive ? "bg-gradient-to-br from-indigo-500/20 to-indigo-500/5 border border-indigo-500/20 ..." : "border border-transparent group-hover/item:border-white/[0.06] group-hover/item:bg-white/[0.03]"}`}>
+  <item.icon className={`w-[14px] h-[14px] ...`} />
+</span>
+// Active item: gradient bg + hover translate-x
+isActive ? `text-white bg-gradient-to-r from-indigo-500/[0.12] to-indigo-500/[0.04] ...` : "... hover:translate-x-0.5"
+
+// Active indicator: indigo→cyan gradient + dual glow
+className="absolute left-0 ... bg-gradient-to-b from-indigo-300 via-indigo-300 to-cyan-300 shadow-[0_0_10px_rgba(165,180,252,0.8),0_0_18px_-2px_rgba(34,211,238,0.4)]"
+
+// Group header: accent dot with glow
+<span className="w-1 h-1 rounded-full bg-indigo-400/40 shadow-[0_0_4px_rgba(129,140,248,0.5)]" />
+
+// Footer: gradient top-border accent + gradient hover bg + glowing status dot
+<div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/15 to-transparent" />
+className="... hover:bg-gradient-to-r hover:from-white/[0.04] hover:to-indigo-500/[0.04] ..."
+<span className="... bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.8)]" />
+
+// Scrollbar: sidebar-specific indigo→cyan gradient thumb
+.docs-sidebar .docs-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, rgba(99,102,241,0.18), rgba(34,211,238,0.12));
+}
+```
+
+### Notes
+No functional changes — all navigation, routing, keyboard shortcuts, search, and filtering work identically. Only visual/visual-layer enhancements. The cyan accent is used semantically as the "return path" secondary accent per the existing signal-gateway token system in globals.css (`--color-gw-wire`), keeping indigo dominant (≥90% of accent usage).
+
+---
+
 ## [1]. Enhance playground UI — reply box, composer, alignment rail
 
 **Session**: `pg-ui-avant-garde-2026-07-15`
@@ -6319,3 +6405,76 @@ The user authorized (standing, across sessions) that commits should be pushed di
 - Personal on-disk memory (`push-to-master-by-default.md` under `.claude/projects/.../memory/`) also records this, but that lives OUTSIDE the repo (`this_studio/.claude` is a sibling of the git root `this_studio/dra`) so it is not version-controlled. The `CLAUDE.md` edit is the durable, repo-tracked source of truth.
 - This entry is itself pushed to `master` per the rule it documents.
 - `verification`: docs-only change to one Markdown file; no TS/Go touched, no build/test surface affected. Convention: `docs(claude):` commit on a `docs/*`-style change.
+
+## [57]. feat(web/pricing): enhance Cost Calculator UI
+
+**Session**: `cost-calculator-ui-2026-07-16`
+**Date**: 2026-07-16 07:05
+
+### Why
+The `/pricing` Cost Calculator was functional but visually flat — sliders had no quick-jump controls, the cost breakdown rows were uniformly muted, the proportional cost bar had no percentages and only accounted for input% (output% was implicit), and the model selector had no visual confirmation marker beyond the top bar. Enhancing visual design and UX: quick-jump token stops under each slider, a live-status dot on the cost panel, stronger gradient/shadow treatment on the proportional bar with percentage labels and shimmer highlights, colored cost rows per stream (blue/violet) with token counts inline, a rate card with a 3-column grid layout, and an active-model corner dot. Animations re-keyed on token values so breakdown rows re-animate on token change, not just model change.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/components/pricing/CostCalculator.tsx | L1-13 | modified (imports: added Cpu, TrendingUp; removed unused accentColor prop usage path) |
+| apps/web/components/pricing/CostCalculator.tsx | L21-37 | modified (CustomSlider: added `stops` prop) |
+| apps/web/components/pricing/CostCalculator.tsx | L21-160 | modified (slider: richer gradient, larger track, thumb ring shadow, quick-jump stop buttons) |
+| apps/web/components/pricing/CostCalculator.tsx | L220-260 | modified (added outputPct, INPUT_STOPS/OUTPUT_STOPS consts) |
+| apps/web/components/pricing/CostCalculator.tsx | cost panel | modified (live eyebrow dot, drop-shadow on big cost, percentages + shimmer on proportional bar, colored breakdown rows, 3-col rate grid, active-model corner dot) |
+
+### Before
+```tsx
+// Slider had no quick-jump stops; cost bar showed no percentages; rows uniformly muted
+<div className="flex h-2 rounded-full overflow-hidden bg-white/[0.04]">
+  <motion.div className="bg-gradient-to-r from-blue-500 to-blue-400" animate={{ width: `${inputPct}%` }} .../>
+  <motion.div className="bg-gradient-to-r from-violet-500 to-violet-400" animate={{ width: `${100 - inputPct}%` }} .../>
+</div>
+...
+<div className="flex items-center gap-1.5">
+  <div className="w-2 h-2 rounded-full bg-blue-500" />
+  <span className="text-[10px] text-gray-500 font-mono">Input {formatTokens(inputTokens)}</span>
+</div>
+...
+// breakdown row
+<motion.div ... className="flex items-center justify-between py-3 px-3 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+  <div className="flex items-center gap-2">
+    <div className="w-1.5 h-1.5 rounded-full bg-blue-400 ..." />
+    <span className="text-xs text-gray-400">Input cost</span>
+  </div>
+  <span className="text-xs font-mono font-bold text-white tabular-nums">{formatCurrency(inputCost)}</span>
+</motion.div>
+```
+
+### After
+```tsx
+// Quick-jump stops under each slider
+const INPUT_STOPS = [1_000, 10_000, 100_000, 500_000, 1_000_000];
+const OUTPUT_STOPS = [1_000, 5_000, 50_000, 250_000, 500_000];
+...
+// Cost bar with percentages + shimmer
+<div className="flex h-2.5 rounded-full overflow-hidden bg-white/[0.04] shadow-inner">
+  <motion.div className="bg-gradient-to-r from-blue-500 via-blue-400 to-sky-300 relative"
+    animate={{ width: `${inputPct}%` }} ...>
+    {inputPct > 12 && <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-60" />}
+  </motion.div>
+  <motion.div className="bg-gradient-to-r from-violet-500 via-violet-400 to-fuchsia-300 relative"
+    animate={{ width: `${outputPct}%` }} ...>...</motion.div>
+</div>
+// Legend with %
+<span className="text-[10px] text-gray-400 font-mono">Input {inputPct.toFixed(0)}%</span>
+// Colored per-stream breakdown row (keys on tokens too)
+<motion.div key={`input-${selectedModelIndex}-${inputTokens}`} ...
+  className="flex items-center justify-between py-3 px-3.5 rounded-lg bg-blue-500/[0.04] border border-blue-500/10">
+  ...
+  <span className="text-xs font-mono font-bold text-blue-300 tabular-nums">{formatCurrency(inputCost)}</span>
+</motion.div>
+// 3-column model rate grid
+<div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">...</div>
+```
+
+### Notes
+- `accentColor` prop kept on CustomSlider for interface compatibility (callers unchanged) though it is no longer used internally now that input/output is derived from the label.
+- `tsc --noEmit` passes clean. Pure visual/UX enhancement — no data model, no SDK/mock-data involvement, so `wiring-verification.test.ts` invariants unaffected.
+- Did not run build (next build ignores TS errors anyway) nor smoke-test since only a presentational client component changed.
