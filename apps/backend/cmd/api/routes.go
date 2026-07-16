@@ -106,16 +106,9 @@ func registerRoutes(
 		},
 	)
 
-	// Token blacklist — skip in SQLite mode (token_blacklist table doesn't
-	// exist in LiteDDL; middleware would log errors on every request).
-	var tokenBlacklistMW func(http.Handler) http.Handler
-	if database.Type != db.DBTypeSQLite {
-		tokenBlacklistSvc := service.NewTokenBlacklistService(repository.NewTokenBlacklistRepo(database))
-		tokenBlacklistMW = appmiddleware.TokenBlacklist(tokenBlacklistSvc)
-	} else {
-		tokenBlacklistMW = func(next http.Handler) http.Handler { return next }
-		logger.Info("token_blacklist_skipped", "reason", "sqlite_lite_mode")
-	}
+	// Token blacklist (Postgres + SQLite lite; token_blacklist is in LiteDDL).
+	tokenBlacklistSvc := service.NewTokenBlacklistService(repository.NewTokenBlacklistRepo(database))
+	tokenBlacklistMW := appmiddleware.TokenBlacklist(tokenBlacklistSvc)
 
 	// Quota tracker
 	var quotaTracker appmiddleware.QuotaTrackerInterface
@@ -166,6 +159,9 @@ func registerRoutes(
 	// Public
 	r.Get("/health", h.Health)
 	r.Get("/health/providers", h.ProviderHealth)
+	// Public model catalog for /models and playground (no auth).
+	// Chat and authenticated list remain under authMW.
+	r.Get("/api/models/catalog", h.ListModelCatalog)
 
 	// First-time bootstrap endpoints (always public; gated by needsSetup
 	// flag inside service.SetupService so a second admin can never be

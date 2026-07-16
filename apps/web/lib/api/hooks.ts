@@ -207,6 +207,15 @@ export function useModels() {
   });
 }
 
+/** Public model catalog shared by /models and playground (no auth required). */
+export function useModelCatalog() {
+  return useQuery<ModelInfo[]>({
+    queryKey: ["models", "catalog"],
+    queryFn: () => getSDK().listModelCatalog(),
+    staleTime: 30_000,
+  });
+}
+
 // ============================================================================
 // Conversations
 // ============================================================================

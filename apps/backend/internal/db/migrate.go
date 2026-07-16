@@ -97,27 +97,65 @@ func AutoMigrate(ctx context.Context, database *DB) error {
 	return nil
 }
 
-// autoMigrateSQLite applies the canonical lite DDL (users, api_keys,
-// user_credits, credit_transactions + indexes) directly via database.SqlDB.
-// Idempotent: every statement uses IF NOT EXISTS so re-runs are safe.
+// autoMigrateSQLite applies the full LiteDDL (all platform tables + indexes)
+// directly via database.SqlDB. Idempotent: every statement uses IF NOT EXISTS.
 //
-// After CREATE statements run, we call EnsureSQLiteColumns to add admin-
-// panel extension columns to the `users` table for any existing on-disk
-// SQLite DB whose schema pre-dates the lite DDL update — `CREATE TABLE
-// IF NOT EXISTS` is a no-op on existing tables, so this is the only way
-// to grow an in-place schema without a manual DROP + recreate.
+// Order matters for existing on-disk DBs:
+//  1. CREATE TABLE IF NOT EXISTS ...  (no-op if present)
+//  2. EnsureSQLiteColumns for tables that gained columns after first create
+//  3. CREATE INDEX IF NOT EXISTS ...  (needs columns from step 2)
+//
+// Without this split, indexes on ALTER-added columns fail with
+// "no such column" against older yapapa.db files.
 func autoMigrateSQLite(ctx context.Context, database *DB) error {
 	if database.SqlDB == nil {
 		return fmt.Errorf("sqlite db is nil")
 	}
+
+	var tables, indexes []string
 	for _, ddl := range LiteDDL {
+		trimmed := strings.TrimSpace(ddl)
+		upper := strings.ToUpper(trimmed)
+		if strings.HasPrefix(upper, "CREATE TABLE") {
+			tables = append(tables, ddl)
+			continue
+		}
+		if strings.HasPrefix(upper, "CREATE ") && strings.Contains(upper, "INDEX") {
+			indexes = append(indexes, ddl)
+			continue
+		}
+		// Unknown statement type — apply with tables for safety.
+		tables = append(tables, ddl)
+	}
+
+	for _, ddl := range tables {
 		if _, err := database.SqlDB.ExecContext(ctx, ddl); err != nil {
-			return fmt.Errorf("apply lite ddl: %w\nDDL: %s", err, ddl)
+			return fmt.Errorf("apply lite table ddl: %w\nDDL: %s", err, ddl)
 		}
 	}
+
 	if err := EnsureSQLiteColumns(ctx, database.SqlDB, "users", usersLiteColumnAdditions); err != nil {
 		return fmt.Errorf("ensure users columns: %w", err)
 	}
-	logger.Info("auto_migrate_complete", "type", "sqlite", "tables", len(LiteDDL))
+	if err := EnsureSQLiteColumns(ctx, database.SqlDB, "api_keys", apiKeysLiteColumnAdditions); err != nil {
+		return fmt.Errorf("ensure api_keys columns: %w", err)
+	}
+	if err := EnsureSQLiteColumns(ctx, database.SqlDB, "user_credits", userCreditsLiteColumnAdditions); err != nil {
+		return fmt.Errorf("ensure user_credits columns: %w", err)
+	}
+	if err := EnsureSQLiteColumns(ctx, database.SqlDB, "model_registry", modelRegistryLiteColumnAdditions); err != nil {
+		return fmt.Errorf("ensure model_registry columns: %w", err)
+	}
+	if err := EnsureSQLiteColumns(ctx, database.SqlDB, "provider_keys", providerKeysLiteColumnAdditions); err != nil {
+		return fmt.Errorf("ensure provider_keys columns: %w", err)
+	}
+
+	for _, ddl := range indexes {
+		if _, err := database.SqlDB.ExecContext(ctx, ddl); err != nil {
+			return fmt.Errorf("apply lite index ddl: %w\nDDL: %s", err, ddl)
+		}
+	}
+
+	logger.Info("auto_migrate_complete", "type", "sqlite", "tables", len(tables), "indexes", len(indexes))
 	return nil
 }

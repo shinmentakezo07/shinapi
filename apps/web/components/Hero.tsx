@@ -5,8 +5,6 @@ import {
   motion,
   useScroll,
   useTransform,
-  useMotionValue,
-  useMotionTemplate,
   AnimatePresence,
 } from "framer-motion";
 import {
@@ -25,7 +23,7 @@ import {
   Hash,
 } from "lucide-react";
 import { useRef, useEffect, useState } from "react";
-import type { ReactNode, SVGProps } from "react";
+import type { ReactNode, SVGProps, CSSProperties } from "react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -728,32 +726,24 @@ function FloatingLogos() {
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
       {icons.map((item, i) => (
-        <motion.div
+        <div
           key={i}
-          className={`absolute ${item.color} opacity-[0.07] blur-[0px] hover:opacity-30 hover:blur-0 transition-all duration-500`}
-          style={{
-            top: item.top,
-            left: item.left,
-            right: item.right,
-            bottom: item.bottom,
-            width: item.size,
-            height: item.size,
-          }}
-          initial={{ y: 0, rotate: 0 }}
-          animate={{
-            y: [0, -30, 0],
-            rotate: [0, 10, -10, 0],
-            scale: [1, 1.1, 1],
-          }}
-          transition={{
-            duration: 8 + Math.random() * 6,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: item.delay,
-          }}
+          className={`absolute ${item.color} opacity-[0.07] blur-[0px] hover:opacity-30 hover:blur-0 transition-all duration-500 hero-float`}
+          style={
+            {
+              top: item.top,
+              left: item.left,
+              right: item.right,
+              bottom: item.bottom,
+              width: item.size,
+              height: item.size,
+              "--float-delay": `${item.delay}s`,
+              "--float-dur": `${10 + (i % 4) * 2}s`,
+            } as CSSProperties
+          }
         >
           <item.Icon className="w-full h-full" />
-        </motion.div>
+        </div>
       ))}
     </div>
   );
@@ -761,82 +751,56 @@ function FloatingLogos() {
 
 // --- New Background Effect ---
 function HeroBackground() {
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
+  const spotlightRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    function handleMouseMove({
-      clientX,
-      clientY,
-    }: {
-      clientX: number;
-      clientY: number;
-    }) {
-      mouseX.set(clientX);
-      mouseY.set(clientY);
+    let rafId = 0;
+    let pendingX = 0;
+    let pendingY = 0;
+    function handleMouseMove({ clientX, clientY }: MouseEvent) {
+      pendingX = clientX;
+      pendingY = clientY;
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        const el = spotlightRef.current;
+        if (el)
+          el.style.background = `radial-gradient(820px circle at ${pendingX}px ${pendingY}px, rgba(99, 102, 241, 0.13), transparent 78%)`;
+      });
     }
-
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, [mouseX, mouseY]);
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, []);
 
   return (
     <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none bg-[#050505]">
       {/* Ambient gradient field */}
-      <motion.div
+      <div
         aria-hidden="true"
-        className="absolute -top-40 left-[-10%] h-[34rem] w-[34rem] rounded-full bg-indigo-500/20 blur-[120px]"
-        animate={{ scale: [1, 1.14, 1], opacity: [0.35, 0.58, 0.35] }}
-        transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute -top-40 left-[-10%] h-[34rem] w-[34rem] rounded-full bg-indigo-500/20 blur-[120px] hero-orb-a"
       />
-      <motion.div
+      <div
         aria-hidden="true"
-        className="absolute right-[-12%] top-1/4 h-[30rem] w-[30rem] rounded-full bg-violet-500/18 blur-[120px]"
-        animate={{ scale: [1.08, 0.95, 1.08], opacity: [0.28, 0.5, 0.28] }}
-        transition={{
-          duration: 10,
-          repeat: Infinity,
-          ease: "easeInOut",
-          delay: 1.2,
-        }}
+        className="absolute right-[-12%] top-1/4 h-[30rem] w-[30rem] rounded-full bg-violet-500/18 blur-[120px] hero-orb-b"
       />
-      <motion.div
+      <div
         aria-hidden="true"
-        className="absolute bottom-[-18%] left-1/3 h-[28rem] w-[28rem] rounded-full bg-cyan-400/12 blur-[110px]"
-        animate={{ scale: [0.95, 1.12, 0.95], opacity: [0.22, 0.42, 0.22] }}
-        transition={{
-          duration: 11,
-          repeat: Infinity,
-          ease: "easeInOut",
-          delay: 2,
-        }}
+        className="absolute bottom-[-18%] left-1/3 h-[28rem] w-[28rem] rounded-full bg-cyan-400/12 blur-[110px] hero-orb-c"
       />
 
       {/* Dimensional grid */}
       <div className="absolute inset-0 perspective-1000">
-        <motion.div
-          animate={{ backgroundPosition: ["0px 0px", "0px 44px"] }}
-          transition={{ duration: 7, repeat: Infinity, ease: "linear" }}
-          className="absolute inset-0 bg-grid-pattern opacity-[0.18] [mask-image:radial-gradient(ellipse_at_center,black_0%,transparent_72%)] transform-gpu rotate-x-12 scale-150 origin-top"
-        />
+        <div className="absolute inset-0 bg-grid-pattern hero-grid-scroll opacity-[0.18] [mask-image:radial-gradient(ellipse_at_center,black_0%,transparent_72%)] transform-gpu rotate-x-12 scale-150 origin-top" />
       </div>
 
       {/* Fine texture */}
       <div className="absolute inset-0 opacity-[0.055] mix-blend-screen [background-image:url('data:image/svg+xml,%3Csvg_viewBox=%220_0_256_256%22_xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter_id=%22noise%22%3E%3CfeTurbulence_type=%22fractalNoise%22_baseFrequency=%220.78%22_numOctaves=%224%22_stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect_width=%22100%25%22_height=%22100%25%22_filter=%22url(%23noise)%22_opacity=%220.7%22/%3E%3C/svg%3E')]" />
 
       {/* Dynamic Spotlights */}
-      <motion.div
-        className="absolute inset-0 opacity-60"
-        style={{
-          background: useMotionTemplate`
-                        radial-gradient(
-                            820px circle at ${mouseX}px ${mouseY}px,
-                            rgba(99, 102, 241, 0.13),
-                            transparent 78%
-                        )
-                    `,
-        }}
-      />
+      <div ref={spotlightRef} className="absolute inset-0 opacity-60" />
 
       {/* Vignette */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_45%_42%,transparent_0%,rgba(0,0,0,0.38)_58%,#000_100%)]" />

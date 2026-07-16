@@ -431,6 +431,18 @@ func (h *Handler) ListModels(w http.ResponseWriter, r *http.Request) {
 	response.OK(w, models)
 }
 
+// ListModelCatalog is the public (unauthenticated) model catalog used by
+// /models and the playground. It returns the same active runtime list as
+// ListModels; chat and other write paths remain auth-gated.
+func (h *Handler) ListModelCatalog(w http.ResponseWriter, r *http.Request) {
+	models, err := h.providerSvc.ListModels(r.Context())
+	if err != nil {
+		response.JSON(w, err.Status, response.Body{Success: false, Error: err.Message})
+		return
+	}
+	response.OK(w, models)
+}
+
 func (h *Handler) ChatProxy(w http.ResponseWriter, r *http.Request) {
 	u := middleware.GetUser(r)
 	if u == nil {

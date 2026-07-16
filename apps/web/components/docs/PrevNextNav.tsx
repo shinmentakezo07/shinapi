@@ -5,6 +5,8 @@ import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import type { NavItem } from "@/components/docs/types";
 import { cn } from "@/lib/utils";
 
+// Mirrors the canonical group ordering in app/docs/layout.tsx so prev/next
+// navigates every page without silently skipping any.
 const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: "Getting Started",
@@ -12,6 +14,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { id: "quickstart", label: "Quick Start", icon: undefined as never },
       { id: "authentication", label: "Authentication", icon: undefined as never },
       { id: "api-reference", label: "API Reference", icon: undefined as never },
+      { id: "sdk", label: "SDK Reference", icon: undefined as never },
       { id: "self-hosting", label: "Self-Hosting", icon: undefined as never },
     ],
   },
@@ -19,14 +22,17 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     label: "Core Features",
     items: [
       { id: "chat", label: "Chat & Streaming", icon: undefined as never },
+      { id: "anthropic", label: "Anthropic Messages", icon: undefined as never },
       { id: "embeddings", label: "Embeddings", icon: undefined as never },
       { id: "conversations", label: "Conversations", icon: undefined as never },
       { id: "prompts", label: "Prompt Templates", icon: undefined as never },
+      { id: "function-calling", label: "Function Calling", icon: undefined as never },
     ],
   },
   {
     label: "Platform",
     items: [
+      { id: "gateway", label: "LLM Gateway", icon: undefined as never },
       { id: "batch", label: "Batch API", icon: undefined as never },
       { id: "files", label: "File Upload", icon: undefined as never },
       { id: "webhooks", label: "Webhooks", icon: undefined as never },
@@ -41,6 +47,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { id: "models", label: "Available Models", icon: undefined as never },
       { id: "pricing", label: "Pricing & Credits", icon: undefined as never },
       { id: "dashboard", label: "Dashboard", icon: undefined as never },
+      { id: "admin", label: "Admin API", icon: undefined as never },
       { id: "security", label: "Security", icon: undefined as never },
       { id: "examples", label: "Code Examples", icon: undefined as never },
     ],

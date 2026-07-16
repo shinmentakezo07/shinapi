@@ -789,6 +789,11 @@ class DraSDK {
     return this.request<ModelInfo[]>("GET", "/api/models");
   }
 
+  /** Public catalog (no auth) for /models and playground. */
+  listModelCatalog() {
+    return this.request<ModelInfo[]>("GET", "/api/models/catalog");
+  }
+
   // Chat (non-streaming)
   chat(data: { model: string; messages: ChatMessage[] }) {
     return this.request<ChatCompletionChunk>("POST", "/api/chat", data);

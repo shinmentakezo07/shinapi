@@ -93,7 +93,7 @@ export function DocsNavbar({
       {/* Single indigo accent strip */}
       <div className="relative h-[2px] w-full overflow-hidden">
         <motion.div
-          className="absolute inset-0 bg-gradient-to-r from-indigo-400/60 via-violet-400/40 to-indigo-300/30"
+          className="absolute inset-0 bg-gradient-to-r from-indigo-400/60 via-indigo-300/40 to-cyan-300/30"
           initial={false}
           animate={{ opacity: scrolled ? 0.85 : 0.5 }}
           transition={{ duration: 0.4 }}

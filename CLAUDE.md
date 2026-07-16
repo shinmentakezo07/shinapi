@@ -95,7 +95,7 @@ docker-compose --profile mongo up -d  # Start Postgres + Mongo profile
 ### Frontend architecture
 
 - **Next.js 16 canary is NOT your training data.** Breaking changes from v14/15 — APIs, conventions, and file structure differ. Read `node_modules/next/dist/docs/` before writing any code and heed deprecation notices. `"use cache"` replaces old `revalidate`/`dynamic` — implicit caching is gone. `fetch()` is no longer cached by default.
-- **App Router routes**: `app/dashboard/` (protected), `app/playground/`, `app/pricing/`, `app/models/`, `app/gateway/`, `app/admin/`, `app/login/`, `app/signup/`, `app/docs/`, `app/forgot-password/`. API routes in `app/api/*` proxy to Go backend through `lib/api/proxy.ts`.
+- **App Router routes**: Product/auth surfaces — `app/dashboard/` (protected), `app/playground/`, `app/pricing/`, `app/models/`, `app/gateway/`, `app/admin/`, `app/login/`, `app/signup/`, `app/docs/`, `app/forgot-password/`, `app/enterprise/`, `app/status/`. Marketing/shell surfaces — `app/about/`, `app/blog/`, `app/changelog/`, `app/contact/`, `app/legal/`, `app/roadmap/`. API routes in `app/api/*` proxy to Go backend through `lib/api/proxy.ts`.
 - **Auth**: NextAuth v5 in `auth.ts`/`auth.config.ts`. JWT HS256 secrets must match the backend. OAuth: GitHub + Google. Fallback: `AUTH_SECRET || NEXTAUTH_SECRET`.
 - **Proxy middleware** (`proxy.ts`): redirects unauthenticated `/dashboard/*` to login, authenticated `/login`/`/signup` to dashboard.
 - **Dashboard is SDK-driven.** Components use `getSDK()` / `DraSDK` from `lib/api/sdk.ts`. `tests/wiring-verification.test.ts` enforces no mock data.
@@ -117,7 +117,7 @@ docker-compose --profile mongo up -d  # Start Postgres + Mongo profile
 - **Middleware** (`internal/middleware/`, 14 files): JWT/API-key auth, rate limiting, quota (in-memory + Redis), request logging, tracing, metrics, body limits, token blacklist, transform.
 - **Three auth modes**: `Authorization: Bearer <jwt>`, `authjs.session-token` cookie, `x-api-key`.
 - **Go module path**: `dra-platform/backend`.
-- **Raw SQL migrations** in `migrations/`, numbered `001_*.sql`–`024_*.sql` (some numbers collide / are disabled, e.g. `022_enterprise_features.sql.disabled`, dual `024_*`). Hand-applied, no auto-migrator.
+- **Raw SQL migrations** in `migrations/`, numbered `001_*.sql`–`025_*.sql` (some numbers collide / are disabled, e.g. `022_enterprise_features.sql.disabled`, dual `008_*`, `022_*`, `024_*`). Hand-applied, no auto-migrator.
 - **First-time admin bootstrap** via `internal/handler/setup.go` (`SetupHandler`). Exposes unauthenticated `GET /api/setup/status` and `POST /api/setup/bootstrap` when no admin exists. Gated by `service.SetupService` / `repository.ErrFirstAdminAlreadyExists`.
 - **Key internal packages**: `config/` (env-based config loader), `db/` (pgx pool + auto-migrate/seed + SQLite lite schema), `middleware/`, `pkg/logger/` (slog), `pkg/response/`, `pkg/token/` (JWT), `testutil/` (integration test harness with `NewTestServer()`).
 
@@ -125,7 +125,7 @@ docker-compose --profile mongo up -d  # Start Postgres + Mongo profile
 
 - OpenAI-compatible proxy (`/v1/chat/completions`, `/v1/embeddings`, `/v1/models`) built on `pkg/llm/`.
 - 10-stage pipeline: **validator → router → cache → guardrails → moderation → translator → provider → telemetry → circuit breaker → watcher**. Orchestrated by `pkg/llm/pipeline/pipeline.go`. Full map in `apps/backend/pkg/llm/AGENTS.md`.
-- ~30 subpackages under `pkg/llm/` (not just the stage names): core stages (`provider/`, `router/`, `cache/`, `guardrails/`, `moderation/`, `translator/`, `pipeline/`, `validator/`, `circuitbreaker/`, `watcher/`, `openai/`, `anthropic/`, `tools/`) plus supporting packages (`embeddings/`, `batch/`, `tokens/`, `streaming/`, `loadbalancer/`, `budget/`, `registry/`, `virtualkeys/`, `security/`, `thinking/`, `ws/`, `otel/`, `usage/`, `audit/`, `credentials/`, `stores/`, `interfaces/`, etc.). Facade: `sdk.go`.
+- ~30 subpackages under `pkg/llm/` (not just the stage names): core stages (`provider/`, `router/`, `cache/`, `guardrails/`, `moderation/`, `translator/`, `pipeline/`, `validator/`, `circuitbreaker/`, `watcher/`, `openai/`, `anthropic/`, `tools/`) plus supporting packages (`embeddings/`, `batch/`, `tokens/`, `streaming/`, `loadbalancer/`, `budget/`, `registry/`, `virtualkeys/`, `security/`, `thinking/`, `ws/`, `otel/`, `usage/`, `audit/`, `credentials/`, `stores/`, `interfaces/`, `util/`, etc.). The package root (`pkg/llm/`) holds `types.go`, `helper.go`, and `llm_test.go` — there is no `sdk.go` facade at this level despite the old reference to one; entry points live in the per-stage subpackages and `pkg/sdk/` (the Go SDK) is a separate client.
 - Anthropic compatibility at `/v1/messages` via `internal/handler/anthropic_messages.go` + `pkg/llm/anthropic/`, reusing the same auth/quota/billing pipeline. Streaming uses Anthropic SSE events (`message_start`, `content_block_delta`, `message_delta`, `message_stop`).
 - Official Go SDKs: `github.com/openai/openai-go/v3`, `github.com/anthropics/anthropic-sdk-go`, `github.com/sashabaranov/go-openai`.
 - `X-Sandbox: true` on `/v1/chat/completions` bypasses billing/quota/logging **only for admin callers**. Non-admins get `403 permission_error` — do not document or use sandbox as a free-usage escape hatch.
@@ -245,7 +245,7 @@ bash scripts/smoke-test.sh  # Wiring verification after significant changes
 - **Backend `ENV=development`** enables `slog.LevelDebug` logging. `ENV=production` in Docker.
 - **`DB_TYPE` modes**: `postgres` (default), `neon` (cloud, skips local container), `mongodb` (backend auto-setup), `sqlite` (lite runtime with embedded schema + seed in `internal/db/lite_schema.go`).
 - **MongoDB** in `docker-compose.yml` is behind a `mongo` profile — NOT started by default.
-- **`opencode.json`** configures the project to use its own Yapapa instance as the LLM provider.
+- **`opencode.json`** configures an OpenAI-compatible provider at `http://localhost:20128/v1` (a `ptcider` provider with models `mimo-v2.5-pro` / `GLM-5.1` and the `oh-my-openagent` plugin) for the OpenCode tool — note this is a generic localhost endpoint, not the app's own backend (`:8080`).
 - **Package overrides** in root `package.json`: dompurify, esbuild, postcss, uuid — pinned across all workspaces.
 - **Frontend dual DB driver**: Uses `@neondatabase/serverless` for cloud Neon databases, `pg` for local Postgres. Check `DATABASE_URL` for `neon.tech` to determine which driver is active.
 - **Docker entrypoint** is `start.sh` with supervisord. In production, the backend binary is `/app/backend/server` and the frontend runs `apps/web/server.js` in standalone mode.

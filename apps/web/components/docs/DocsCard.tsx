@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -50,15 +51,19 @@ export const DocsCard = ({
   </div>
 );
 
-/* Icon tile with the signature glass treatment */
+/* Icon tile with the signature glass treatment — now doubles as a
+   signal node: indigo by default, cyan when the row represents the
+   *return* side of a request (docs-route-wire variant). */
 export const DocsIconTile = ({
   icon: Icon,
   className,
   size = "md",
+  wire = false,
 }: {
   icon: React.ElementType;
   className?: string;
   size?: "sm" | "md" | "lg";
+  wire?: boolean;
 }) => {
   const dims =
     size === "sm" ? "w-9 h-9" : size === "lg" ? "w-12 h-12" : "w-10 h-10";
@@ -67,15 +72,24 @@ export const DocsIconTile = ({
     <div
       className={cn(
         "relative flex items-center justify-center flex-shrink-0 rounded-xl overflow-hidden",
-        "border border-white/[0.07] bg-white/[0.02]",
-        "group-hover:border-indigo-500/25 group-hover:bg-indigo-500/[0.06]",
-        "transition-all duration-300",
+        "border bg-white/[0.02] transition-all duration-300",
+        wire
+          ? "border-cyan-400/15 group-hover:border-cyan-400/30 group-hover:bg-cyan-400/[0.06]"
+          : "border-white/[0.07] group-hover:border-indigo-500/25 group-hover:bg-indigo-500/[0.06]",
         dims,
         className,
       )}
     >
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-      <Icon className={cn(iconSize, "text-white/45 group-hover:text-indigo-200 transition-colors duration-300")} />
+      <Icon
+        className={cn(
+          iconSize,
+          "transition-colors duration-300",
+          wire
+            ? "text-cyan-200/60 group-hover:text-cyan-200"
+            : "text-white/45 group-hover:text-indigo-200",
+        )}
+      />
     </div>
   );
 };
@@ -103,6 +117,79 @@ export const DocsTag = ({
     {children}
   </span>
 );
+
+/* ── Route row — the index's primary structural unit ──
+   A scannable list row, NOT a boxed card. Reads like a routing table:
+   mono ID ─ label ─ one-line description ─ chevron →. The hairline
+   separator + single hover "signal" replaces the repeated glass-card
+   treatment so the whole index stops having uniform visual weight.
+
+   `wire` flips the accent to cyan for rows that represent the *response*
+   side of a request (chat / embeddings / webhooks). `href` makes it a
+   client-side link; pass `as="button"` for non-navigational rows. */
+export const DocsRouteRow = ({
+  id,
+  label,
+  desc,
+  href,
+  wire = false,
+}: {
+  id: string;
+  label: string;
+  desc?: string;
+  href?: string;
+  wire?: boolean;
+}) => {
+  const Tag = href ? Link : ("div" as const);
+  return (
+    <Tag
+      {...(href ? { href } : {})}
+      className={cn(
+        "docs-route group relative flex items-center gap-4 w-full",
+        "px-4 py-3.5 pl-5 rounded-xl",
+        "cursor-pointer",
+        "transition-all duration-200",
+        "text-white/55 hover:text-white",
+      )}
+    >
+      {/* signal tick — lights up on hover/focus */}
+      <span
+        aria-hidden
+        className={cn(
+          "absolute left-0 top-2 bottom-2 w-[2px] rounded-full transition-all duration-300",
+          wire
+            ? "bg-cyan-300/0 group-hover:bg-cyan-300/80 group-focus-visible:bg-cyan-300/80"
+            : "bg-indigo-300/0 group-hover:bg-indigo-300/80 group-focus-visible:bg-indigo-300/80",
+          "group-hover:shadow-[0_0_10px_rgba(165,180,252,0.6)]",
+        )}
+      />
+      {/* mono route ID */}
+      <span className="font-mono text-[10px] tabular-nums tracking-[0.06em] text-white/30 group-hover:text-indigo-200/80 transition-colors w-9 flex-shrink-0">
+        {id}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[13.5px] font-medium tracking-[-0.01em] truncate">
+          {label}
+        </span>
+        {desc && (
+          <span className="block text-[11.5px] text-white/35 group-hover:text-white/55 transition-colors leading-snug mt-0.5 truncate">
+            {desc}
+          </span>
+        )}
+      </span>
+      <span
+        aria-hidden
+        className={cn(
+          "flex-shrink-0 font-mono transition-all duration-200",
+          wire ? "text-cyan-300/40" : "text-indigo-200/30",
+          "group-hover:translate-x-0.5 group-hover:text-current",
+        )}
+      >
+        →
+      </span>
+    </Tag>
+  );
+};
 
 /* Stat block */
 export const DocsStat = ({

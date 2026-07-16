@@ -39,11 +39,35 @@ type sqliteQuerier struct {
 var (
 	sqliteCastPattern  = regexp.MustCompile(`(?i)::[a-z_][a-z0-9_]*(?:\[\])?`)
 	sqliteILikePattern = regexp.MustCompile(`(?i)\bILIKE\b`)
+	// Postgres NOW() → SQLite RFC3339-ish timestamp. Keep the same format
+	// assign() already parses for *time.Time (RFC3339Nano / RFC3339).
+	sqliteNowPattern      = regexp.MustCompile(`(?i)\bNOW\s*\(\s*\)`)
+	sqliteTruePattern     = regexp.MustCompile(`(?i)\bTRUE\b`)
+	sqliteFalsePattern    = regexp.MustCompile(`(?i)\bFALSE\b`)
+	sqliteIntervalPattern = regexp.MustCompile(`(?i)NOW\s*\(\s*\)\s*-\s*INTERVAL\s+'(\d+)\s*(day|days|hour|hours|minute|minutes|second|seconds)'`)
+	// Postgres row-locking clauses — `FOR UPDATE`, `FOR SHARE`, `FOR NO KEY
+	// UPDATE`, `FOR KEY SHARE` — with optional `OF <table/col list>`, `NOWAIT`,
+	// and `SKIP LOCKED`. SQLite has no row locking; the lite runtime is a
+	// single-process embedded DB so these are safe to drop. Anchored: matches
+	// only a locking keyword in clause position (always trailing in this
+	// codebase) and consumes through the first statement terminator or EOL —
+	// it will not eat a future query body that legitimately contains "FOR".
+	sqliteForLockingPattern = regexp.MustCompile(`(?is)\bFOR\s+(?:UPDATE|SHARE|NO\s+KEY\s+UPDATE|KEY\s+SHARE)\b[^;]*`)
 )
 
 func normalizeSQLiteSQL(qStr string) string {
+	// Row-locking clauses first: SQLite has no row locks and the clause always
+	// trails the query body, so strip it before the value rewrites below.
+	qStr = sqliteForLockingPattern.ReplaceAllString(qStr, "")
+	// Interval before bare NOW() so the interval form is not partially rewritten.
+	qStr = sqliteIntervalPattern.ReplaceAllString(qStr, "datetime('now', '-$1 $2')")
 	qStr = sqliteCastPattern.ReplaceAllString(qStr, "")
 	qStr = sqliteILikePattern.ReplaceAllString(qStr, "LIKE")
+	qStr = sqliteNowPattern.ReplaceAllString(qStr, "strftime('%Y-%m-%dT%H:%M:%fZ','now')")
+	qStr = sqliteTruePattern.ReplaceAllString(qStr, "1")
+	qStr = sqliteFalsePattern.ReplaceAllString(qStr, "0")
+	// PG empty-array literal left after stripping ::text[]
+	qStr = strings.ReplaceAll(qStr, "'{}'", "'[]'")
 	return qStr
 }
 
@@ -293,6 +317,10 @@ func assign(dest any, v any) error {
 			*d = 0
 		case *[]byte:
 			*d = nil
+		case *json.RawMessage:
+			// Treat SQL NULL metadata as empty JSON object so provider
+			// list/get scans don't fail on optional JSON TEXT columns.
+			*d = json.RawMessage("{}")
 		case *[]string:
 			*d = nil
 		case *any:
@@ -349,17 +377,41 @@ func assign(dest any, v any) error {
 		}
 		return fmt.Errorf("scan: cannot assign %T to *bool", v)
 	case *float64:
-		f, ok := v.(float64)
-		if !ok {
-			return fmt.Errorf("scan: cannot assign %T to *float64", v)
+		if f, ok := v.(float64); ok {
+			*d = f
+			return nil
 		}
-		*d = f
+		if n, ok := toInt64(v); ok {
+			*d = float64(n)
+			return nil
+		}
+		if s, ok := v.(string); ok {
+			if f, err := strconv.ParseFloat(s, 64); err == nil {
+				*d = f
+				return nil
+			}
+		}
+		return fmt.Errorf("scan: cannot assign %T to *float64", v)
 	case *[]byte:
-		b, ok := v.([]byte)
-		if !ok {
+		switch x := v.(type) {
+		case []byte:
+			*d = x
+		case string:
+			*d = []byte(x)
+		default:
 			return fmt.Errorf("scan: cannot assign %T to *[]byte", v)
 		}
-		*d = b
+	case *json.RawMessage:
+		// metadata / fallback_models columns are JSON TEXT in the lite
+		// schema; domain.Provider.Metadata is json.RawMessage ([]byte).
+		switch x := v.(type) {
+		case []byte:
+			*d = json.RawMessage(x)
+		case string:
+			*d = json.RawMessage(x)
+		default:
+			return fmt.Errorf("scan: cannot assign %T to *json.RawMessage", v)
+		}
 	case *[]string:
 		// SQLite has no native array type; repositories store string lists
 		// as JSON-encoded TEXT (e.g. "[\"a\",\"b\"]") with the COALESCE
@@ -466,6 +518,26 @@ func assign(dest any, v any) error {
 		}
 		d.Valid = false
 	default:
+		// Named string aliases (domain.ProviderStatus, domain.ModelStatus, …)
+		// fail the concrete type switch above. Reflect one level so repos can
+		// Scan into those fields without intermediate variables.
+		rv := reflect.ValueOf(dest)
+		if rv.Kind() == reflect.Ptr && !rv.IsNil() {
+			elem := rv.Elem()
+			if elem.Kind() == reflect.String && elem.CanSet() {
+				var s string
+				switch x := v.(type) {
+				case string:
+					s = x
+				case []byte:
+					s = string(x)
+				default:
+					s = fmt.Sprintf("%v", v)
+				}
+				elem.SetString(s)
+				return nil
+			}
+		}
 		return fmt.Errorf("scan: unsupported destination type %T", dest)
 	}
 	return nil

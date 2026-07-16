@@ -72,10 +72,10 @@ export function TipBox({
         )}
       />
 
-      {/* Hover glow */}
+      {/* Hover glow — quiet wash, not a floodlight */}
       <div
         className={cn(
-          "pointer-events-none absolute inset-0 bg-gradient-to-r opacity-40 group-hover:opacity-100 transition-opacity duration-700",
+          "pointer-events-none absolute inset-0 bg-gradient-to-r opacity-20 group-hover:opacity-40 transition-opacity duration-700",
           cfg.accent,
           "via-transparent to-transparent",
         )}

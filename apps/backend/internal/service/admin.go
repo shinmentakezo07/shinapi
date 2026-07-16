@@ -2,9 +2,14 @@ package service
 
 import (
 	"context"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"sync"
 	"time"
 
@@ -31,9 +36,13 @@ type AdminService struct {
 	llmCache     cache.Cache
 	llmWatcher   *watcher.Watcher
 
-	// rawKeyStore holds raw API keys in memory so providers can be
-	// hot-registered with the LLM runtime without a backend restart.
-	// Keyed by provider-key ID.
+	// keyCipher encrypts provider API keys for durable DB storage (AES-GCM).
+	// Derived from AUTH_SECRET via SetKeyEncryptionSecret.
+	keyCipher cipher.AEAD
+
+	// rawKeyStore holds decrypted API keys in memory so providers can be
+	// hot-registered without re-decrypting every request.
+	// Keyed by provider-key ID. Seeded from encrypted_key on startup.
 	rawKeyStore sync.Map
 }
 
@@ -63,6 +72,64 @@ func (s *AdminService) SetLLMRuntime(reg *llmprovider.Registry, c cache.Cache, w
 	s.llmWatcher = w
 }
 
+// SetKeyEncryptionSecret configures AES-GCM for durable provider API key storage.
+// Secret is typically AUTH_SECRET (hashed to 32 bytes).
+func (s *AdminService) SetKeyEncryptionSecret(secret string) {
+	if secret == "" {
+		return
+	}
+	key := sha256.Sum256([]byte(secret))
+	block, err := aes.NewCipher(key[:])
+	if err != nil {
+		logger.Error("provider_key_cipher_init_failed", "error", err.Error())
+		return
+	}
+	aead, err := cipher.NewGCM(block)
+	if err != nil {
+		logger.Error("provider_key_gcm_init_failed", "error", err.Error())
+		return
+	}
+	s.keyCipher = aead
+}
+
+func (s *AdminService) encryptProviderKey(plaintext string) (string, error) {
+	if plaintext == "" {
+		return "", nil
+	}
+	if s.keyCipher == nil {
+		return "", fmt.Errorf("provider key encryption is not configured")
+	}
+	nonce := make([]byte, s.keyCipher.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return "", err
+	}
+	ciphertext := s.keyCipher.Seal(nonce, nonce, []byte(plaintext), nil)
+	return base64.StdEncoding.EncodeToString(ciphertext), nil
+}
+
+func (s *AdminService) decryptProviderKey(encoded string) (string, error) {
+	if encoded == "" {
+		return "", fmt.Errorf("empty encrypted key")
+	}
+	if s.keyCipher == nil {
+		return "", fmt.Errorf("provider key encryption is not configured")
+	}
+	raw, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return "", fmt.Errorf("decode encrypted key: %w", err)
+	}
+	nonceSize := s.keyCipher.NonceSize()
+	if len(raw) < nonceSize {
+		return "", fmt.Errorf("ciphertext too short")
+	}
+	nonce, ciphertext := raw[:nonceSize], raw[nonceSize:]
+	plain, err := s.keyCipher.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		return "", fmt.Errorf("decrypt key: %w", err)
+	}
+	return string(plain), nil
+}
+
 // storeRawKey saves the raw API key in memory keyed by provider-key ID.
 func (s *AdminService) storeRawKey(keyID, rawKey string) {
 	s.rawKeyStore.Store(keyID, rawKey)
@@ -83,25 +150,36 @@ func (s *AdminService) deleteRawKey(keyID string) {
 }
 
 // getActiveRawKeyForProvider finds the first active raw API key for a provider.
+// Prefers in-memory cache; falls back to decrypting encrypted_key from DB.
 func (s *AdminService) getActiveRawKeyForProvider(ctx context.Context, providerID string) string {
 	keys, err := s.providerRepo.ListKeys(ctx, providerID)
 	if err != nil {
 		return ""
 	}
 	for _, k := range keys {
-		if k.IsActive {
-			if raw, ok := s.getRawKey(k.ID); ok {
-				return raw
-			}
+		if !k.IsActive {
+			continue
 		}
+		if raw, ok := s.getRawKey(k.ID); ok {
+			return raw
+		}
+		if k.EncryptedKey == "" {
+			continue
+		}
+		raw, err := s.decryptProviderKey(k.EncryptedKey)
+		if err != nil {
+			logger.Warn("provider_key_decrypt_failed", "key_id", k.ID, "error", err.Error())
+			continue
+		}
+		s.storeRawKey(k.ID, raw)
+		return raw
 	}
 	return ""
 }
 
 // LoadProvidersFromDB loads all active providers from the database and registers
-// them with the LLM runtime at startup. API keys are hashed in the DB and cannot
-// be recovered — providers that require keys must be re-registered via the admin
-// API (which passes the raw key through to the runtime in memory).
+// them with the LLM runtime at startup. Encrypted keys are decrypted into the
+// in-memory store so chat works after restart without re-entering keys.
 func (s *AdminService) LoadProvidersFromDB(ctx context.Context, reg *llmprovider.Registry) {
 	if reg == nil {
 		return
@@ -111,6 +189,8 @@ func (s *AdminService) LoadProvidersFromDB(ctx context.Context, reg *llmprovider
 		logger.Error("load_providers_from_db_failed", "error", err.Error())
 		return
 	}
+	loadedWithKey := 0
+	loadedWithoutKey := 0
 	for _, p := range providers {
 		if p.Status != domain.ProviderStatusActive || p.BaseURL == "" {
 			continue
@@ -118,9 +198,20 @@ func (s *AdminService) LoadProvidersFromDB(ctx context.Context, reg *llmprovider
 		if p.ProviderType == "builtin" {
 			continue // already registered at startup via initProviderRegistry
 		}
-		s.registerProviderRuntime(&p)
+		rawKey := s.getActiveRawKeyForProvider(ctx, p.ID)
+		if rawKey != "" {
+			s.registerProviderRuntime(&p, rawKey)
+			loadedWithKey++
+		} else {
+			s.registerProviderRuntime(&p)
+			loadedWithoutKey++
+		}
 	}
-	logger.Info("admin_providers_loaded", "count", len(providers))
+	logger.Info("admin_providers_loaded",
+		"count", len(providers),
+		"with_key", loadedWithKey,
+		"without_key", loadedWithoutKey,
+	)
 }
 
 // EnsureBuiltinProviders creates DB entries for known LLM-registered providers
@@ -272,18 +363,23 @@ func (s *AdminService) CreateProviderFull(ctx context.Context, p *domain.Provide
 		return err
 	}
 
-	// Store API key if provided
+	// Store API key if provided (hash for display + encrypted ciphertext for restart).
 	if apiKey != "" {
 		prefix, lastFour, hash := deriveKeyParts(apiKey)
+		enc, err := s.encryptProviderKey(apiKey)
+		if err != nil {
+			return fmt.Errorf("encrypt api key: %w", err)
+		}
 		k := &domain.ProviderKey{
-			ID:          domain.NewID(),
-			ProviderID:  p.ID,
-			Label:       "primary",
-			KeyPrefix:   prefix,
-			KeyHash:     hash,
-			KeyLastFour: lastFour,
-			IsActive:    true,
-			Strategy:    domain.KeyStrategyRoundRobin,
+			ID:           domain.NewID(),
+			ProviderID:   p.ID,
+			Label:        "primary",
+			KeyPrefix:    prefix,
+			KeyHash:      hash,
+			KeyLastFour:  lastFour,
+			EncryptedKey: enc,
+			IsActive:     true,
+			Strategy:     domain.KeyStrategyRoundRobin,
 		}
 		if err := s.providerRepo.CreateKey(ctx, k); err != nil {
 			return fmt.Errorf("store api key: %w", err)
@@ -310,6 +406,9 @@ func (s *AdminService) CreateProviderFull(ctx context.Context, p *domain.Provide
 		s.registerProviderRuntime(p, apiKey)
 	}
 
+	// Keep /v1/models and public catalog overlay in sync with new rows.
+	s.SyncModelRegistryOverlay(ctx)
+
 	return nil
 }
 
@@ -319,6 +418,13 @@ func (s *AdminService) AddProviderKeyRaw(ctx context.Context, k *domain.Provider
 	k.KeyPrefix = prefix
 	k.KeyHash = hash
 	k.KeyLastFour = lastFour
+	if rawKey != "" {
+		enc, err := s.encryptProviderKey(rawKey)
+		if err != nil {
+			return fmt.Errorf("encrypt api key: %w", err)
+		}
+		k.EncryptedKey = enc
+	}
 	if err := s.providerRepo.CreateKey(ctx, k); err != nil {
 		return err
 	}
@@ -404,7 +510,12 @@ func (s *AdminService) DeleteProvider(ctx context.Context, id string) error {
 			logger.Warn("delete_provider_key_failed", "key_id", k.ID, "error", err.Error())
 		}
 	}
-	return s.providerRepo.Delete(ctx, id)
+	if err := s.providerRepo.Delete(ctx, id); err != nil {
+		return err
+	}
+	// Cascade removes model_registry rows; refresh overlay so catalog drops them.
+	s.SyncModelRegistryOverlay(ctx)
+	return nil
 }
 
 // registerProviderRuntime creates a GenericProvider from DB config and registers it.
@@ -748,7 +859,8 @@ func (s *AdminService) ListSSOConfigs(ctx context.Context) ([]domain.SSOConfig, 
 }
 
 // deriveKeyParts splits a raw API key into a display prefix, last-four chars,
-// and a SHA-256 hash for storage. The raw key is never persisted.
+// and a SHA-256 hash for storage. The raw key is also AES-GCM encrypted into
+// provider_keys.encrypted_key for restart-safe runtime use.
 func deriveKeyParts(rawKey string) (prefix, lastFour, hash string) {
 	if rawKey == "" {
 		return "", "", ""

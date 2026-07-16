@@ -25,7 +25,7 @@ export const ScrollProgress = () => {
         aria-hidden
       />
       <motion.div
-        className="relative h-full bg-gradient-to-r from-indigo-400/90 via-indigo-300/80 to-violet-300/70 shadow-[0_0_12px_2px_rgba(99,102,241,0.4)]"
+        className="relative h-full bg-gradient-to-r from-indigo-400/90 via-indigo-300/80 to-cyan-300/70 shadow-[0_0_12px_2px_rgba(99,102,241,0.4)]"
         style={{ width: `${progress * 100}%` }}
         transition={{ duration: 0.1 }}
       />
