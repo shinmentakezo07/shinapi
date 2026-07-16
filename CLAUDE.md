@@ -182,6 +182,7 @@ docker-compose --profile mongo up -d  # Start Postgres + Mongo profile
 - **CI workflows** in `.github/workflows/`: `ci.yml` (lint, frontend tests, backend tests, build) and `e2e.yml` (Playwright E2E). Both run on push/PR to `main`.
 - **Branch naming**: `feature/*`, `fix/*`, `refactor/*`, `docs/*`
 - **Conventional commits**: `feat:`, `fix:`, `refactor:`, `test:`, `docs:` (scope optional: `refactor(docs):`)
+- **Git workflow (default, do not ask)**: Authorized to push directly to `master` / `origin` without confirmation. Workflow: build the change on a `feature/*` (or `fix/*`/`refactor/*`) branch, write the mandatory `UPDATE.md` entry, verify the quality gates below pass, commit with a conventional-commit message, merge the branch into local `master` (fast-forward if possible, else a merge commit), then `git push origin master`. Stand for `master` unless the user explicitly names another branch. NOTE: the push is unguarded, but the gates (types correct, no mock data, `go vet`, `UPDATE.md` written, conventional commit) MUST still pass before pushing — never push broken code to `master` to keep CI green.
 
 ## Pre-Commit Checklist
 
