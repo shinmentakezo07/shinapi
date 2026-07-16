@@ -6229,3 +6229,55 @@ const NAV_GROUPS = [
 - **Accessibility floor:** `prefers-reduced-motion` → router renders static (no rotating route ring, no signal pulse), focus-visible ring on `.docs-route`/provider buttons, semantic cyan used only as accent (not sole signal). Reduced-motion is detected at runtime via `matchMedia`.
 - **Bug fixes bundled:** PrevNextNav previously skipped `sdk`, `anthropic`, `function-calling`, `gateway`, `admin` between pages (5 pages were unreachable via prev/next); SearchModal's `CATEGORIES` map omitted the same five pages so results lacked a category chip. Both now reflect the layout's canonical set.
 - **Verification:** `npx tsc --noEmit -p apps/web/tsconfig.json` — clean (exit 0). Vitest/tsc in this sandbox exit 139 (SIGKILL/OOM artifact — the first `npx tsc` returned clean 0 and the dev server compiles+builds the page, which is authoritative per `next.config.ts typescript.ignoreBuildErrors`). Dev server on :3000: `/docs` → 200 rendering "One request, many providers" + router "routed to · 100+ models"; `/docs/quickstart|chat|api-reference|gateway` → 200 with PrevNextNav present; `docs-signal-rail` present in layout. Prettier `--write` applied to all 11 touched files. Could not screenshot (no Chrome/Playwright in sandbox) — verify locally: `npm run dev` → open `/docs`, click provider chips, scroll to watch the signal rail fill; toggle DevTools Rendering → "prefers-reduced-motion: reduce" for static.
+
+## 105. feat(dashboard): enhance analytics page UI — sparkline KPI rail, provider stream, request river, live feed
+
+**Session**: dashboard-analytics-ui-enhancement
+**Date**: 2026-07-16 00:00
+
+### Why
+The `/dashboard/analytics` page existed but felt generic and thin for a gateway control surface: only 4 plain KPI cards, 4 charts, and one table, with no sense of liveness, provider mix, token economics, or recent traffic. The user asked to "enhance the UI and visual, add more data showing things." This rebuilds the page as a denser mission-control readout while keeping it fully driven by the real `getSDK().getAnalytics()` data (no mocks) and matching the existing void-black shell.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/dashboard/analytics/AnalyticsClient.tsx | L1-L1080 | rewritten |
+| apps/web/app/dashboard/analytics/loading.tsx | L1-L35 | rewritten |
+
+### Before
+```tsx
+// app/dashboard/analytics/AnalyticsClient.tsx — 4 KPI cards via MetricCard, 4 charts, 1 table
+import { MetricCard } from "@/components/dashboard/MetricCard";
+// ...
+const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d">("7d");
+// 4 stats: Total Requests, Total Spent, Avg Latency, Success Rate (static "+12.5%" etc churn labels)
+<MetricCard title="Total Requests" value={summary.totalRequests.toLocaleString()} change="+12.5%" ... />
+// Charts: Daily Requests & Cost (Bar), Usage by Model (Pie), Hourly Request Pattern (Area), Latency Trend (Line)
+// One Model Performance Breakdown table with share bars
+```
+
+### After
+```tsx
+// app/dashboard/analytics/AnalyticsClient.tsx — 6 sparkline KPIs, 4 sub-summary chips, 3 charts,
+// 24h request-river heat strip, 2 charts, tokens in/out + top-models leaderboard, live recent feed, breakdown table
+// Local SparklineCard + ChartCard components (no MetricCard dependency); data still from getSDK().getAnalytics()
+// New derived metrics from real APILog fields: totalTokens, input/output tokens, p95Latency, tokensPerSec,
+// successRate/errorRate, per-model avg latency+tokens+cost (modelPerf), provider mix over time (providerSeries),
+// 24-cell heatStrip (per-hour), costDeltaPct/reqDeltaPct half-over-half deltas
+<SparklineCard title="Requests" ... spark={sparkRequests} change={reqDeltaPct...} />  // 6 cards, 2/3/6 col responsive
+// Sub-summary: Peak traffic window, P95 latency, Top model, Total tokens
+// Row 1: Request volume & spend (Bar) + Traffic by provider (stacked Area) + Usage by model (donut, center caption)
+// Request river · 24h: 24-cell heat grid via inline display:grid repeat(24, minmax(0,1fr)) (Tailwind v4 lacks grid-cols-24)
+// Row 2: Hourly request pattern (Area) + Latency trend (Line)
+// Row 3: Tokens input vs output (horizontal Bar) + Top models leaderboard (ranked bars w/ latency+cost)
+// Recent requests: LIVE feed table (status pill, model, provider, tokens, latency, cost, relative time)
+// Model performance breakdown table (refined share bars using per-model color)
+```
+
+### Notes
+- **No mock data, no backend, no SDK change.** Still calls `getSDK().getAnalytics()` and derives every metric from the returned `summary` / `recentLogs` / `modelBreakdown` / `dailyUsage`. `tests/wiring-verification.test.ts` (no-mock-data rule) unaffected.
+- **`loading.tsx` updated** to mirror the new shape (6 + 4 skeleton stat rows, 3-up chart grid, heat-strip skeleton, 2-up chart grid, 7-col + 4-col tables).
+- **Tailwind v4 gotcha:** `grid-cols-24` is not a default utility, so the heat strip uses an inline `style={{ display: "grid", gridTemplateColumns: "repeat(24, minmax(0, 1fr))" }}`.
+- **Selected design choices (vs. the AI default):** within the existing void-black shell, the signature element is the **24-hour "request river"** heat strip (pink intensity by hour) plus **inline sparklines inside each KPI card** — numbers that carry a trend, not just an arrow. Six KPIs instead of four (added Tokens/sec and Error Rate). Donut gains a center readout; provider mix is a new stacked stream; a live recent-requests feed with a pulsing LIVE marker replaces the static feel. One aesthetic risk, justified: a pink heat strip sits alongside the blue/green/emerald chart palette as the single memorable visual.
+- **Verification:** `npx tsc --noEmit -p tsconfig.json` (apps/web) → **0 errors in analytics files** (the only TS error introduced, a Recharts formatter tuple type on the tokens chart, was fixed by widening the formatter param). Remaining 10 tsc errors are pre-existing in unrelated files (SettingsForm, login, signup, ModelsExplorer, DocsCard, sdk.test) and are ignored at build per `next.config.ts typescript.ignoreBuildErrors: true`. `prettier --write` applied to both touched files. Vitest/node segfault (exit 139) in this sandbox is an environment artifact; the pure-logic `analytics.test.ts` (helper functions only, not the component) is unchanged by this edit. Verify visually: `npm run dev` → open `/dashboard/analytics`, toggle 7/30/90 Days, hover charts, watch the LIVE feed.
