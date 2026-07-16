@@ -47,12 +47,16 @@ func (s *FineTuningService) ListJobs(ctx context.Context, userID string, page, l
 	return jobs, nil
 }
 
-func (s *FineTuningService) CreateDataset(ctx context.Context, userID, filename, format string) (*domain.FineTuningDataset, *domain.AppError) {
+func (s *FineTuningService) CreateDataset(ctx context.Context, userID, filename, format, mimeType string) (*domain.FineTuningDataset, *domain.AppError) {
 	if filename == "" || format == "" {
 		return nil, domain.NewError(domain.ErrBadRequest, 400, "filename and format are required")
 	}
 	storageKey := fmt.Sprintf("datasets/%s/%s", userID, filename)
-	ds, err := s.repo.CreateDataset(ctx, userID, filename, storageKey, format, 0)
+	var mime *string
+	if mimeType != "" {
+		mime = &mimeType
+	}
+	ds, err := s.repo.CreateDataset(ctx, userID, filename, storageKey, format, 0, mime)
 	if err != nil {
 		return nil, domain.Wrap(domain.ErrInternal, 500, "failed to create dataset", err)
 	}

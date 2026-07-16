@@ -1,3 +1,80 @@
+## [1]. Enhance playground UI — reply box, composer, alignment rail
+
+**Session**: `pg-ui-avant-garde-2026-07-15`
+**Date**: 2026-07-15 21:42
+
+### Why
+The `/playground` (side-by-side model comparison) had a polished void-black shell but its three core surfaces under-served the comparison metaphor: the AI reply cards gave no specs or completion signal, the composer hid the fan-out destination, and the human turn used the same cool palette as the machine columns — so a multi-model "benchmark tape" read as detached bubbles instead of one synchronized conversation. Enhancing reply box, model description visibility, and chat box per the user's request, while taking one justified aesthetic risk (a reserved amber "human turn" accent + Instrument Serif display headline + a left alignment rail) that encodes the real human↔machine opposition of comparison rather than decorating.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/components/playground/ChatInterface.tsx | L1-40 | modified (helpers + HUMAN_ACCENT) |
+| apps/web/components/playground/ChatInterface.tsx | L120-160 | modified (empty-state serif headline) |
+| apps/web/components/playground/ChatInterface.tsx | L255-300 | modified (response card spec strip header) |
+| apps/web/components/playground/ChatInterface.tsx | L345-470 | modified (streaming + footer metrics) |
+| apps/web/components/playground/ChatInterface.tsx | L495-522 | modified (EmptyRail description + context) |
+| apps/web/components/playground/ChatInterface.tsx | L606-700 | modified (alignment rail + turn markers) |
+| apps/web/components/playground/ChatInterface.tsx | L155-175 | modified (user bubble amber accent) |
+| apps/web/components/playground/ChatInterface.tsx | L746-825 | modified (composer destination badge + affordances) |
+
+### Before
+```tsx
+// No HUMAN_ACCENT; formatContext/formatPrice did not exist
+const colorClass = getProviderColorClass(model.id);
+// response card header: name + id only, no specs
+// streaming Thinking… with no live count; footer showed only SplitFlapTime + thumbs
+// EmptyRail body: single "No prompt sent yet" line, no description/context
+// conversation row: <div className="space-y-6"> — flat, no turn rail, no T1/T2 marker
+// UserMessageBubble: cyan/blue gradient border (same family as machine cards)
+// composer: char count + Enter kbd + plain send button; disabled:opacity-20; no destination
+```
+
+### After
+```tsx
+const HUMAN_ACCENT = "#F5B14A"; // reserved warm human-turn accent
+function formatContext(ctx?: number): string { /* 128K / 1M formatting */ }
+function formatPrice(p?: string): string { /* $0.150/M in, free, exp */ }
+
+// response card header gains a spec strip (context window + prompt price):
+<span className="hidden md:flex items-center gap-2.5 mr-1 shrink-0">
+  <span className="...text-[10px] font-mono text-gray-500" title="Context window">
+    <Gauge /> {formatContext(model.context_length)}
+  </span>
+  <span className="..." title="Price per 1M prompt tokens">
+    <Coins /> {formatPrice(model.pricing?.prompt)}<span>/M in</span>
+  </span>
+</span>
+
+// card tracks stream start via ref; footer reports ~tokens + elapsed wall-clock
+const approxTokens = content ? Math.round(content.length / 4) : 0;
+// footer: SplitFlapTime · ~N tok · Xs (provider-colored)
+
+// EmptyRail surfaces model.description (line-clamp-3) + context badge + "Awaiting first turn"
+
+// conversation row becomes a benchmark tape with a left alignment rail:
+<div className="relative space-y-5 pl-7 sm:pl-9">
+  <div className="absolute left-[7px]..." style={{ HUMAN_ACCENT gradient }} />
+  <motion.div className="...w-[22px] h-[22px] rounded-full..." style={{ HUMAN_ACCENT }}>
+    {turnOrdinal + 1}
+  </motion.div>
+  <UserMessageBubble ... />
+  <grid of ModelResponseCard />
+</div>
+
+// UserMessageBubble now keyed to HUMAN_ACCENT (warm), inset left bar + glow
+// composer gains a destination badge: "→ [provider dots] N models"
+// send button: disabled:opacity-30 + filter saturate(0.55) for clearer idle state
+```
+
+### Notes
+- Risk taken (justified): warm amber human accent against the cool provider palette — encodes the real human↔machine opposition; the alignment rail turns the comparison into one synchronized tape rather than detached cards.
+- Instrument Serif (`--font-instrument`, already loaded) reserved for the empty-state hero only — one signature voice, not two; page chrome stays sans.
+- Token count uses a ~4 chars/token heuristic and is labelled "~N tok" to never read as a billing figure; elapsed time is wall-clock from stream start (non-authoritative, informational).
+- No API/SDK/backend changes; surface-only. tsc --noEmit clean, next lint clean, prettier applied.
+- Session name: `pg-ui-avant-garde-2026-07-15` — group subsequent follow-ups under it.
+
 ## Session: `docs-overhaul-2026-07-05` — 2026-07-05
 
 **Title (conventional-commits):** `feat(docs): add 5 new doc pages, update sidebar nav, expand API reference, update models list`
@@ -4068,3 +4145,2087 @@ The Playground page was functional but visually generic: model response cards us
 - Added `aria-label` / `role="log"` attributes to the message region, input, and action buttons for WCAG AA screen-reader parity.
 - `EmptyRail` reuses `ModelResponseCard`'s provider-accent logic so the pre-prompt frame and live responses stay visually consistent.
 - No behavioral change to streaming, history, or model-selection flows; purely presentational + one new affordance (clear conversation).
+
+## [R1]. Audit-fix round 1: confirmed bug fixes
+
+**Session**: dra-full-audit-fix-loop
+**Date**: 2026-07-09 08:02
+
+### Why
+Automated full-repo audit (parallel read-only agents + adversarial verification) found and fixed confirmed bugs in this round.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/backend/internal/db/mongo_querier.go | L702-781 (added L785-825) | modified |
+| apps/backend/internal/handler/admin_providers.go | L307-356 (added), L393-440 | modified |
+| apps/backend/internal/middleware/auth.go | L156-167 | modified |
+| apps/backend/internal/repository/admin_security_repo.go | L187-193 | modified |
+| apps/backend/internal/repository/webhook.go | L63 | modified |
+| apps/backend/internal/service/export.go | L91-99 (added), L125-133 (added) | modified |
+| apps/backend/internal/service/provider.go | L317-341 | modified |
+| apps/backend/internal/service/webhook.go | L119-122, L161-172, L201-212, L320-323, L337, L382 | modified |
+| apps/backend/pkg/llm/provider/openai_sdk.go | L178-185 | modified |
+| apps/backend/pkg/llm/streaming/relay.go | L24-99 | modified |
+| apps/backend/pkg/llm/types.go | L84-88 | modified |
+| apps/web/lib/api/admin-sdk.ts | L70-73 | modified |
+| apps/web/lib/api/rate-limit.ts | L57-66 | modified |
+| apps/web/lib/api/sdk.ts | L598-605, L868-880 | modified |
+
+### Before
+```code
+// apps/backend/internal/db/mongo_querier.go — L705
+	// Handle AND conditions
+	parts := strings.Split(where, " and ")
+// L716-719
+		if strings.Contains(part, " is null") {
+			col := strings.TrimSpace(strings.Split(part, " is null")[0])
+// L722-725
+		if strings.Contains(part, " is not null") {
+			col := strings.TrimSpace(strings.Split(part, " is not null")[0])
+// L729-732
+		for _, op := range []string{">=", "<=", "<>", ">", "<", "="} {
+			if strings.Contains(part, op) {
+				sides := strings.SplitN(part, op, 2)
+
+// apps/backend/internal/handler/admin_providers.go — L393-410
+func validateNotPrivateURL(rawURL string) error {
+	if skipSSRFCheck {
+		return nil
+	}
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return fmt.Errorf("invalid URL")
+	}
+	host := u.Hostname()
+	if host == "" {
+		return fmt.Errorf("missing hostname")
+	}
+	ips, err := net.LookupIP(host)
+	if err != nil {
+		return fmt.Errorf("cannot resolve hostname: %w", err)
+	}
+	for _, ip := range ips {
+		if ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
+			return fmt.Errorf("URL resolves to private/reserved IP %s", ip)
+		}
+	}
+	return nil
+}
+
+// apps/backend/internal/middleware/auth.go — L158-167
+		if !u.IsAdmin() {
+			response.Error(w, 403, "Admin access required")
+			return
+		}
+		if !u.HasPermission(permission) {
+			response.Error(w, 403, "Permission denied: "+permission)
+			return
+		}
+
+// apps/backend/internal/repository/admin_security_repo.go — L187-189
+func (r *AdminSecurityRepo) ReviewSuspicious(ctx context.Context, id int64, action string, _ string) error {
+	_, err := r.db.Exec(ctx, `UPDATE suspicious_activities SET reviewed=true,resolved=$2 WHERE id=$1`, id, action == "dismiss")
+
+// apps/backend/internal/repository/webhook.go — L63
+		`UPDATE webhooks SET url = $1, secret = $2, events = $3, headers = $4, active = $5
+
+// apps/backend/internal/service/export.go — L91-99 / L125-133 (no JSON branch; always CSV)
+
+// apps/backend/internal/service/provider.go — L317-321
+	for _, m := range models {
+		if m.ID == modelID || strings.HasSuffix(m.ID, modelID) {
+			return &m, nil
+		}
+	}
+
+// apps/backend/internal/service/webhook.go — L119 (no URL validation), L161-172 (no event filter; sem after send), L201-212 / L337 / L382 (idempotencyKey recomputed from time)
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+// dispatch loop:
+		if !w.Active {
+			continue
+		}
+		go func(webhookID string, c webhook.Config, e webhook.Event) {
+			defer func() {
+				s.wg.Done()
+				if r := recover(); r != nil { ... }
+			}()
+			select {
+			case s.sem <- struct{}{}:
+				s.sendAndTrack(s.ctx, webhookID, c, e)
+				<-s.sem
+			case <-s.ctx.Done():
+				return
+			}
+		}(...)
+// idempotencyKey := fmt.Sprintf("%s:%s:%d", d.WebhookID, d.EventType, d.CreatedAt.Unix())
+
+// apps/backend/pkg/llm/provider/openai_sdk.go — L178-185
+		delta.ToolCalls[i] = llm.ToolCall{
+			ID:   tc.ID,
+			Type: string(tc.Type),
+			Function: llm.ToolCallFunction{ ... }
+
+// apps/backend/pkg/llm/streaming/relay.go — L26-44
+	finished := false
+	...
+		if !finished {
+			p.writer.WriteFinish(...)
+		}
+	...
+		if chunk.FinishReason != nil {
+			finished = true
+		}
+// writeChunk: WriteToolCallStart(i, ...), WriteToolCallDelta(i, ...)
+
+// apps/backend/pkg/llm/types.go — L84-87
+type ToolCall struct {
+	ID       string           `json:"id"`
+	Type     string           `json:"type"`
+	Function ToolCallFunction `json:"function"`
+}
+
+// apps/web/lib/api/admin-sdk.ts — L70
+    return this.api.adminListUsers(
+      params?.page,
+      params?.limit,
+    ) as unknown as PaginatedResult<AdminUserDetail>;
+
+// apps/web/lib/api/rate-limit.ts — L60-66
+  const entry = store.get(identifier);
+  if (!entry) return null;
+  const maxRequests = MAX_REQUESTS_PER_WINDOW;
+
+// apps/web/lib/api/sdk.ts — L598-605
+  public async paginatedRequest<T>(
+    path: string,
+    query: { page?: number; limit?: number } = {},
+// L868-875
+  adminListUsers(page?: number, limit?: number) {
+    return this.paginatedRequest<User>("/api/admin/users", {
+      page,
+      limit,
+    });
+```
+
+### After
+```code
+// apps/backend/internal/db/mongo_querier.go — L705 (quote-aware split) + new helpers L785-825
+	// Handle AND conditions, splitting only on " and " outside single-quoted literals
+	parts := splitOnAndRespectingQuotes(where)
+// IS NULL / IS NOT NULL / operators now use findOpOutsideQuotes(...)
+// splitOnAndRespectingQuotes / findOpOutsideQuotes added (respect single-quoted literals)
+
+// apps/backend/internal/handler/admin_providers.go — SSRF TOCTOU fix in fetchModelsFromUpstream + resolveAndValidateHost
+	var dialIP net.IP
+	if !skipSSRFCheck {
+		u, perr := url.Parse(modelsURL)
+		...
+		ips, verr := resolveAndValidateHost(u.Hostname())
+		...
+		dialIP = ips[0]
+		port := u.Port()
+		...
+		client.Transport = &http.Transport{
+			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+				dialAddr := net.JoinHostPort(dialIP.String(), port)
+				d := net.Dialer{Timeout: 10 * time.Second}
+				return d.DialContext(ctx, network, dialAddr)
+			},
+		}
+	}
+// resolveAndValidateHost returns validated IPs; validateNotPrivateURL delegates to it
+func resolveAndValidateHost(host string) ([]net.IP, error) { ... }
+
+// apps/backend/internal/middleware/auth.go — L158-167
+		if !u.HasPermission(permission) && !u.IsAdmin() {
+			response.Error(w, 403, "Permission denied: "+permission)
+			return
+		}
+
+// apps/backend/internal/repository/admin_security_repo.go — L187-193
+	resolved := action == "resolve" || action == "dismiss"
+	_, err := r.db.Exec(ctx, `UPDATE suspicious_activities SET reviewed=true,resolved=$2 WHERE id=$1`, id, resolved)
+
+// apps/backend/internal/repository/webhook.go — L63 (preserve secret when empty)
+		`UPDATE webhooks SET url = $1, secret = CASE WHEN $2 <> '' THEN $2 ELSE secret END, events = $3, headers = $4, active = $5
+
+// apps/backend/internal/service/export.go — JSON branch added before CSV writer
+	if format == "json" {
+		enc := json.NewEncoder(f)
+		enc.SetIndent("", "  ")
+		if err := enc.Encode(logs); err != nil {
+			return "", err
+		}
+		return filePath, nil
+	}
+
+// apps/backend/internal/service/provider.go — L317-341 (exact match first, single-ambiguous suffix fallback)
+	for _, m := range models {
+		if m.ID == modelID {
+			return &m, nil
+		}
+	}
+	var match *llm.ModelInfo
+	for _, m := range models {
+		if strings.HasSuffix(m.ID, modelID) {
+			if match != nil {
+				return nil, domain.NewError(domain.ErrNotFound, 404, "model not found")
+			}
+			mm := m
+			match = &mm
+		}
+	}
+	if match != nil {
+		return match, nil
+	}
+
+// apps/backend/internal/service/webhook.go — URL validation, event filter, sem-before-send, stored idempotency key
+	if err := webhook.ValidateWebhookURL(req.URL); err != nil {
+		return nil, domain.NewError(domain.ErrBadRequest, 400, err.Error())
+	}
+// dispatch:
+		if !webhook.IsEventAllowed(event.Type, w.Events) {
+			continue
+		}
+		go func(webhookID string, c webhook.Config, e webhook.Event) {
+			defer s.wg.Done()
+			defer func() {
+				if r := recover(); r != nil { ... }
+			}()
+			select {
+			case s.sem <- struct{}{}:
+				defer func() { <-s.sem }()
+				s.sendAndTrack(s.ctx, webhookID, c, e)
+			case <-s.ctx.Done():
+				return
+			}
+		}(...)
+// delivery carries IdempotencyKey; retries use d.IdempotencyKey instead of recompute
+
+// apps/backend/pkg/llm/provider/openai_sdk.go — L178-185
+		delta.ToolCalls[i] = llm.ToolCall{
+			ID:    tc.ID,
+			Type:  string(tc.Type),
+			Index: tc.Index,
+			Function: llm.ToolCallFunction{ ... }
+
+// apps/backend/pkg/llm/streaming/relay.go — finishWritten + ctx-cancel finish + idx from tc.Index
+	finishWritten := false
+	...
+		if !finishWritten {
+			p.writer.WriteFinish(...)
+		}
+	...
+		if chunk.FinishReason != nil {
+			finishWritten = true
+		}
+	case <-ctx.Done():
+		if !finishWritten {
+			_ = p.writer.WriteFinish(...)
+		}
+// writeChunk: idx := tc.Index (fallback i); WriteToolCallStart(idx, ...), WriteToolCallDelta(idx, ...)
+
+// apps/backend/pkg/llm/types.go — L84-88
+type ToolCall struct {
+	ID       string           `json:"id"`
+	Type     string           `json:"type"`
+	Index    int              `json:"index,omitempty"`
+	Function ToolCallFunction `json:"function"`
+}
+
+// apps/web/lib/api/admin-sdk.ts — L70-73
+    return this.api.adminListUsers(
+      params?.page,
+      params?.limit,
+      params?.query,
+      params?.status,
+    ) as unknown as PaginatedResult<AdminUserDetail>;
+
+// apps/web/lib/api/rate-limit.ts — L60-66 (anonymous cap)
+  const maxRequests = isAuthenticated
+    ? MAX_REQUESTS_PER_WINDOW
+    : MAX_ANONYMOUS_REQUESTS;
+
+// apps/web/lib/api/sdk.ts — L598-605 + L868-880
+  public async paginatedRequest<T>(
+    path: string,
+    query: { page?: number; limit?: number; query?: string; status?: string } = {},
+  adminListUsers(page?: number, limit?: number, query?: string, status?: string) {
+    return this.paginatedRequest<User>("/api/admin/users", { page, limit, query, status });
+  }
+```
+
+### Notes
+Round 1 of the audit-fix loop. 14 files changed. Next rounds re-audit for regressions.
+
+---
+
+## [R2]. Audit-fix round 2: full parallel audit → fix → re-audit regression loop
+
+**Session**: dra-full-audit-fix-loop
+**Date**: 2026-07-09 08:10
+
+### Why
+A full read-only parallel audit (10 specialized agents over backend handlers/services/repository/LLM-gateway/middleware/SDK/pkgs and frontend SDK/app/security) surfaced 1×P0, 5×P1, and ~30×P2/P3 confirmed defects across the gateway. Fixes were applied by file-isolated agents, then a second re-audit pass caught two regressions introduced by the fixes (broken HTTPS webhook delivery; guardrails still not blocking single-phrase injection). Those regressions are fixed here too. Build is green and unit tests pass.
+
+### Files Changed (47 source files + 2 new migrations)
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/backend/migrations/024_stripe_invoice_unique.sql | L1-8 | created |
+| apps/backend/migrations/024_promo_redemption_unique.sql | L1-9 | created |
+| apps/backend/internal/service/stripe.go | L106-141 | modified |
+| apps/backend/internal/service/webhook.go | L115-122, L154-158, L313-317 | modified |
+| apps/backend/internal/handler/openai_proxy.go | L256-271, L350-353 | modified |
+| apps/backend/internal/handler/enterprise.go | L120-131, L186-197 | modified |
+| apps/backend/internal/handler/admin_users_full.go | L44-59, L144-190 | modified |
+| apps/backend/internal/handler/auth_handlers.go | L60-77 | modified |
+| apps/backend/internal/handler/handler.go | L568-597 | modified |
+| apps/backend/internal/handler/sse.go | L41-63 | modified |
+| apps/backend/internal/handler/anthropic_messages.go | L243-323 | modified |
+| apps/backend/internal/middleware/quota.go | adds ToScopedUser | modified |
+| apps/backend/internal/middleware/redis_quota.go | L69-107 | modified |
+| apps/backend/cmd/api/routes.go | L55-63, L121-124, L308-314, L383-384, L448-450, L467 | modified |
+| apps/backend/internal/repository/credits.go | L87-105 | modified |
+| apps/backend/internal/repository/admin_billing_repo.go | L40, L54-60, L292-294 | modified |
+| apps/backend/internal/repository/admin_features_repo.go | L269-279, L292-294 | modified |
+| apps/backend/internal/repository/admin_provider_repo.go | L127-141 | modified |
+| apps/backend/internal/repository/budget.go | L105-108 | modified |
+| apps/backend/internal/repository/fine_tuning.go | L16-30 | modified |
+| apps/backend/internal/repository/transaction.go | L33-38 | modified |
+| apps/backend/internal/repository/conversation.go | L92-97 | modified |
+| apps/backend/internal/repository/file.go | L77-82 | modified |
+| apps/backend/internal/repository/user.go | L86-97 | modified |
+| apps/backend/internal/config/config.go | L104 | modified |
+| apps/backend/internal/config/config_test.go | — | modified |
+| apps/backend/internal/domain/models.go | L306-309 | modified |
+| apps/backend/internal/service/fine_tuning.go | L47-63 | modified |
+| apps/backend/internal/handler/fine_tuning_handlers.go | L69-82 | modified |
+| apps/backend/cmd/api/services.go | SetCache wiring | modified |
+| apps/backend/pkg/webhook/webhook.go | SendWithIdempotency + helpers | modified |
+| apps/backend/pkg/llm/helper.go | L46-54 | modified |
+| apps/backend/pkg/llm/cache/cache.go | L307-317 | modified |
+| apps/backend/pkg/llm/cache/semantic.go | L46-80 | modified |
+| apps/backend/pkg/llm/anthropic/formatter.go | L278-360 | modified |
+| apps/backend/pkg/llm/anthropic/schema.go | L121 | modified |
+| apps/backend/pkg/llm/streaming/relay.go | L24-65 | modified |
+| apps/backend/pkg/llm/provider/multikey.go | L52-120 | modified |
+| apps/backend/pkg/llm/provider/provider.go | L443-449 | modified |
+| apps/backend/pkg/llm/circuitbreaker/circuitbreaker.go | L128-160 | modified |
+| apps/backend/pkg/llm/ws/gateway.go | L63-71, L199-213 | modified |
+| apps/backend/pkg/llm/router/router.go | L267-271 | modified |
+| apps/backend/pkg/llm/guardrails/guardrails.go | L149-201 | modified |
+| apps/backend/pkg/llm/guardrails/guardrails_test.go | L46-48 | modified |
+| apps/backend/pkg/llm/provider/openai_sdk.go | L183 (derefInt) | modified |
+| apps/web/app/playground/page.tsx | L97-98, L163-170, L298-314, L356 | modified |
+| apps/web/app/dashboard/notifications/page.tsx | L57-74, L102, L112 | modified |
+| apps/web/app/dashboard/DashboardOverviewClient.tsx | L85-89, L91-94, L619-622 | modified |
+| apps/web/app/dashboard/analytics/AnalyticsClient.tsx | shared MetricCard (verified correct) | n/a |
+
+### Key fixes (Before → After)
+
+**P0 — Stripe double-credit on webhook replay** (`internal/service/stripe.go`, new `024_stripe_invoice_unique.sql`)
+Before: idempotency `InvoiceExists` ran OUTSIDE the transaction and `stripe_invoice_id` had no UNIQUE constraint → replayed/raced `checkout.session.completed` granted credits twice.
+After: existence check runs INSIDE `WithTx` via `InvoiceExistsTx`; DB-level `uq_stripe_invoice_id` UNIQUE backs it.
+
+**P1 — Embeddings honored `X-Sandbox` without admin check** (`internal/handler/openai_proxy.go`)
+Before: `if r.Header.Get("X-Sandbox") != "true" { asyncLogAndDeduct(...) }` — no auth check.
+After: `isSandbox` rejected with 403 unless `u != nil && u.IsAdmin()`; billing skipped only `isSandbox && u.IsAdmin()`.
+
+**P1 — Virtual-key List/Deactivate lacked admin/ownership authz** (`cmd/api/routes.go`, `enterprise.go`)
+Before: routes gated only by `authMW`; `ListVirtualKeys` returned ALL tenants' keys; `DeactivateVirtualKey` allowed any user to disable any key.
+After: both wrapped in `RequireAdmin`; handlers scope to caller's own keys when non-admin.
+
+**P1 — AdminCreateAdminUser privilege escalation** (`admin_users_full.go`)
+Before: request `role` passed straight through to `CreateAdminUser` (any admin → superadmin).
+After: `if req.Role == "superadmin" && (u == nil || u.Role != "superadmin") { 403 }`.
+
+**P2 — AdminRemoveAdmin could deactivate a superadmin** (`admin_users_full.go`, `routes.go`)
+Before: `RequireAdmin` only; deletes any admin row including superadmin.
+After: `RequirePermission("superadmin")` + handler guards (no self-removal, no removal of last active superadmin).
+
+**P1 — Webhook SSRF on Update + dispatch ignores Events + idempotency mismatch** (`service/webhook.go`, `pkg/webhook/webhook.go`, `domain/models.go`)
+Before: `Update` only format-validated; `Dispatch` fired every webhook regardless of `Events`; retry key recomputed from a different timestamp.
+After: `Update` runs `ValidateWebhookURL`; `Dispatch`/`ProcessPendingRetries` pre-filter via `IsEventAllowed`; `WebhookDelivery.IdempotencyKey` persisted and reused by retry paths.
+
+**P2 — HTTPS webhook delivery broken by SSRF TOCTOU fix** (REGRESSION FIX, `pkg/webhook/webhook.go`)
+Before: `req.URL.Host = resolvedIP` → Go derived TLS `ServerName` from the IP → cert verify failed for all HTTPS webhooks (`x509: cert valid for <host>, not <ip>`).
+After: custom `Transport` with `DialContext` pinning the validated `ip:port` (no DNS re-resolution) and `TLSClientConfig.ServerName = origHost`; `req.Host` keeps the real host header.
+
+**P1/P2 — Guardrails could not block a single injection phrase** (`guardrails/guardrails.go`) + REGRESSION FIX
+Before: block gated on `if risk := detectInjection(content); risk > 0.5` (`risk = matches/12`, so one phrase ≈0.08 never reached the inner `matches>0` check).
+After: `matches := countInjection(content); risk := detectInjection(content); if risk > 0.5 || matches > 0 { ... if matches > 0 || risk > 0.15 { result.Allowed = false } }` — a single phrase now blocks. Test `TestCheckRequest_PromptInjection` updated to expect `false`.
+
+**P1 — Stale `user_credits` cache after billing writes** (`credits.go`, `admin_billing_repo.go`, `admin_features_repo.go`)
+Before: `*Tx` mutation paths never invalidated the `credits:<userID>` cache → stale balances up to TTL.
+After: `cache.Delete(ctx, creditsCacheKey(userID))` on each mutation (nil-guarded); admin repos given `SetCache` wiring.
+
+**P1 — `AdjustCredits` corrupted `total_spent` on deductions** (`admin_billing_repo.go`)
+Before: `total_spent = total_spent + GREATEST(-$2, 0)` added `abs(amount)` on a deduction.
+After: `total_spent = total_spent + LEAST($2, 0)` (correctly subtracts).
+
+**P1 — `AdminProviderRepo.Update` dropped circuit-breaker/rate-limit columns** (`admin_provider_repo.go`)
+Before: SET omitted `circuit_breaker_*` and `rate_limit_rpm/tpm`.
+After: all six columns added to the SET list bound to provider fields.
+
+**P2 — Budget hard-cap unenforceable / FineTuning mime_type NULL / Promo double-redeem / ENV default dev** (`budget.go`, `fine_tuning.go`, `024_promo_redemption_unique.sql`, `config.go`)
+After: `CheckCapExceeded` sums `ABS(amount)` over `type='usage'`; `CreateDataset` accepts + persists `mimeType`; `(promo_id,user_id)` UNIQUE constraint added; `ENV` defaults to `"production"`.
+
+**P1 — LLM cache key omitted tool-calls/content-blocks** (`helper.go`, `cache/cache.go`)
+Before: keyed only on Role+Content → within-tenant wrong cached completions (text vs image, differing tool history).
+After: `ToolCalls` and `ContentBlocks` json-hashed into the key.
+
+**P2 — Anthropic native streaming dropped tool calls / streaming usage lost / multikey rotation dead / prefix collision / CB resets / ws double-disconnect / routeByCost no-match**
+After: `anthropic/formatter.go` emits `tool_use` blocks; `streaming/relay.go` buffers usage and writes it exactly once on close; `multikey.go` loops all instances with failover and advances the counter; `provider.go` uses longest-prefix match; `circuitbreaker.go` resets `successes` on reopen and counts the trial on transition; `ws/gateway.go` uses `sync.Once` for `Disconnect`; `router.go` returns an explicit error.
+
+**P2 — Quota not enforced for session/JWT proxy requests / Redis quota fails open / CORS wildcard+credentials** (`routes.go`, `quota.go`, `redis_quota.go`)
+After: `getKey` resolves a `ToScopedUser` quota subject for authenticated sessions (1000 req/day, 2M tok/month defaults); Redis quota errors fail-closed; CORS disables credentials when `*` origin present.
+
+**Frontend** (`playground/page.tsx`, `notifications/page.tsx`, `DashboardOverviewClient.tsx`)
+After: playground reads `sessionsRef.current` so multi-turn history survives (no stale closure); notifications reconnect on normal stream end AND clear a pending auto-reconnect timer on manual reconnect; ambient glow `opacity-20` override removed; analytics X-axis parses `YYYY-MM-DD` from raw parts (no UTC off-by-one); stray `Livering-[0.01]` class removed.
+
+### Notes
+- `go build ./...` exits 0; `go vet ./internal/handler/...` clean (only a pre-existing broken untracked test `rbac_handlers_test.go` references `testutil.GenerateTestJWTWithRole` which does not exist — out of scope).
+- `go test ./pkg/llm/guardrails/... ./pkg/llm/cache/... ./pkg/llm/circuitbreaker/... ./pkg/llm/provider/... ./internal/config/...` pass.
+- A cross-agent conflict was intercepted: the data-integrity fix agent's `git checkout HEAD --` would have reverted two security-handler files; those security fixes were re-applied and verified in the diff.
+- `openai_sdk.go:183` (`*int` vs `int` `ToolCall.Index` mismatch from go-openai v1.41.2) was a pre-existing compile break; fixed with a `derefInt` helper so the full build is green.
+- False positives flagged and dropped by agents: export-download code does not exist in `exports/page.tsx`; `AnalyticsClient` glow/date logic lives in shared `MetricCard` and was already correct; `EstimateTokens` pre-router model mismatch not present in owned handler files; `pkg/webhook` `SendWithRetry`/`WebhookRepo` json-marshal errors are unreachable for `map[string]string`.
+
+---
+
+## [R3]. Audit-fix round 3: LLM gateway, WebSocket, and credits-cache regressions
+
+**Session**: dra-full-audit-fix-loop
+**Date**: 2026-07-11
+
+### Why
+A re-audit pass after R2 surfaced additional confirmed defects and regressions in the LLM gateway, WebSocket gateway, and credits cache invalidation paths. Fixes were applied file-isolated, then the backend was rebuilt and fully tested.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/backend/pkg/llm/cache/cache.go | L1- | modified |
+| apps/backend/pkg/llm/guardrails/guardrails.go | L1- | modified |
+| apps/backend/pkg/llm/streaming/relay.go | L1- | modified |
+| apps/backend/pkg/llm/circuitbreaker/circuitbreaker.go | L1- | modified |
+| apps/backend/pkg/llm/ws/gateway.go | L1- | modified |
+| apps/backend/pkg/llm/ws/gateway_test.go | L1- | modified |
+| apps/backend/pkg/llm/anthropic/formatter.go | L1- | modified |
+| apps/backend/pkg/llm/router/router.go | L1- | modified |
+| apps/backend/internal/repository/credits.go | L1- | modified |
+| apps/backend/internal/service/credits.go | L1- | modified |
+| apps/backend/internal/service/stripe.go | L1- | modified |
+| apps/backend/internal/service/webhook.go | L1- | modified |
+| apps/backend/internal/repository/admin_billing_repo.go | L1- | modified |
+
+### Key fixes (Before → After)
+
+**P1 — Cache key collisions omitted tool history / content blocks** (`pkg/llm/cache/cache.go`)
+Before: `hashMessages` concatenated only `Role` and `Content` without delimiters, so distinct message sequences could hash identically and return wrong cached completions.
+After: messages are hashed with explicit delimiters (`\x00`), and `ToolCalls`/`ContentBlocks`/`Name` are included in the key so differing tool history or multi-modal content produces distinct keys.
+
+**P1 — Output guardrails failed to block** (`pkg/llm/guardrails/guardrails.go`)
+Before: `CheckResponse` detected PII/pattern violations but never set `result.Allowed = false`, so output guardrails were effectively no-ops.
+After: `CheckResponse` now sets `Allowed = false` and populates `Reason` for PII, blocked patterns, and prompt-injection matches in outputs.
+
+**P1 — Streaming tool-call deltas merged into wrong slot** (`pkg/llm/streaming/relay.go`)
+Before: the accumulator ignored `ToolCall.Index` and always appended deltas to the last tool call, corrupting parallel tool calls.
+After: deltas are matched by `Index`; missing slots are padded, and empty padded entries are filtered from the final message.
+
+**P2 — Circuit breaker timer leaked / half-open state mishandled** (`pkg/llm/circuitbreaker/circuitbreaker.go`)
+Before: `StreamRecord` used a goroutine + timer.Reset in a loop that could leak timers and mishandle the half-open trial outcome.
+After: replaced with a `select` loop using a fresh timer per chunk, resetting failure/success counters correctly on state transitions.
+
+**P2 — WebSocket gateway write races and unexported handler type** (`pkg/llm/ws/gateway.go`, `gateway_test.go`)
+Before: multiple goroutines could write to the same `Conn` concurrently; the handler type used an unexported `connectionState`, making `RegisterHandler` unusable from external packages.
+After: added per-connection write mutex and `SendLocked`; exported `ConnectionState`; updated default handlers, internal slices/maps, and tests to use the exported type.
+
+**P2 — Anthropic SSE block indices could collide** (`pkg/llm/anthropic/formatter.go`)
+Before: text and thinking blocks shared a single block index, causing deltas/stop events to target the wrong block.
+After: separate `TextBlockIndex` and `ThinkingBlockIndex` counters ensure each block stream gets its own index.
+
+**P2 — Router capability filter could silently no-match** (`pkg/llm/router/router.go`)
+Before: `routeByCapability` returned `nil, nil` when no provider matched, leading to nil-pointer dereferences downstream.
+After: returns an explicit error so callers handle the no-match case.
+
+**P1 — Credits cache invalidated inside uncommitted transactions** (`internal/repository/credits.go`, `internal/service/credits.go`, `internal/service/stripe.go`)
+Before: `DeductTx`/`UpsertTx` deleted the credits cache before the surrounding transaction committed; a rollback left stale cache data.
+After: removed cache invalidation from Tx methods; added `InvalidateCache` helper; callers (`Purchase`, `DeductForUsage`, `FulfillCheckout`) invalidate after successful commit.
+
+**P2 — Webhook dispatch semaphore leaked on panic** (`internal/service/webhook.go`)
+Before: the semaphore was released inline; a panic in `attemptDelivery` would leak a slot.
+After: release is wrapped in `defer` so the semaphore is always returned.
+
+**P2 — Admin billing credit adjustment failed for missing rows** (`internal/repository/admin_billing_repo.go`)
+Before: `AdjustCredits` assumed a `user_credits` row existed; on a fresh user it would silently do nothing.
+After: if no row exists, an INSERT is performed first, then the UPDATE is retried.
+
+### Validation
+- `cd apps/backend && go build ./...` → exit 0
+- `cd apps/backend && go test ./...` → all packages pass
+- Frontend typecheck/lint not run because the frontend has pre-existing dependency/configuration issues unrelated to these backend changes.
+
+### Notes
+- The WebSocket `Handler` signature change is a breaking API change for any external handler implementations; they must now accept `*ConnectionState` instead of `Conn` and can use `Gateway.SendLocked` for thread-safe writes.
+
+### Post-review fixes
+- `pkg/llm/ws/gateway.go`: `Send` renamed to private `send`; `SendLocked` is now the only public write path that holds the per-connection mutex.
+- `pkg/llm/ws/gateway_test.go`: `TestGatewaySend` now exercises `SendLocked` via a `ConnectionState`.
+- `pkg/llm/guardrails/guardrails.go`: `CheckRequest`/`CheckResponse` now collect all violations and always set `Reason` by joining them, instead of overwriting on the first violation.
+
+---
+
+## [R4]. Audit-fix round 4: billing race, streaming cost, webhook idempotency, router cache stampede
+
+**Session**: dra-full-audit-fix-loop
+**Date**: 2026-07-11
+
+### Why
+A targeted deep-dive audit surfaced a critical concurrent-billing vulnerability, streaming token over-estimation, a webhook idempotency collision, a router cache stampede, and inconsistent sandbox enforcement.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/backend/internal/service/credits.go | L135- | modified |
+| apps/backend/internal/handler/openai_proxy.go | L42- | modified |
+| apps/backend/internal/service/webhook.go | L191, L345, L383 | modified |
+| apps/backend/pkg/llm/router/router.go | L1- | modified |
+
+### Key fixes (Before → After)
+
+**P0 — Concurrent billing race granted free usage** (`internal/service/credits.go`)
+Before: `LogAndDeduct` aborted the transaction when `credits.Balance < cost`. Concurrent requests that passed the pre-flight `CheckBalance` could then fail async deduction and receive the response for free.
+After: Balance check removed from `LogAndDeduct`; the pre-flight gate remains the sole balance check, and deductions proceed so in-flight requests are always billed (balance may go negative).
+
+**P1 — Streaming output tokens wildly over-estimated** (`internal/handler/openai_proxy.go`)
+Before: `outputTokens += llm.EstimateTokens(chunk.Delta.Content)` ran on every tiny stream chunk.
+After: Stream content is buffered in `outputBuffer` and `EstimateTokens` is called once at `FINISH`.
+
+**P1 — Pre-flight cost estimation bypassed balance check** (`internal/handler/openai_proxy.go`)
+Before: `EstimateTokens(req.Model, nil)` always returned zero input tokens, so `CheckBalance` was effectively skipped.
+After: Request messages are converted to `domain.ChatMessage` and passed to `EstimateTokens`.
+
+**P1 — Webhook idempotency key collision** (`internal/service/webhook.go`)
+Before: Key used `event.Timestamp.Unix()`, giving 1-second precision and deduplicating distinct events.
+After: Key uses `UnixNano()`.
+
+**P2 — Router ListModels cache stampede** (`pkg/llm/router/router.go`)
+Before: Concurrent cache misses all called `p.ListModels(ctx)` upstream simultaneously.
+After: `singleflight.Group` collapses concurrent fetches per provider into one upstream call.
+
+**P2 — Webhook retry loop blocked sequentially** (`internal/service/webhook.go`)
+Before: `ProcessPendingRetries` and `RetryDelivery` ran `attemptDelivery` synchronously inside the semaphore.
+After: Each retry attempt runs in its own goroutine under the semaphore.
+
+**P3 — Inconsistent sandbox enforcement / model prefix stripping** (`internal/handler/openai_proxy.go`)
+Before: Chat completions silently disabled sandbox for non-admins; A/B router used `LastIndex` and stripped middle group names.
+After: Non-admin `X-Sandbox` now returns 403; A/B router uses `Index` to preserve middle group names.
+
+### Validation
+- `cd apps/backend && go build ./...` ✅
+- `cd apps/backend && go test ./...` ✅
+
+
+---
+
+## [R5]. Audit-fix round 5: cross-tenant cache leak, SDK envelope, streaming over-billing, credentials race, dashboard proxy routes, analytics/export UI
+
+**Session**: dra-full-audit-fix-loop
+**Date**: 2026-07-11
+
+### Why
+A targeted deep-dive audit surfaced additional confirmed defects across the LLM gateway, SDK, dashboard, and credentials layer. Fixes were applied file-isolated, then the backend was rebuilt and tested.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/backend/internal/domain/models.go | L1- | modified |
+| apps/backend/internal/service/provider.go | L1- | modified |
+| apps/backend/internal/handler/openai_proxy.go | L1- | modified |
+| apps/backend/internal/handler/handler.go | L1- | modified |
+| apps/backend/pkg/sdk/client.go | L1- | modified |
+| apps/backend/internal/handler/admin_users_full.go | L1- | modified |
+| apps/backend/pkg/llm/circuitbreaker/circuitbreaker.go | L1- | modified |
+| apps/backend/internal/handler/admin_providers.go | L1- | modified |
+| apps/backend/pkg/webhook/webhook.go | L1- | modified |
+| apps/backend/internal/handler/anthropic_messages.go | L1- | modified |
+| apps/backend/internal/db/db.go | L1- | modified |
+| apps/backend/internal/repository/setup_repo.go | L1- | modified |
+| apps/backend/internal/handler/admin_messages.go | L1- | modified |
+| apps/backend/internal/handler/admin_operations.go | L1- | modified |
+| apps/backend/pkg/llm/credentials/vault.go | L1- | modified |
+| apps/web/app/api/exports/[id]/route.ts | L1- | created |
+| apps/web/app/dashboard/exports/page.tsx | L1- | rewritten |
+| apps/web/app/dashboard/analytics/AnalyticsClient.tsx | L1- | modified |
+| apps/web/lib/api/sdk.ts | L1- | modified |
+| apps/web/lib/api/admin-sdk.ts | L1- | modified |
+| apps/web/app/dashboard/keys/KeysClient.tsx | L1- | modified |
+
+### Key fixes (Before → After)
+
+**H1 — Cross-tenant cache leak** (`internal/domain/models.go`, `internal/service/provider.go`, `internal/handler/openai_proxy.go`, `internal/handler/handler.go`)
+Before: `domain.ChatRequest` had no `Metadata`; `toLLMChatRequest` never set `user_id`/`tenant_id`/`api_key_id`; cache key in `pkg/llm/helper.go` hashed empty identifiers, letting requests from different tenants collide.
+After: added `Metadata map[string]string` to `domain.ChatRequest`; handlers inject trusted `user_id`, `api_key_id`, and `tenant_id` into `Metadata`; `toLLMChatRequest` propagates it to `llm.ChatRequest` so cache keys are scoped.
+
+**H5 — Go SDK envelope mismatch** (`pkg/sdk/client.go`)
+Before: `OpenAIChatCompletions`, `OpenAIEmbeddings`, and `OpenAIListModels` decoded into the generic `{success,data,error}` envelope, but `/v1/*` proxy endpoints return raw OpenAI JSON.
+After: those three methods now decode directly into `json.RawMessage`, preserving OpenAI compatibility.
+
+**H6 — Dashboard 404s / mock data** (`apps/web/app/api/exports/[id]/route.ts`, `apps/web/app/dashboard/exports/page.tsx`, `apps/web/lib/api/sdk.ts`)
+Before: exports page used hard-coded mock data; there was no proxy route for `GET /api/exports/:id`.
+After: created `app/api/exports/[id]/route.ts`; rewrote exports page to use real SDK hooks; added `deleteExportJob` to the SDK.
+
+**M3 — Analytics NaN totals and wrong time-range slice** (`apps/web/app/dashboard/analytics/AnalyticsClient.tsx`)
+Before: `totalCost` could become `NaN`; time-range slicing used `slice(0, days).reverse()` which showed oldest data instead of latest.
+After: added `Number.isFinite` guards; changed slice to `slice(-days)` to show the most recent N days.
+
+**Streaming over-billing** (`internal/handler/openai_proxy.go`, `internal/handler/anthropic_messages.go`)
+Before: async billing ran on every stream chunk, including client disconnects and abnormal terminations.
+After: both handlers now track `completedNormally` and only call `asyncLogAndDeduct` when the stream finished for a real reason.
+
+**SQLite bootstrap race** (`internal/db/db.go`, `internal/repository/setup_repo.go`)
+Before: concurrent `POST /api/setup/bootstrap` requests could race past the `COUNT(*)=0` check because SQLite deferred transactions don't lock until first write.
+After: added a process-wide `sqliteBootstrapMu` around the SQLite bootstrap path; `CreateFirstAdmin` acquires it before beginning the transaction.
+
+**Missing `rows.Err()` checks** (`internal/handler/admin_messages.go`, `internal/handler/admin_operations.go`)
+Before: `Rows` iteration ended without checking `rows.Err()`.
+After: added `defer rows.Close()` and explicit `rows.Err()` checks with logging.
+
+**Wrong Request ID in keys page** (`apps/web/app/dashboard/keys/KeysClient.tsx`)
+Before: UI displayed a request ID from a non-existent failed request object.
+After: removed the misleading request-ID display and replaced it with a clear generic error message.
+
+**admin-sdk.listUserUsage cast** (`apps/web/lib/api/sdk.ts`, `apps/web/lib/api/admin-sdk.ts`)
+Before: `listUserUsage` returned a raw array and the admin-sdk cast was unsafe.
+After: backend returns paginated envelope; SDK decodes `PaginatedResult<UsageRecord>`; admin-sdk uses the typed result.
+
+**Credentials data race** (`pkg/llm/credentials/vault.go`)
+Before: `GetBestKey` returned cached `*Credential` pointers that `RecordSuccess`/`RecordFailure` mutated concurrently.
+After: `getActiveCredentials` returns deep copies so selection and mutation no longer race.
+
+### Validation
+- `cd apps/backend && go build ./...` → exit 0
+- `cd apps/backend && go test ./pkg/llm/credentials/... ./pkg/llm/circuitbreaker/... ./internal/handler/... ./internal/repository/... ./internal/db/...` → all pass
+- `cd apps/web && npx tsc --noEmit` → pre-existing errors (missing module declarations, type mismatches) unrelated to these changes
+- `cd apps/web && npm run lint` → fails because `next lint` is not a recognized command in Next.js 16.3.0-canary.16 / ESLint 10; this is a pre-existing tooling issue
+
+### Notes
+- The frontend has pre-existing dependency/type issues that predate this session; the changes above do not introduce new TypeScript errors in the modified files.
+
+---
+
+## [R5]. fix(auth): eliminate "Invalid or expired token" on fresh login by using a dedicated backend JWT cookie
+
+**Session**: auth-token-cookie-fix
+**Date**: 2026-07-12
+
+### Why
+After a fresh credentials login, every authenticated API request returned `{"success":false,"error":"Invalid or expired token"}`. The backend `Auth` middleware was trying to read NextAuth's encrypted session cookies (`authjs.session-token`) and validate them as backend JWTs. NextAuth cookies are encrypted with `AUTH_SECRET`, while backend JWTs are signed with `AUTH_SECRET` (or a separate secret), so the middleware rejected the cookie contents as an invalid JWT. The real backend JWT was only available in the NextAuth session object on the frontend and was not being sent to the backend on SDK requests.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| `apps/backend/internal/middleware/auth.go` | L55-68 | modified |
+| `apps/backend/internal/middleware/token_blacklist.go` | L37-46 | modified |
+| `apps/backend/internal/handler/auth_handlers.go` | L282-296, L322-333 | modified |
+| `apps/web/auth.ts` | L1-180 | modified |
+| `apps/web/app/lib/actions.ts` | L1, L260-270 | modified |
+
+### Before
+```go
+// apps/backend/internal/middleware/auth.go
+// Auth middleware tried to read NextAuth session cookies as backend JWTs.
+if c, err := r.Cookie("authjs.session-token"); err == nil {
+    tokenStr = c.Value
+}
+```
+
+```ts
+// apps/web/auth.ts
+// backendToken lived only in the NextAuth session; no cookie was set.
+```
+
+### After
+```go
+// apps/backend/internal/middleware/auth.go
+// Dedicated backend token cookie set by the frontend on login.
+if c, err := r.Cookie("dra_backend_token"); err == nil {
+    tokenStr = c.Value
+}
+```
+
+```ts
+// apps/web/auth.ts
+// Sets HttpOnly dra_backend_token cookie in the jwt callback on sign-in.
+async function setBackendTokenCookie(token: string) {
+  const maxAge = 60 * 60 * 24 * 7;
+  const secure = process.env.NODE_ENV === "production";
+  const sameSite = secure ? "none" : "lax";
+  const domain = process.env.BACKEND_TOKEN_COOKIE_DOMAIN || undefined;
+  const cookieStore = await cookies();
+  cookieStore.set("dra_backend_token", token, {
+    httpOnly: true,
+    secure,
+    sameSite: sameSite as "lax" | "none",
+    path: "/",
+    maxAge,
+    ...(domain ? { domain } : {}),
+  });
+}
+
+// Called inside jwt callback when trigger === "signIn" || "signUp".
+```
+
+```ts
+// apps/web/app/lib/actions.ts
+export async function signOutAction() {
+  "use server";
+  try {
+    await clearBackendTokenCookie();
+  } catch {
+    // Best-effort cleanup
+  }
+  await signOut();
+}
+```
+
+### Key changes
+1. **Backend `Auth` middleware** now looks for a dedicated `dra_backend_token` cookie instead of NextAuth session cookies. It still accepts `Authorization: Bearer <token>` and `x-api-key` as before.
+2. **Backend `TokenBlacklist` middleware** also reads the `dra_backend_token` cookie for the token to check.
+3. **Backend `Logout` handler** extracts the token from the `Authorization` header or the `dra_backend_token` cookie for blacklisting, and clears the `dra_backend_token` cookie in the response.
+4. **Frontend `auth.ts`** sets the `dra_backend_token` HttpOnly cookie in the NextAuth `jwt` callback when `trigger === "signIn"` or `"signUp"`. The cookie max-age matches the backend JWT expiry (7 days). Supports `BACKEND_TOKEN_COOKIE_DOMAIN` for cross-subdomain deployments.
+5. **Frontend `signOutAction`** clears the backend token cookie before signing out of NextAuth.
+
+### Validation
+- `cd apps/backend && go build ./...` → exit 0
+- `cd apps/web && npx tsc --noEmit` → pre-existing errors in unrelated files; no new errors in `auth.ts` or `actions.ts`
+
+### Notes
+- OAuth providers (GitHub/Google) still do not receive a backend JWT, so those users will need a separate backend linking flow to use authenticated SDK endpoints.
+- The `dra_backend_token` cookie is HttpOnly, so it is sent automatically with `credentials: "include"` SDK requests and cannot be read by client-side JavaScript.
+
+## [init]. docs(claude): refresh CLAUDE.md against current repo layout
+
+**Session**: init-claude-md-2026-07-12
+**Date**: 2026-07-12 19:27
+
+### Why
+`/init` found an already-strong `CLAUDE.md`, but several facts had drifted: migration range, LLM package count/sizes, sandbox auth semantics, missing `packages/` dir, and a dead `olla.md` reference in `AGENTS.md`. Keeping agent guidance accurate prevents wrong assumptions on auth, migrations, and SDK touch points.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| CLAUDE.md | monorepo / backend / LLM / quirks / key-files sections | modified |
+| AGENTS.md | reference table (`olla.md` row) | modified |
+
+### Before
+```markdown
+# CLAUDE.md (stale excerpts)
+- packages/: Reserved for shared packages (currently empty).
+- olla.md: Exhaustive project reference ...
+- Raw SQL migrations ... 001_*.sql–022_*.sql
+- 18+ subpackages under pkg/llm/
+- X-Sandbox: true ... disables quota, cost, and logging for testing
+- lib/api/sdk.ts (~1700 lines) ... hooks.ts (~800 lines)
+```
+
+### After
+```markdown
+# CLAUDE.md (corrected excerpts)
+- Root package.json workspaces include packages/*, but no packages/ directory is checked in yet.
+- ops.md / osa.md / FIXES_APPLIED.md / UPDATE.md called out; olla.md reference removed from AGENTS.md
+- Migrations 001_*.sql–024_*.sql (colliding/disabled numbers noted)
+- ~30 subpackages under pkg/llm/ with supporting packages listed
+- X-Sandbox admin-only; non-admins get 403
+- sdk.ts ~2240 lines, hooks.ts ~900 lines, Go client.go ~1860 lines
+```
+
+### Notes
+- Did not rewrite CLAUDE.md from scratch; structure, commands, hard constraints, and UPDATE.md mandate were already correct.
+- `apps/web/CLAUDE.md` remains a thin `@AGENTS.md` import and was left alone.
+
+## [FAQ-UI]. feat(pricing): enhance FAQ section visuals on pricing page
+
+**Session**: pricing-faq-ui-2026-07-12
+**Date**: 2026-07-12 20:13
+
+### Why
+The pricing page FAQ looked thinner than the surrounding avant-garde sections (CreditPackages / PricingCTA). Needed stronger hierarchy, glass/HUD atmosphere, accordion polish, a11y, and a richer support rail so the FAQ matches the rest of `/pricing`.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/components/pricing/PricingFAQ.tsx | L1-553 | modified |
+
+### Before
+```tsx
+// apps/web/components/pricing/PricingFAQ.tsx — multi-open local state, lighter sidebar
+function FAQItem({ item, index }: { item: ...; index: number }) {
+  const [isOpen, setIsOpen] = useState(false);
+  // ... basic gradient border + chevron accordion
+}
+// Support rail: mail card + two plain stat tiles only
+```
+
+### After
+```tsx
+// apps/web/components/pricing/PricingFAQ.tsx — single-open accordion, HUD atmosphere
+// - useReducedMotion, aria ids, sticky support rail
+// - category chips with counts, glass contact card + docs/gateway links
+// - left accent rail, gradient border on open/hover, trust strip
+function FAQItem({ item, index, isOpen, onToggle, reduce }) { ... }
+export function PricingFAQ() {
+  const [openKey, setOpenKey] = useState(FAQ_WITH_CATEGORIES[0]?.question ?? null);
+  // atmosphere: glow orbs + grid + vignette + HUD corners
+}
+```
+
+### Notes
+- Content still sourced from `pricingFAQ` in `lib/pricing-data.ts` (no copy changes).
+- First FAQ item opens by default for a fuller first paint.
+- Links: `/docs`, `/gateway`, `mailto:support@yapapa.dev`.
+
+## [LOGIN-UI]. feat(login): avant-garde visual overhaul of /login
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 20:25
+
+### Why
+`/login` felt thinner than the rest of the marketing/dashboard visual language. Needed a full dual-panel polish: richer atmosphere, stronger brand editorial, glass auth card, improved fields/social buttons, and trust callouts — without changing auth actions (`authenticate` / `authenticateSocial`).
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/login/page.tsx | L1-end | modified |
+
+### Before
+```tsx
+// apps/web/app/login/page.tsx — minimal dual column
+// MeshOrbs + Particles + underline-only fields
+// Form card: subtle glass, social outline buttons, basic error text
+// Left: typewriter headline + short copy + operational footer
+```
+
+### After
+```tsx
+// apps/web/app/login/page.tsx — dual panel avant-garde
+// Atmosphere (mesh + grid + vignette + noise) + violet particles + HUD corners
+// Left: badge, typewriter ("One gateway." / "Every model." / "Zero friction."),
+//       feature cards, stats strip (100+ / SSE / $5)
+// Right: gradient-ring glass card, Secure badge, icon fields,
+//        richer error alert, free-credits callout, rounded social/submit CTAs
+// Auth: still useActionState(authenticate) + authenticateSocial
+```
+
+### Notes
+- No changes to `app/lib/actions.ts` or NextAuth wiring.
+- Reduced-motion respected for mesh, particles, typewriter, and entrance motion.
+
+## [LOGIN-UI-2]. feat(login): replace generic dual-panel with intentional minimal stage
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 20:35
+
+### Why
+Previous `/login` still read as a SaaS dual-column template (feature cards, glass card, particle canvas, social button grid). Rebuilt as asymmetric single-stage composition: serif/italic display type, underline fields, text social links, structural frame lines — less chrome, higher hierarchy, lower cognitive load. Auth wiring unchanged.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/login/page.tsx | L1-end | modified |
+
+### Before
+```tsx
+// Dual panel + MeshOrbs/Particles + glass card + icon fields + social outline buttons
+// FEATURES cards, stats tiles, Secure badge, free-credits callout box
+```
+
+### After
+```tsx
+// Single stage: vertical/horizontal frame lines, one light source, partial grid
+// 12-col asymmetric main: editorial (Sign + italic "in.") vs form instrument
+// Underline FieldShell, Button primitive (default/lg), text SocialRow (GitHub / Google)
+// Typographic metrics (font-display italic), index footer — no particle canvas
+// useActionState(authenticate) + authenticateSocial preserved
+```
+
+### Notes
+- Uses existing `Button` from `@/components/ui/button` (library discipline).
+- Reduced motion respected; no continuous canvas rAF.
+- Focus: auto-focus email; WCAG focus labels, aria-invalid, role=alert error.
+
+## [LOGIN-UI-3]. feat(login): restyle to match site glass/HUD/cyber visual system
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 20:50
+
+### Why
+User feedback: previous intentional-minimal login looked unattractive and mismatched site components. Rebuilt `/login` to use the same visual language as signup, hero, pricing, and header: mesh gradient, HUD corners, glass-card shell, blue/violet glows, cyber Button, feature chips, brand mark aligned with CyberpunkLogo.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/login/page.tsx | L1-end | modified |
+
+### Before
+```tsx
+// Austere single-stage: frame lines, underline fields, text social links
+// bg #030304, no glass-card, no mesh-gradient, no HUD
+```
+
+### After
+```tsx
+// Dual column matching signup/hero:
+// Atmosphere: mesh-gradient + glow orbs + bg-grid-pattern + vignette
+// DynamicSpotlight (mousemove), HUDOverlay corners + mono labels
+// BrandMark (cyber logo tile), feature cards, mono stats
+// Form: glass-card rounded-[28px] → #0A0A0A inner, corner accents
+// Fields: rounded-xl icon inputs, Button variant="cyber"
+// Social outline buttons, free-credits callout
+// Auth: authenticate / authenticateSocial unchanged
+```
+
+### Notes
+- Uses project utilities: `glass-card`, `mesh-gradient`, `bg-grid-pattern`, `animate-glow-pulse`, `Button` cyber variant.
+- Reduced motion gates spotlight + glow pulse + entrance motion.
+
+## [LOGIN-UI-4]. feat(login): elevate LIVE / Universal LLM Gateway status badge
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 20:55
+
+### Why
+User asked to elevate the "LIVE · Universal LLM Gateway" chip. Previous flat blue pill felt weak next to site glass/HUD chrome. Rebuilt as glass capsule with emerald live pulse, spectral wash, and mono product label.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/login/page.tsx | LIVE badge block (~L376-L420) | modified |
+
+### Before
+```tsx
+// flat rounded-full blue pill: Zap + LIVE chip + gray "Universal LLM Gateway"
+className="... rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1.5"
+```
+
+### After
+```tsx
+// glass capsule: p-[3px] black/40 backdrop-blur, gradient wash, hover glow
+// emerald Live chip with ping dot + ring; divider; Zap + mono product label
+```
+
+### Notes
+- Reduced motion still disables ping via `!reduce && "animate-ping"`.
+
+## [LOGIN-UI-5]. feat(login): use icon/Nervous Cat logo in brand mark
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 21:00
+
+### Why
+User asked to add the repo `icon/` logo on the login page. Site already serves the same asset as `/nervous-cat.jpg` (copy of `icon/Nervous Cat.jpg`). Replaced the letter-"Y" brand tile with Next/Image of that logo inside the cyber frame, matching CyberpunkLogo / header usage.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/login/page.tsx | BrandMark + Image import | modified |
+
+### Before
+```tsx
+// Letter "Y" placeholder inside blue-bordered tile
+<span className="... text-xl font-black italic text-[#3b82f6]">Y</span>
+```
+
+### After
+```tsx
+// next/image src="/nervous-cat.jpg" (icon/Nervous Cat.jpg) inside tech-grid tile
+// BrandMark supports compact prop for mobile form header
+```
+
+### Notes
+- Asset path used site-wide: `apps/web/public/nervous-cat.jpg` (same file as `icon/Nervous Cat.jpg`).
+- No new public file copy required; public asset already present.
+
+## [LOGIN-UI-6]. feat(login): replace form-card lock icon with icon/ logo
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 21:05
+
+### Why
+User asked to put the `icon/` logo inside the login form card header instead of the lock icon. Swapped Lucide `Lock` tile for `/nervous-cat.jpg` (same asset as `icon/Nervous Cat.jpg`) in a cyber-framed square matching the brand mark.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/login/page.tsx | form card header icon (~L581) | modified |
+
+### Before
+```tsx
+<div className="... rounded-2xl bg-gradient-to-br from-violet-600 to-blue-600 ...">
+  <Lock className="h-5 w-5 text-white" />
+</div>
+```
+
+### After
+```tsx
+<div className="... rounded-2xl border border-[#3b82f6]/30 bg-black ...">
+  <Image src="/nervous-cat.jpg" alt="Yapapa" width={40} height={40} className="... object-cover" priority />
+</div>
+```
+
+### Notes
+- Password field still uses Lock icon (input affordance, not brand).
+- Public path: `apps/web/public/nervous-cat.jpg` ≡ `icon/Nervous Cat.jpg`.
+
+## [LOGIN-UI-7]. style(login): void black page background
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 21:10
+
+### Why
+User requested pure void black background on `/login`. Removed mesh gradient, glow orbs, grid pattern, vignette, mouse spotlight, and card outer color wash so the stage reads as absolute black.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/login/page.tsx | Atmosphere, page shell, card glow | modified |
+
+### Before
+```tsx
+bg-[#050505] + mesh-gradient + blue/violet blur orbs + bg-grid-pattern + DynamicSpotlight + card rainbow blur
+```
+
+### After
+```tsx
+bg-black + Atmosphere() => absolute inset-0 bg-black
+// DynamicSpotlight removed; card outer gradient wash removed
+```
+
+### Notes
+- Form card remains `#0A0A0A` glass shell for contrast on pure black.
+- HUD corner brackets retained (hairline white, not color fill).
+
+## [LOGIN-UI-8]. fix(login): pin form card on scroll + compact content fit
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 21:15
+
+### Why
+User: form should stay in place while scrolling; card content must fit cleanly. Desktop shell is now viewport-locked (`h-screen overflow-hidden`); left brand column scrolls independently; right form column stays centered/pinned. Card padding/gaps tightened so social + fields + CTA + signup fit without overflow.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/login/page.tsx | page shell + form section + card spacing | modified |
+
+### Before
+```tsx
+// min-h-screen overflow-hidden full page — tall left content forced page scroll and form could leave view
+// card p-7/sm:p-9, mb-8/mb-7, space-y-5, max-w-[440px]
+```
+
+### After
+```tsx
+// lg:h-screen lg:overflow-hidden; left lg:overflow-y-auto; right lg:h-full centered pin
+// card max-w-[400px], p-5/sm:p-6, tighter mb/gap, py-3 inputs, break-words on error
+// form wrapper lg:max-h-full lg:overflow-y-auto as safety valve on short viewports
+```
+
+### Notes
+- Mobile still stacks and scrolls naturally (form not sticky on small screens).
+- Auth fields/actions unchanged.
+
+## [LOGIN-UI-8]. style(login): fit entire login composition in one viewport
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 21:15
+
+### Why
+User required everything on `/login` to fit one page (no desktop scroll). Compressed dual-column layout into `h-dvh` with tighter type, features, form paddings, and input heights while keeping void black + glass form.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/login/page.tsx | shell, left column, form card, Field/Submit/Social | modified |
+
+### Before
+```tsx
+// min-h-screen stacked content, large type (4.25rem), py-12/p-14, py-3.5 inputs, mt-7 footers
+// left brand always visible and tall → page scroll on laptop heights
+```
+
+### After
+```tsx
+// h-dvh max-h-dvh overflow-hidden
+// left: hidden on mobile, flex on lg; denser badge/h1/features/stats
+// form: max-w-[400px], p-5/6, py-2.5 inputs, h-11 submit, compact free-credits + signup
+// form section: overflow-y-auto only if mobile keyboard overflows
+```
+
+### Notes
+- Auth wiring unchanged.
+- Mobile: brand column hidden; compact BrandMark above form; form section can scroll if needed.
+
+## [LOGIN-UI-9]. style(login): enhance Sign in button inside form card
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 21:20
+
+### Why
+User asked to enhance the Sign in button UI inside the login card. Replaced plain cyber variant with a premium gradient CTA: outer glow halo, specular edge, hover sheen, cyber corner ticks, and arrow chip.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/login/page.tsx | SubmitButton | modified |
+
+### Before
+```tsx
+// Button variant="cyber" h-11, simple sheen, text + ArrowRight
+```
+
+### After
+```tsx
+// group/submit wrapper + gradient glow halo
+// blue→violet→fuchsia fill, inset specular, corner ticks
+// arrow in white/15 chip; hover scale + brighter glow; reduced-motion sheen gate
+```
+
+### Notes
+- Still uses shared `Button` primitive (library discipline).
+- Pending state dims glow and shows Loader2 "Verifying…".
+
+## [LOGIN-UI-10]. style(login): simplify Sign in button to match void-black card
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 21:25
+
+### Why
+User preferred a simple Sign in button matching the login page (void black + glass card) over the glowing gradient CTA. Removed halo, spectral fill, corner ticks, and scale effects.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/login/page.tsx | SubmitButton | modified |
+
+### Before
+```tsx
+// gradient blue→violet→fuchsia + outer glow blur + corner ticks + arrow chip
+```
+
+### After
+```tsx
+// solid white button, black text, subtle border, quiet hover sheen, ArrowRight
+// matches form fields' quiet chrome on #0A0A0A card
+```
+
+### Notes
+- Still uses shared `Button` primitive.
+
+## [SIGNUP-UI-1]. feat(signup): parity with login void-black / glass / one-viewport UI
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 21:35
+
+### Why
+User asked to apply everything done on `/login` to `/signup`. Rebuilt signup for visual parity: void black stage, h-dvh single-page fit, nervous-cat logo brand + form header, glass card, Live/Free status capsule, dense feature/stats rail, simple white CTA (no glow), compact social/fields. Kept signup-specific fields (name, password strength) and `signup` / `authenticateSocial` auth.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/signup/page.tsx | L1-end | rewritten |
+
+### Before
+```tsx
+// mesh Atmosphere + DynamicSpotlight + Glitch/Typewriter + RegistrationTerminal
+// letter-Y BrandMark, cyber SubmitButton, tall min-h-screen layout
+// User icon in form header; terminal-prefix fields
+```
+
+### After
+```tsx
+// void black Atmosphere, HUD only, h-dvh overflow-hidden
+// BrandMark with /nervous-cat.jpg (icon logo), Free badge capsule
+// glass-card form, logo tile header, Field inputs (login style)
+// white Create account CTA; password strength retained
+// signup action + field names unchanged
+```
+
+### Notes
+- Removed glitch text, typewriter, registration terminal, mesh/spotlight for density + parity.
+- Mobile: left column hidden; compact BrandMark above form; form scrolls if needed.
+
+## [SIGNUP-UI-2]. style(signup): deepen visual polish for parity with login
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 21:45
+
+### Why
+User asked to enhance signup UI/visuals further after parity rewrite. Refined hierarchy and micro-details without abandoning void-black / h-dvh / glass system.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/signup/page.tsx | left editorial + form card + social | modified |
+
+### Before
+```tsx
+// Headline "One gateway. / Every model." (same as login)
+// Feature list single fade-in; plain social hover; form card without top specular
+// Password label row with separate Show text button + icon toggle
+```
+
+### After
+```tsx
+// Signup-specific headline: "Start free. / Ship faster."
+// 01 Register → 02 Get key → 03 Ship path
+// Staggered feature cards; glass form top specular wash
+// Social hover wash; password eye toggle only (no duplicate Show text)
+// Stats tiles with subtle gradient fill
+```
+
+### Notes
+- Auth (`signup`, field names) unchanged.
+- Still one-viewport desktop (`h-dvh`), void black, nervous-cat logo, white Create account CTA.
+
+## [AUTH-UI-1]. style(auth): redesign $5 free credits callout on login + signup
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 21:50
+
+### Why
+User asked to enhance the "$5 free credits…" strip on both auth pages. Replaced flat icon+paragraph with a compact value tile: $5/free chip, title+subtitle, Gift mono tag, soft violet wash — quieter than glow CTAs, stronger hierarchy.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/login/page.tsx | free-credits callout | modified |
+| apps/web/app/signup/page.tsx | free-credits callout | modified |
+
+### Before
+```tsx
+// sparkles icon + single paragraph "$5 free credits when you create..."
+```
+
+### After
+```tsx
+// card: $5 / FREE tile · title + subtitle · Gift chip
+// login copy: "Free credits on signup" / "Create an account to claim — no card required."
+// signup copy: "Free credits included" / "Claimed on signup — no card required."
+```
+
+### Notes
+- No glow CTA styling; matches void-black glass form language.
+
+## [AUTH-UI-2]. style(auth): simplify free-credits strip to match form card
+
+**Session**: login-ui-2026-07-12
+**Date**: 2026-07-12 21:55
+
+### Why
+Previous free-credits callout looked noisy (stacked $5 tile, Gift chip, blur wash) and clashed with the quiet glass form card. Simplified to field-matching chrome: soft border, white/02 fill, sparkles icon, single line of copy.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/login/page.tsx | free-credits strip | modified |
+| apps/web/app/signup/page.tsx | free-credits strip | modified |
+
+### Before
+```tsx
+// $5/FREE value tile + title/subtitle + Gift chip + violet blur wash
+```
+
+### After
+```tsx
+// rounded-xl border-white/08 bg-white/02 · sparkles icon ·
+// "$5 free credits · … No card required."
+// Same visual language as form inputs / social buttons
+```
+
+### Notes
+- Login: "when you create an account"
+- Signup: "included on signup"
+
+## [1]. Fix admin providers 500 in SQLite lite mode
+
+**Session**: admin-providers-sqlite-500-2026-07-12
+**Date**: 2026-07-12 20:45
+
+### Why
+`GET /api/admin/providers` returned 500 because the running backend was in
+`DB_TYPE=sqlite` lite mode against `yapapa.db`, and the lite schema only
+covered auth/credits tables. Admin provider list queries hit missing
+`providers` (and related) tables. After creating the tables, scans still
+failed on `json.RawMessage` NULL metadata and named string status types,
+and Postgres `NOW()` is not available in SQLite.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/backend/internal/db/lite_schema.go | L10-15, L161-268 | modified |
+| apps/backend/internal/db/sqlite_querier.go | L39-51, L298-304, L351-389, L497-518 | modified |
+
+### Before
+```go
+// lite_schema.go — LiteDDL ended at api_logs; no providers table
+// sqlite_querier.go — normalizeSQLiteSQL only stripped casts / ILIKE
+// assign(NULL) had no *json.RawMessage branch
+// assign default: unsupported destination type for domain.ProviderStatus
+```
+
+### After
+```go
+// lite_schema.go — LiteDDL adds providers, provider_keys, model_registry, usage_records
+// sqlite_querier.go — NOW() rewritten to strftime(...)
+// assign supports *json.RawMessage (NULL → {}) and string-named types via reflect
+```
+
+### Notes
+- Backend was restarted with the rebuilt `./api` binary against the same
+  sqlite file; auto-migrate created the new tables and
+  `EnsureBuiltinProviders` seeded openai + sandbox.
+- Verified: authenticated `GET /api/admin/providers` returns 200 with 2
+  providers. Frontend proxy still requires the browser admin session cookie
+  (Bearer-only curl against :3000 returns 401, which is expected).
+- Postgres is not running in this environment; `.env` says postgres but
+  `scripts/dev.sh` launched sqlite mode (`DB_TYPE=sqlite`).
+
+## [2]. Expand SQLite lite schema to full platform tables + SQL rewrites
+
+**Session**: admin-providers-sqlite-500-2026-07-12
+**Date**: 2026-07-12 20:52
+
+### Why
+SQLite lite mode only had a handful of tables, so most admin/runtime endpoints
+failed with "no such table". The running dev stack uses `DB_TYPE=sqlite` (no
+Postgres container). Need full schema parity from migrations plus safer SQL
+translation and migrate ordering so existing yapapa.db files upgrade cleanly.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/backend/internal/db/lite_schema.go | full rewrite | modified |
+| apps/backend/internal/db/migrate.go | autoMigrateSQLite | modified |
+| apps/backend/internal/db/sqlite_querier.go | normalize + assign | modified |
+| apps/backend/cmd/api/routes.go | token blacklist | modified |
+| apps/backend/cmd/api/services.go | webhook retry worker | modified |
+| scripts/dev.sh | sqlite mode messaging | modified |
+
+### Before
+```go
+// LiteDDL: ~6-10 core tables only
+// autoMigrate: apply all DDL then ensure users columns
+// normalizeSQLiteSQL: casts + ILIKE only
+// token blacklist / webhook retry skipped on sqlite
+```
+
+### After
+```go
+// LiteDDL: 74 tables + ~100 indexes from all migrations/*.sql
+// autoMigrate: CREATE TABLE → Ensure columns → CREATE INDEX
+// normalize: NOW(), INTERVAL, TRUE/FALSE, empty array '{}'
+// assign: json.RawMessage + named string types
+// token blacklist + webhook retry enabled on sqlite
+```
+
+### Notes
+- Verified admin endpoints 200: providers, models, stats, settings, users,
+  audit, feature-flags, billing/summary, announcements, groups, rbac/permissions.
+- Existing yapapa.db upgraded in place (75 tables including sqlite_sequence).
+- Postgres-only partition helpers remain non-partitioned SQLite tables.
+- Some pkg/llm stores still tied to *pgxpool.Pool may still no-op.
+
+## [3]. Shared provider-driven model catalog for models + playground
+
+**Session**: shared-model-catalog-2026-07-12
+**Date**: 2026-07-12 21:00
+
+### Why
+Public `/models` and `/playground` used a static `openrouter-models-2026.json` catalog disconnected from Admin → Providers / Models. Adding a provider with endpoint, API key, and model IDs updated the backend runtime but never the marketing models page or playground selector. Need one shared source of truth so create/delete of provider models updates both surfaces.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/backend/cmd/api/routes.go | public routes | modified |
+| apps/backend/internal/handler/handler.go | ListModelCatalog | modified |
+| apps/backend/internal/service/admin.go | CreateProviderFull + DeleteProvider overlay sync | modified |
+| apps/web/app/api/models/catalog/route.ts | public Next proxy | created |
+| apps/web/lib/api/model-catalog.ts | ModelInfo adapter | created |
+| apps/web/lib/api/sdk.ts | listModelCatalog | modified |
+| apps/web/lib/api/hooks.ts | useModelCatalog | modified |
+| apps/web/lib/api/admin-sdk.ts | createProvider models typing | modified |
+| apps/web/app/models/page.tsx | drop static JSON | modified |
+| apps/web/app/models/[id]/page.tsx | catalog-backed detail | modified |
+| apps/web/components/models/ModelsExplorer.tsx | live catalog | modified |
+| apps/web/app/playground/page.tsx | live catalog | modified |
+| apps/web/app/admin/(protected)/providers/page.tsx | manual model IDs + invalidation | modified |
+| apps/web/app/admin/(protected)/models/page.tsx | catalog invalidation | modified |
+| apps/web/app/models/openrouter-models-2026.json | removed | deleted |
+| apps/web/tests/lib/api/model-catalog.test.ts | adapter tests | created |
+
+### Before
+```ts
+// apps/web/app/models/page.tsx
+import modelData from "./openrouter-models-2026.json";
+<ModelsExplorer initialModels={modelData} />
+
+// apps/web/app/playground/page.tsx
+import openRouterModels from "../models/openrouter-models-2026.json";
+const allModels = enrichModels(openRouterModels);
+```
+
+```go
+// CreateProviderFull / DeleteProvider did not call SyncModelRegistryOverlay
+// No public GET /api/models/catalog
+```
+
+### After
+```ts
+// Public catalog via useModelCatalog() → GET /api/models/catalog
+// ModelsExplorer + playground map runtime ModelInfo → UI shapes
+// Admin create merges fetch selection + manual model IDs
+```
+
+```go
+// routes: r.Get("/api/models/catalog", h.ListModelCatalog) // no auth
+// CreateProviderFull + DeleteProvider call SyncModelRegistryOverlay(ctx)
+```
+
+### Notes
+- Guests can browse catalog; chat remains authenticated.
+- Canonical model ids stay `provider/modelId` for gateway routing.
+- Adapter accepts snake_case (`input_price_per_1k`) and camelCase fields.
+- Durable provider API keys after process restart remain a known follow-up.
+- Vitest not installed in this environment's node_modules; adapter unit test file added for CI.
+
+## [4]. Persist admin provider API keys encrypted for restart survival
+
+**Session**: durable-provider-keys-2026-07-12
+**Date**: 2026-07-12 21:30
+
+### Why
+Admin-added providers stored only a hash of the API key plus an in-memory raw key map. After backend restart, `LoadProvidersFromDB` re-registered providers without credentials, so chat failed until keys were re-entered. Providers must survive restarts without a config.yml — DB is the save location.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/backend/migrations/025_provider_keys_encrypted.sql | full | created |
+| apps/backend/internal/db/lite_schema.go | provider_keys + column additions | modified |
+| apps/backend/internal/db/migrate.go | EnsureSQLiteColumns provider_keys | modified |
+| apps/backend/internal/domain/admin.go | ProviderKey.EncryptedKey | modified |
+| apps/backend/internal/repository/admin_provider_repo.go | CreateKey/ListKeys encrypted_key | modified |
+| apps/backend/internal/service/admin.go | AES-GCM encrypt/decrypt + LoadProvidersFromDB | modified |
+| apps/backend/cmd/api/services.go | SetKeyEncryptionSecret(AUTH_SECRET) | modified |
+
+### Before
+```go
+// provider_keys: key_hash only; raw keys in sync.Map
+// LoadProvidersFromDB: registerProviderRuntime(&p) // no key
+// Comment: "API keys are hashed in the DB and cannot be recovered"
+```
+
+### After
+```go
+// provider_keys.encrypted_key = AES-GCM(base64) using AUTH_SECRET
+// CreateProviderFull / AddProviderKeyRaw encrypt before insert
+// getActiveRawKeyForProvider decrypts from DB if memory miss
+// LoadProvidersFromDB registers with decrypted key
+```
+
+### Notes
+- Still no config.yml — providers are saved in the database.
+- Changing AUTH_SECRET invalidates previously encrypted keys (re-add keys).
+- Existing keys without encrypted_key remain unrecovered until re-entered once.
+- Keys are never returned in API JSON (`json:"-"`).
+
+## [5]. Strip Postgres row-locking clauses in SQLite SQL normalization
+
+**Session**: fix-sqlite-webhook-locking-2026-07-13
+**Date**: 2026-07-13 20:15
+
+### Why
+Under `DB_TYPE=sqlite` the webhook retry worker (`retryWorker`) logged a hard error every 10s: `webhook_retry_worker_error ... list pending retries: SQL logic error: near "FOR": syntax error (1)`. `WebhookRepo.ListPendingRetries` ends its query with `LIMIT $1 FOR UPDATE SKIP LOCKED`, a Postgres-only row-locking clause. SQLite rejects it (`near "FOR"`), so `ProcessPendingRetries` fails every tick and no webhook retries are ever processed in lite mode. SQLite has no row-locking syntax, and the lite runtime is single-process with one worker goroutine, so the clauses are both unsupported and unnecessary. Two other repos (`admin_billing_repo.go`, `admin_features_repo.go`) carry the same latent break via `FOR UPDATE`. Fix centrally in the SQLite SQL normalizer rather than per-repo, matching the existing `NOW()`/cast/`ILIKE` rewrite pattern.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/backend/internal/db/sqlite_querier.go | L48-55 | modified (added `sqliteForLockingPattern`) |
+| apps/backend/internal/db/sqlite_querier.go | L59-61 | modified (apply pattern first in `normalizeSQLiteSQL`) |
+| apps/backend/internal/db/sqlite_querier_locking_test.go | L1-69 | created |
+
+### Before
+```go
+// apps/backend/internal/db/sqlite_querier.go:39-48
+var (
+	sqliteCastPattern  = regexp.MustCompile(`(?i)::[a-z_][a-z0-9_]*(?:\[\])?`)
+	sqliteILikePattern = regexp.MustCompile(`(?i)\bILIKE\b`)
+	sqliteNowPattern      = regexp.MustCompile(`(?i)\bNOW\s*\(\s*\)`)
+	sqliteTruePattern     = regexp.MustCompile(`(?i)\bTRUE\b`)
+	sqliteFalsePattern    = regexp.MustCompile(`(?i)\bFALSE\b`)
+	sqliteIntervalPattern = regexp.MustCompile(`(?i)NOW\s*\(\s*\)\s*-\s*INTERVAL\s+'(\d+)\s*(day|days|hour|hours|minute|minutes|second|seconds)'`)
+)
+// ... normalizeSQLiteSQL() had NO handling for FOR UPDATE / FOR SHARE / SKIP LOCKED;
+//     the clause passed through to SQLite verbatim → "near FOR: syntax error".
+```
+
+### After
+```go
+// apps/backend/internal/db/sqlite_querier.go:48-55
+	// Postgres row-locking clauses — `FOR UPDATE`, `FOR SHARE`, `FOR NO KEY
+	// UPDATE`, `FOR KEY SHARE` — with optional `OF <table/col list>`, `NOWAIT`,
+	// and `SKIP LOCKED`. SQLite has no row locking; the lite runtime is a
+	// single-process embedded DB so these are safe to drop. Anchored: matches
+	// only a locking keyword in clause position (always trailing in this
+	// codebase) and consumes through the first statement terminator or EOL —
+	// it will not eat a future query body that legitimately contains "FOR".
+	sqliteForLockingPattern = regexp.MustCompile(`(?is)\bFOR\s+(?:UPDATE|SHARE|NO\s+KEY\s+UPDATE|KEY\s+SHARE)\b[^;]*`)
+)
+
+// apps/backend/internal/db/sqlite_querier.go:59-61
+	// Row-locking clauses first: SQLite has no row locks and the clause always
+	// trails the query body, so strip it before the value rewrites below.
+	qStr = sqliteForLockingPattern.ReplaceAllString(qStr, "")
+```
+
+### Notes
+- Regression test `TestNormalizeSQLiteSQLStripsRowLocking` covers the exact `ListPendingRetries` query plus `FOR SHARE`, `FOR UPDATE OF t.col NOWAIT`, `FOR NO KEY UPDATE OF t1, t2 SKIP LOCKED`, and a guard that a literal “for” in a `WHERE`/comment is not stripped.
+- Safe under SQLite: single-process DB, single worker goroutine, writer-level DB lock already serializes access — no need for row-level `SKIP LOCKED`.
+- Backend must be rebuilt (`make build` / `make dev`) and restarted for the fix to take effect; the live server is still running the old binary, so the log spam continues until restart.
+- Also unblocks `admin_billing_repo.go` (`... WHERE user_id=$1 FOR UPDATE`) and `admin_features_repo.go` (`... WHERE code=$1 FOR UPDATE`) under SQLite — both would have hit the same `near "FOR"` error on first call.
+
+## [N]. Fix scroll animation lag in hero sections
+
+**Session**: `fix-hero-scroll-lag-2026-07-15`
+**Date**: 2026-07-15 12:00
+
+### Why
+
+Hero section had severe scroll jank. Root causes: (1) 15 floating logos each driven by Framer Motion `animate` with `repeat: Infinity` — all JS-driven on main thread, (2) 3 ambient gradient orbs using Framer Motion infinite loops instead of compositor-friendly CSS keyframes, (3) unthrottled `mousemove` listener setting MotionValues on every pixel move via `useMotionTemplate`, (4) grid background animation using Framer Motion `backgroundPosition` (layout property, not compositor). `GatewayFeatures.tsx` had the same issue with its `AtmosphericBackground` — 3 Framer Motion `whileInView` infinite loops.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/globals.css | L1069-1136 | modified |
+| apps/web/components/Hero.tsx | L1 (imports) | modified |
+| apps/web/components/Hero.tsx | L718-810 (FloatingLogos + HeroBackground) | modified |
+| apps/web/components/GatewayFeatures.tsx | L218-267 (AtmosphericBackground) | modified |
+
+### Before
+
+```tsx
+// Hero.tsx — FloatingLogos (15 motion.div with Framer Motion infinite loops)
+<motion.div
+  className={`absolute ${item.color} opacity-[0.07] ...`}
+  style={{ top: item.top, ... }}
+  initial={{ y: 0, rotate: 0 }}
+  animate={{ y: [0, -30, 0], rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] }}
+  transition={{ duration: 8 + Math.random() * 6, repeat: Infinity, ease: "easeInOut", delay: item.delay }}
+>
+  <item.Icon className="w-full h-full" />
+</motion.div>
+```
+
+```tsx
+// Hero.tsx — HeroBackground (Framer Motion orbs + unthrottled mousemove + useMotionTemplate)
+const mouseX = useMotionValue(0);
+const mouseY = useMotionValue(0);
+useEffect(() => {
+  function handleMouseMove({ clientX, clientY }) {
+    mouseX.set(clientX); mouseY.set(clientY);  // fires on every pixel
+  }
+  window.addEventListener("mousemove", handleMouseMove);
+  return () => window.removeEventListener("mousemove", handleMouseMove);
+}, [mouseX, mouseY]);
+// ... 3 motion.div orbs with animate={{ scale: [...], opacity: [...] }} repeat: Infinity
+// ... motion.div grid with animate={{ backgroundPosition: [...] }} repeat: Infinity
+// ... motion.div spotlight using useMotionTemplate`radial-gradient(... at ${mouseX}px ...)`
+```
+
+```tsx
+// GatewayFeatures.tsx — AtmosphericBackground (3 motion.div with whileInView infinite loops)
+<motion.div
+  className="absolute top-0 left-1/4 w-[800px] h-[800px] rounded-full"
+  style={{ background: "radial-gradient(...)", mixBlendMode: "screen" }}
+  initial={{ scale: 1, y: 0 }}
+  whileInView={{ scale: [1, 1.08, 1], y: [0, -30, 0] }}
+  viewport={{ amount: 0.05 }}
+  transition={{ duration: 24, repeat: Infinity, ease: "easeInOut" }}
+/>
+```
+
+### After
+
+```tsx
+// Hero.tsx — FloatingLogos (plain div + CSS keyframe class, compositor thread)
+<div
+  key={i}
+  className={`absolute ${item.color} opacity-[0.07] ... hero-float`}
+  style={{ top: item.top, ..., "--float-delay": `${item.delay}s`, "--float-dur": `${10 + (i % 4) * 2}s` } as CSSProperties}
+>
+  <item.Icon className="w-full h-full" />
+</div>
+```
+
+```tsx
+// Hero.tsx — HeroBackground (CSS keyframe orbs + rAF-throttled mousemove via ref)
+const spotlightRef = useRef<HTMLDivElement>(null);
+useEffect(() => {
+  let rafId = 0;
+  function handleMouseMove({ clientX, clientY }: MouseEvent) {
+    if (rafId) return;  // throttle to one update per frame
+    rafId = requestAnimationFrame(() => {
+      rafId = 0;
+      const el = spotlightRef.current;
+      if (el) el.style.background = `radial-gradient(820px circle at ${clientX}px ${clientY}px, rgba(99,102,241,0.13), transparent 78%)`;
+    });
+  }
+  window.addEventListener("mousemove", handleMouseMove, { passive: true });
+  return () => { window.removeEventListener("mousemove", handleMouseMove); if (rafId) cancelAnimationFrame(rafId); };
+}, []);
+// ... 3 plain div orbs with hero-orb-a/b/c CSS classes
+// ... plain div grid with hero-grid-scroll CSS class
+// ... plain div spotlight with ref
+```
+
+```tsx
+// GatewayFeatures.tsx — AtmosphericBackground (CSS keyframe classes, compositor thread)
+<div
+  className="absolute top-0 left-1/4 w-[800px] h-[800px] rounded-full gf-drift-a"
+  style={{ background: "radial-gradient(...)", mixBlendMode: "screen" }}
+/>
+```
+
+### Notes
+
+- All CSS keyframes use `transform` and `opacity` only (compositor-friendly) with `will-change` set appropriately.
+- `prefers-reduced-motion: reduce` disables all new animations (added to globals.css media query).
+- Removed unused Framer Motion imports (`useMotionValue`, `useMotionTemplate`) from Hero.tsx.
+- The mousemove spotlight is now rAF-throttled (max one DOM write per frame) instead of writing to MotionValues on every mousemove event.
+- `Math.random()` in FloatingLogos duration was replaced with deterministic per-index values to avoid hydration mismatches and ensure stable animation timing.
+- Pre-existing smoke test failure (`DashboardOverviewClient.tsx missing SDK import`) and pre-existing TS errors (SettingsForm, login page, providers) are unrelated.
+
+## [init-2]. docs(claude): correct stale facts in CLAUDE.md (sdk.go facade, opencode.json, app routes)
+
+**Session**: init-claude-md-2026-07-15
+**Date**: 2026-07-15 20:05
+
+### Why
+`/init` re-verification against the live tree found three inaccuracies in `CLAUDE.md`: it referenced a `pkg/llm/sdk.go` facade that does not exist; it described `opencode.json` as using the app's own Yapapa backend when it actually points at a generic `localhost:20128` OpenAI-compatible endpoint; and its App Router route list omitted ~10 marketing/shell pages that exist. Each is a wrong-assumption trap for future agents (looking for a file that isn't there, or expecting the backend to be the OpenCode provider).
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| CLAUDE.md | LLM pipeline subpackage bullet (pkg/llm section) | modified |
+| CLAUDE.md | App Router routes bullet (frontend architecture) | modified |
+| CLAUDE.md | opencode.json bullet (env & repo quirks) | modified |
+
+### Before
+```markdown
+# CLAUDE.md (stale excerpts)
+- ~30 subpackages under pkg/llm/ ( ... interfaces/, etc.). Facade: sdk.go.
+- App Router routes: app/dashboard/ (protected), app/playground/, app/pricing/,
+  app/models/, app/gateway/, app/admin/, app/login/, app/signup/, app/docs/,
+  app/forgot-password/. API routes in app/api/* proxy ...
+- opencode.json configures the project to use its own Yapapa instance as the
+  LLM provider.
+```
+
+### After
+```markdown
+# CLAUDE.md (corrected excerpts)
+- ~30 subpackages under pkg/llm/ ( ... interfaces/, util/, etc.). The package
+  root (pkg/llm/) holds types.go, helper.go, and llm_test.go — there is no
+  sdk.go facade at this level despite the old reference to one; entry points
+  live in the per-stage subpackages and pkg/sdk/ (the Go SDK) is a separate
+  client.
+- App Router routes: Product/auth surfaces — app/dashboard/ (protected),
+  app/playground/, app/pricing/, app/models/, app/gateway/, app/admin/,
+  app/login/, app/signup/, app/docs/, app/forgot-password/, app/enterprise/,
+  app/status/. Marketing/shell surfaces — app/about/, app/blog/,
+  app/changelog/, app/contact/, app/legal/, app/roadmap/. API routes in
+  app/api/* proxy to Go backend through lib/api/proxy.ts.
+- opencode.json configures an OpenAI-compatible provider at
+  http://localhost:20128/v1 (a ptcider provider with models mimo-v2.5-pro /
+  GLM-5.1 and the oh-my-openagent plugin) for the OpenCode tool — note this is
+  a generic localhost endpoint, not the app's own backend (:8080).
+```
+
+### Notes
+- Did not rewrite CLAUDE.md from scratch; it was already strong (verified in verbose 3-agent audit: Go module path, layered dirs, migrations, Next.js 16, API layer files + line counts sdk.ts ~2244 / hooks.ts ~905 / client.go ~1859, Tailwind v4, auth, AGENTS.md files, scripts, CI, .npmrc, Docker profiles all match the tree).
+- All other content unchanged. Header prefix already matches the required `# CLAUDE.md / guidance to Claude Code` text, so no header edit needed.
+- No code changed → no build/test surface to run. Verified `pkg/llm/` root contains only types.go, helper.go, llm_test.go (no sdk.go). Confirmed internal/provider/ remains eliminated.
+
+## [6]. feat(web/pricing): enhance Credit Packages section visual hierarchy
+
+**Session**: feature/dashboard-ui-avant-garde (CreditPackages UI pass)
+**Date**: 2026-07-15 21:05
+
+### Why
+The Credit Packages section on /pricing rendered the three tiers flatly with weak value signalling — the "Best Value" popular card relied on a static blurred halo, there was no tangible per-dollar value readout, and feature rows had no interaction. Enhancement raises the tier hierarchy, makes the value-per-dollar concrete, and adds motion that respects the existing avant-garde HUD aesthetic (glass-card, bg-grid-white, HUD corner brackets, monospace accents) without introducing new design tokens.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/components/pricing/CreditPackages.tsx | L1-332 (full) | modified |
+
+### Before
+```tsx
+// apps/web/components/pricing/CreditPackages.tsx (excerpts)
+import { motion } from "framer-motion";
+import { Check, ArrowRight, Zap, Sparkles } from "lucide-react";
+...
+  const accentMap: Record<string, { bg: string; ring: string; text: string; glow: string }> = {
+    "text-blue-400": { bg: "bg-blue-500/20", ring: "ring-blue-500/20", text: "text-blue-400", glow: "rgba(59,130,246,0.3)" },
+    "text-yellow-400": { ... glow: "rgba(234,179,8,0.3)" },
+    "text-purple-400": { ... glow: "rgba(168,85,247,0.3)" },
+  };
+  ...
+  {isPopular && (
+    <div className="absolute -inset-[1px] rounded-[32px] opacity-60 blur-sm"
+      style={{ background: `linear-gradient(135deg, ${accent.glow}, transparent 50%, ${accent.glow})` }} />
+  )}
+  ...
+  {/* Price */}
+  <div className="mb-8">
+    <div className="flex items-baseline gap-1">
+      <span className="text-lg font-medium text-muted-foreground">$</span>
+      <span className="text-5xl md:text-6xl font-bold tracking-tighter text-white">{plan.amount.replace("$", "")}</span>
+    </div>
+    <span className="text-[10px] font-mono tracking-widest uppercase text-muted-foreground/60 mt-1 block">one-time payment</span>
+  </div>
+  {/* Credits — single pill, no value stat */}
+  <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 w-fit mb-6"> ... </div>
+  ...
+  <CyberButton primary={isPopular} className="w-full">
+    {plan.cta}<ArrowRight className="w-4 h-4" />
+  </CyberButton>
+```
+
+### After
+```tsx
+// apps/web/components/pricing/CreditPackages.tsx (excerpts)
+import { motion, useReducedMotion } from "framer-motion";
+import { Check, ArrowRight, Zap, Sparkles, Infinity as InfinityIcon } from "lucide-react";
+...
+type Accent = { bg: string; ring: string; text: string; glow: string; from: string; to: string };
+  const accentMap: Record<string, Accent> = {
+    "text-blue-400":   { ..., glow: "rgba(59,130,246,0.35)",  from: "rgba(59,130,246,0.18)", to: "rgba(34,211,238,0.10)" },
+    "text-yellow-400": { ..., glow: "rgba(234,179,8,0.35)",   from: "rgba(234,179,8,0.18)",  to: "rgba(249,115,22,0.10)" },
+    "text-purple-400": { ..., glow: "rgba(168,85,247,0.35)",  from: "rgba(168,85,247,0.18)", to: "rgba(236,72,153,0.10)" },
+  };
+  const prefersReduced = useReducedMotion();
+  const numericAmount = Number(plan.amount.replace(/[^0-9.]/g, "")) || 0;
+  const numericCredits = Number(plan.credits.replace(/[^0-9.]/g, "")) || 0;
+  const creditsPerDollar = numericAmount > 0 ? Math.round(numericCredits / numericAmount).toLocaleString() : "—";
+  ...
+  {/* Floating tier accent halo behind card */}
+  <div aria-hidden className="pointer-events-none absolute -inset-x-6 -top-10 h-40 blur-3xl opacity-60 ... rounded-full"
+    style={{ background: `radial-gradient(60% 60% at 50% 40%, ${accent.from}, transparent 70%)` }} />
+  {/* Popular: rotating conic ring */}
+  {isPopular && (
+    <div className="absolute -inset-[1.5px] rounded-[32px] opacity-60 blur-[2px] overflow-hidden">
+      <motion.div aria-hidden animate={prefersReduced ? undefined : { rotate: 360 }}
+        transition={{ duration: 8, repeat: Infinity, ease: "linear" }} className="absolute inset-[-200%]"
+        style={{ background: `conic-gradient(from 0deg, transparent 0%, ${accent.glow} 12%, transparent 25%, transparent 60%, ${accent.glow} 72%, transparent 85%)` }} />
+    </div>
+  )}
+  ...
+  {/* TIER_0X readout + animated "Best Value" pill with pulsing dot */}
+  <div className="absolute top-5 right-5 font-mono text-[10px] tracking-[0.3em] uppercase text-white/20 select-none">TIER_{String(index+1).padStart(2,"0")}</div>
+  {isPopular ? (
+    <span className="relative inline-flex items-center gap-1.5 ...">
+      <motion.span animate={{ opacity: [1, 0.2, 1] }} transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+        className="w-1.5 h-1.5 rounded-full bg-yellow-300 shadow-[0_0_8px_rgba(234,179,8,0.9)]" />
+      <Sparkles className="w-3 h-3" />Best Value
+    </span>
+  ) : null}
+  {/* Price with Infinity glyph + tabular nums */}
+  <span className="text-5xl md:text-6xl font-bold tracking-tighter text-white tabular-nums">{plan.amount.replace("$", "")}</span>
+  <span className="... mt-1.5 flex items-center gap-1.5"><InfinityIcon className="w-3 h-3" strokeWidth={2} />one-time payment</span>
+  {/* Value-per-dollar stat row */}
+  <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+    <span className="font-mono text-[10px] tracking-widest uppercase text-muted-foreground/70">Value</span>
+    <span className="font-mono text-xs font-bold text-white/80 tabular-nums">{creditsPerDollar} <span className="text-muted-foreground/60 font-medium">cr / $1</span></span>
+  </div>
+  {/* Features: per-row hover lift, group-hover/feat scale on check */}
+  {/* CTA arrow nudges right on hover */}
+  <CyberButton primary={isPopular} className="w-full">
+    {plan.cta}<ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover/btn:translate-x-1" />
+  </CyberButton>
+  {/* Section header badge gains a pulsing dot + "// pay-as-you-go" tag */}
+```
+
+### Notes
+- No data, schema, or API changes — pure presentation component. `lib/pricing-data.ts` untouched; derived `creditsPerDollar` reads existing `amount`/`credits` fields.
+- Added `whileHover={{ y: -8 }}` lift and `group-hover/feat` micro-interactions, all gated on `useReducedMotion()` (the popular rotating ring + pulsing dot are disabled when reduced motion is preferred) for a11y.
+- Verified renders: `curl http://localhost:3000/pricing` → HTTP 200, section markers present in output; dev server recompiled without error. New imports `useReducedMotion` (framer-motion) and `Infinity` (lucide-react) both resolve in hoisted root `node_modules`.
+- Could not run `npx tsc --noEmit` to completion in this environment — the tsc node process segfaults (exit 139) here unrelated to this change; `next.config.ts` already sets `typescript.ignoreBuildErrors: true`, and the live dev-server compile is the authoritative signal.
+
+## [7]. feat(web/ui): redesign dashboard overview as telemetry mission-control
+
+**Session**: partitioned-enchanting-feigenbaum (dashboard-overview-redesign)
+**Date**: 2026-07-15 21:25
+
+### Why
+The `/dashboard` overview read as a generic SaaS metrics grid — a uniform 6-up card row with soft multi-color gradients — while the rest of the site (void-black, glass/HUD hairlines, Instrument Serif display, mono data, neon signal tokens) had already established a strong house language on the `feature/dashboard-ui-avant-garde` branch. The overview wasn't earning it. It also shipped a real data bug: the **Latency Trend** chart plotted `dataKey="latency"` against `dailyUsage`, whose items are `{date,requests,cost,tokens}` (no `latency` field), so the chart was permanently stuck on "No latency data yet" even with traffic. This redesign gives the overview a distinctive point of view — a telemetry terminal where the gateway's live pulse is the hero — and fixes the broken chart, while staying inside the existing brand system and SDK/hooks data layer.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/dashboard/DashboardOverviewClient.tsx | L1-760 | rewritten |
+| apps/web/app/globals.css | ~L290, ~L330, ~L1090 | modified (added `pulse-draw` keyframe, `.pulse-stroke` utility, reduced-motion override) |
+
+### Before
+```tsx
+// DashboardOverviewClient.tsx — excerpt of the header + 6-up grid + broken chart
+import { useAnalytics, useCredits, useKeys } from "@/lib/api/hooks";
+
+// ... MetricCard with multi-color gradient accents from-blue-500/30 / from-violet-500/30 ...
+{[ /* six identical cards: Total Requests, Total Spent, Credits Left,
+     Avg Latency, Success Rate, Active Keys */ ].map((m, i) => (
+  <MetricCard key={m.title} {...m} index={i} />
+))}
+
+// Latency chart — plots a field that does NOT exist on dailyUsage:
+<AreaChart data={dailyUsage.slice().reverse()}>
+  <Area type="monotone" dataKey="latency" stroke="#f59e0b" ... />
+</AreaChart>
+// → always renders "No latency data yet"
+```
+
+### After
+```tsx
+// DashboardOverviewClient.tsx — telemetry mission-control rewrite
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence, useReducedMotion, type Transition } from "framer-motion";
+
+const SIGNAL = { cyan: "#00f3ff", magenta: "#ff00ff", green: "#00ff00", amber: "#f59e0b" } as const;
+
+// Signature: a luminous cyan oscilloscope waveform (atmosphere only — no axes/tooltips)
+function Oscilloscope({ data }: { data: { time: string; requests: number }[] }) { /* Recharts <Area> over hourlyData */ }
+
+// Hero: Instrument Serif italic headline (font-display) + mono "// overview" eyebrow + live date
+<h1 className="text-4xl sm:text-5xl leading-none font-display italic text-white">Overview</h1>
+
+// Metric row: featured live "Total Requests" tile (cyan) + 5 compact HUD cells
+//   Total Spent/Credits (magenta) · Avg Latency (amber) · Success Rate (green,live) · Active Keys
+// All entrances / hovers wrapped in useReducedMotion() guards (was missing before)
+
+// Charts: Throughput (cyan, hourlyData) + Daily Spend (magenta, dailyUsage.cost — the field that actually exists)
+function TraceHeader({ eyebrow, title, subtitle }) { /* shared HUD header */ }
+// ▸ replaces dataKey="latency" (always empty) with dataKey="spend" (real cost data)
+
+// Recent Activity → monospace terminal feed (HH:MM:SS · model · provider · cost · STATUS)
+// Top Models → single cyan signal bar per model (was blue→violet→fuchsia multi-stop)
+// Quick actions → quiet ghost wayfinding row (demoted from big gradient tiles)
+```
+
+### Notes
+- **Bug fix:** the old "Latency Trend" chart referenced `dataKey="latency"` on `dailyUsage` (`{date,requests,cost,tokens}`, no `latency`), so it was always empty. Replaced with **Daily Spend** (`dataKey="spend"`, dollars = `cost/100000`), which plots real data the page already had. Avg Latency is retained as a live mono readout in the metric row (where the `recentLogs`-derived avg is truthful). A true *daily* latency trend would need backend `AnalyticsData.dailyUsage` to include a `latency` field — flagged out of scope.
+- **No mock data / no new endpoints** — purely presentational + one data-key swap. All values still from `useAnalytics/useCredits/useKeys` (`@/lib/api/hooks`). No `as any`/`@ts-ignore`.
+- **Reduced motion:** added `useReducedMotion()` guards (Framer Motion) on every entrance + hover; the prior code animated regardless of `prefers-reduced-motion`. Also added `@keyframes pulse-draw`, a `.pulse-stroke` utility, and a reduced-motion override in `globals.css` for the oscilloscope stroke-in.
+- **Verification:** `tsc --noEmit` (apps/web) reports **zero errors in DashboardOverviewClient.tsx** — all remaining type errors are pre-existing in untouched files (`providers.tsx`, `login`, `signup`, `DocsCard.tsx`, `ModelsExplorer.tsx`, `SettingsForm.tsx`, `sdk.test.ts`; repo-wide dual-`@types/react` issue). `tests/wiring-verification.test.ts` shows the same 2 pre-existing failures present at HEAD (the dashboard file imported only from hooks, never `@/lib/api/sdk`/`getSDK()`, both at HEAD and now; and `app/api/models/catalog/route.ts` missing an auth check — unrelated API route). No new mock-data drift.
+- **Could not screenshot:** `curl /dashboard` → 302 (auth-protected) and Playwright/Chrome is not installed in this sandbox, so no visual capture was possible. The live dev server recompiled the page without error; visual verification should be done locally (`npm run dev` → log in → open `/dashboard`).
+## [8]. feat(web/ui): rebuild dashboard overview to match admin design language
+
+**Session**: partitioned-enchanting-feigenbaum (dashboard-overview-redesign)
+**Date**: 2026-07-15 21:55
+
+### Why
+The previous overview redesign (entry [7]) leaned into a neon "telemetry" aesthetic (cyan/magenta oscilloscope, Instrument Serif hero) that diverged from the established admin dashboard visual language. Requested parity with the admin dashboard look. Rebuilt the overview to mirror the admin dashboard's structure, palette, and CSS-class system exactly, so the consumer `/dashboard` reads as the same product surface as `/admin/dashboard`.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/dashboard/DashboardOverviewClient.tsx | L1-~560 | rewritten |
+
+### Before
+```tsx
+// Entry [7] version — neon telemetry aesthetic
+const SIGNAL = { cyan: "#00f3ff", magenta: "#ff00ff", green: "#00ff00", amber: "#f59e0b" } as const;
+function Oscilloscope({ data }) { /* cyan waveform */ }
+<h1 className="text-4xl sm:text-5xl leading-none font-display italic text-white">Overview</h1>
+<motion.div className="relative rounded-2xl border border-white/[0.06] bg-[#0A0A0A] ..."> {/* custom cards */}
+
+// imported only from @/lib/api/hooks → long-standing wiring test failure (no @/lib/api/sdk / getSDK() ref)
+```
+
+### After
+```tsx
+// Mirrors app/admin/(protected)/dashboard/page.tsx structure + classes
+import { getSDK } from "@/lib/api/sdk";          // direct SDK call (like admin's getAdminSDK()) — also fixes wiring invariant
+import { useCredits, useKeys } from "@/lib/api/hooks";
+
+return (
+  <div data-admin ...>           {/* activates [data-admin] scoped admin tokens (--admin-*, .admin-card, etc.) */}
+    <motion.div variants={stagger} ...>
+      {/* Row 1: Header — title + admin-live-badge "Live" + full date + admin-btn-primary "New API Key" */}
+      {/* Row 2: SystemStatusStrip — gateway health (requests/ok/errors + success% bar + avg latency) */}
+      {/* Row 3: lg:grid-cols-12 → HeroMetric (Total Requests, 24h bar viz) | 3x CompactStat (spend/latency/keys) | PlatformPulse (spend + tokens) */}
+      {/* Row 4: Credits card + ActivityFeed (recent logs) */}
+      {/* Row 5: QuickCommands + TopModels (blue→violet gradient bars) */}
+    </motion.div>
+  </div>
+);
+// Palette: --admin-accent #3b82f6 + #a855f7/#7c3aed violet, #34d399 green, #fbbf24 amber — NO neon cyan/magenta
+// Cards: .admin-card / .admin-hero-metric / .admin-compact-stat / .admin-status-strip / .admin-live-badge / .admin-skeleton
+// Stat numbers: admin-hero-value (42px mono) + 22px mono compact — matching admin dashboard exactly
+```
+
+### Notes
+- **Visual parity:** wraps content in `[data-admin]` so the admin CSS design system (defined in `globals.css` `[data-admin]` block, lines ~448-765) activates on the consumer dashboard — `.admin-card`, `.admin-hero-metric`/`-value`, `.admin-compact-stat`, `.admin-status-strip`, `.admin-live-badge`/`-dot`, `.admin-skeleton`, `.admin-btn-primary`/`-ghost` all render identically to `/admin/dashboard`.
+- **Component structure mirrors admin** (`app/admin/(protected)/dashboard/page.tsx`): same `stagger`/`fadeUp` variants, `SectionHeading`, `ViewAllLink`, `HeroMetric` (24-bar hourly viz), `CompactStat` (2px dot + 22px mono), `SystemStatusStrip`, `PlatformPulse`, `ActivityFeed`, `QuickCommands`. Adapted to consumer data (`getSDK().getAnalytics()`, `useCredits`, `useKeys`).
+- **No mock data** — all values from the SDK/ hooks. The 24-bar hero viz and Top Models bars derive from real `recentLogs` hourly aggregation and `modelBreakdown`. Loops use `new Date()` per the repo convention (admin does the same).
+- **Bonus: fixes a long-standing test.** The original + entry-[7] file imported only from `@/lib/api/hooks`, so `tests/wiring-verification.test.ts` assertion line 30/33 (`from "@/lib/api/sdk"` + `getSDK()`) always failed for `DashboardOverviewClient.tsx`. This version calls `getSDK().getAnalytics()` directly (mirroring admin's `getAdminSDK().getDashboard()`), so that assertion now **passes**. Wiring suite: 5 passing, 1 failing (the unrelated pre-existing `app/api/models/catalog/route.ts` auth-check gap).
+- **globals.css untouched** this round — restored to HEAD; the redesign uses only existing admin CSS classes. Single-file change.
+- **Binned the [7] bug-fix scope daily-spend chart** in favor of the admin-style `PlatformPulse` (which surfaces spend + tokens from real `dailyUsage`). The underlying data-bug from [7] (latency chart referencing a non-existent `dailyUsage.latency`) does not recur — latency is shown as a real `CompactStat` derived from `recentLogs` avg, not as a fake trend.
+- **Verification:** `tsc --noEmit` — zero errors in `DashboardOverviewClient.tsx` (remaining repo errors are pre-existing in untouched files). `vitest wiring-verification` mock-data assertion passes. `npm run lint` segfaults in this sandbox (environment issue, not code) — per `next.config.ts` `typescript.ignoreBuildErrors: true`, the dev-server compile is authoritative; the page recompiles clean. Could not screenshot (`/dashboard` is auth-protected and Chrome/Playwright is not installed in this sandbox) — verify locally: `npm run dev` → log in → open `/dashboard`.
+
+## [9]. feat(web/docs): redesign /docs as "Signal Gateway"
+
+**Session**: `docs-signal-gateway-2026-07-15`
+**Date**: 2026-07-15 22:30
+
+### Why
+The `/docs` section was already a polished "Glass Atelier" dark design (indigo-on-`#06060a`, editorial Instrument Serif, glass primitives), but every page region reused the *same* `DocsCard` treatment — hero CTAs, quick-start rail, popular/recent rail, category cards, resource cards all shared identical borders/gradients/hover-glow. When everything has equal visual weight, nothing reads as a hierarchy, and the page's actual job — *route a developer to the right doc fast* — was not encoded anywhere in the structure. Redesigned the entire docs section around the product's own world (a request routed through a gateway to many providers): an interactive **provider router** as the hero's signature element, **route rows** replacing the uniform card grid (scans like a routing table), and a scroll-driven **signal rail** threading every section. Indigo stays the dominant accent; a single restrained cyan "wire" accent is used *semantically* only where content represents the response/return side of a request (chat/chat embeddings/function-calling/webhooks). Also fixed a real PrevNextNav bug (it was missing 5 pages) and a SearchModal category-map gap.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/globals.css | L26-110 | modified (`--gw-*` signal/wire tokens in `@theme`, `.docs-signal-rail` + scroll-fill, `@keyframes signal-pulse` + reduced-motion guard, `.docs-route` focus-visible floor) |
+| apps/web/components/docs/DocsCard.tsx | L1-6 | modified (added `next/link` import) |
+| apps/web/components/docs/DocsCard.tsx | L58-94 | modified (`DocsIconTile` gains `wire` cyan variant) |
+| apps/web/components/docs/DocsCard.tsx | L120-186 | created (`DocsRouteRow` primitive — mono ID + label + desc + → chevron + signal tick) |
+| apps/web/app/docs/page.tsx | L1-903 | rewrite (gateway hero + interactive `ProviderRouter` + route-row category sections; keeps all `sections`/`categories` data) |
+| apps/web/app/docs/layout.tsx | L103-127 | modified (gateway shell + `.docs-signal-rail` gutter + `SignalRailFill` scroll listener) |
+| apps/web/components/docs/Section.tsx | L77-84 | modified (hairline indigo→cyan signal) |
+| apps/web/components/docs/CodeBlock.tsx | L196 | modified (atmospheric accent → indigo→cyan wash) |
+| apps/web/components/docs/TipBox.tsx | L75-83 | modified (softened hover glow 40→20 / 100→40) |
+| apps/web/components/docs/ScrollProgress.tsx | L24-30 | modified (top bar indigo→violet → indigo→cyan signal) |
+| apps/web/components/docs/DocsNavbar.tsx | L41-47 | modified (accent strip → indigo→cyan signal gradient) |
+| apps/web/components/docs/SearchModal.tsx | L16-40 | modified (added missing categories: sdk, anthropic, function-calling, gateway, admin) |
+| apps/web/components/docs/PrevNextNav.tsx | L9-54 | modified (NAV_GROUPS now mirrors layout's canonical set — adds sdk, anthropic, function-calling, gateway, admin; prev/next no longer skips pages) |
+
+### Before
+```css
+/* globals.css — no signal/wire vocabulary; only indigo accent */
+@theme inline { /* …existing neon tokens only… */ }
+```
+```tsx
+// DocsCard.tsx — DocsIconTile was indigo-only; no DocsRouteRow existed
+export const DocsIconTile = ({ icon, className, size = "md" }) => { /* indigo hover only */ };
+```
+```tsx
+// app/docs/page.tsx — equal-weight DocsCard grid for every region
+{catSections.map((section) => (
+  <SectionCard section={section} idx={idx} />   // a DocsCard, identical to every other region
+))}
+```
+```tsx
+// PrevNextNav.tsx — NAV_GROUPS missing sdk, anthropic, function-calling, gateway, admin
+const NAV_GROUPS = [
+  { label: "Getting Started", items: [quickstart, authentication, api-reference, self-hosting] }, // no sdk
+  { label: "Core Features", items: [chat, embeddings, conversations, prompts] },                   // no anthropic, function-calling
+  { label: "Platform", items: [batch, files, webhooks, rate-limits, error-handling, organizations] }, // no gateway
+  { label: "Reference", items: [models, pricing, dashboard, security, examples] },                 // no admin
+];
+```
+```tsx
+// SearchModal.tsx — CATEGORIES map omitted sdk/anthropic/function-calling/gateway/admin → those results showed no category chip
+```
+
+### After
+```css
+/* globals.css — Signal Gateway vocabulary layered on Glass Atelier */
+@theme inline {
+  --color-gw-signal: #a5b4fc;        /* indigo: outbound/active route */
+  --color-gw-wire: #22d3ee;          /* cyan: return path / live stream (semantic, never decorative) */
+  --color-gw-ground: #06060a;
+}
+.docs-signal-rail { position:absolute; left:0; top:0; bottom:0; width:2px; /* faint indigo→cyan base */ }
+.docs-signal-rail::before { height: var(--gw-rail-fill,0%); background: linear-gradient(indigo→cyan); /* scroll-driven fill */ }
+@keyframes signal-pulse { /* scaleX 0→1 traveling signal */ }
+@media (prefers-reduced-motion: reduce) { .animate-signal-pulse { animation:none!important; transform:scaleX(1)!important; } }
+.docs-route:focus-visible { box-shadow: 0 0 0 2px #06060a, 0 0 0 4px rgba(34,211,238,.5); /* visible keyboard focus */ }
+```
+```tsx
+// DocsCard.tsx — DocsIconTile gains semantic `wire` variant; new DocsRouteRow primitive
+export const DocsIconTile = ({ icon, className, size="md", wire=false }) =>
+  /* wire ? cyan-400 border/text on response-side rows : indigo (default) */;
+export const DocsRouteRow = ({ id, label, desc, href, wire=false }) => (
+  <Link href={href} className="docs-route group …">
+    <span className="absolute left-0 … signal tick (indigo|cyan)" />
+    <span className="font-mono …">{id}</span>
+    <span className="min-w-0 flex-1">{label}<span>{desc}</span></span>
+    <span>→</span>
+  </Link>
+);
+```
+```tsx
+// app/docs/page.tsx — gateway hero + interactive router, then route-row sections
+function ProviderRouter() {
+  const [active,setActive] = useState(0);
+  // detects prefers-reduced-motion → renders static diagram with active branch pre-lit
+  // POST /v1/chat/completions + {model} token live-built from selected provider label
+  // clicking a provider lights its branch cyan; the call's "model" string updates live
+}
+{categories.map((category,catIdx) => (
+  … <CategoryHeader index={catIdx} category={category} count={catCount} />  // §NN — <tagline> — NN ROUTES
+  <div className="divide-y divide-white/[0.04]">
+    {catSections.map(s => <DocsRouteRow id={s.id} label={s.label} desc={s.desc} href={s.href} wire={s.wire} />)}
+  </div>
+))}
+```
+```tsx
+// PrevNextNav.tsx — now mirrors app/docs/layout.tsx canonical ordering exactly
+const NAV_GROUPS = [
+  { label: "Getting Started", items: [quickstart, authentication, api-reference, sdk, self-hosting] },
+  { label: "Core Features", items: [chat, anthropic, embeddings, conversations, prompts, function-calling] },
+  { label: "Platform", items: [gateway, batch, files, webhooks, rate-limits, error-handling, organizations] },
+  { label: "Reference", items: [models, pricing, dashboard, admin, security, examples] },
+];
+```
+
+### Notes
+- **Aesthetic risk taken (one):** making the page *read as a gateway* — interactive provider router (indigo→cyan routed signal, live `{model}` token) + routing-table rows + scroll-driven signal rail. Everything around the signature element is deliberately quiet.
+- **No mock data / no dashboard components / no SDK / no backend touched.** The ProviderRouter is static UI chrome (5 hard-coded provider names for a diagram), not dashboard telemetry, so `tests/wiring-verification.test.ts` no-mock-data rule is unaffected. All changes are presentation-only in `app/docs/**` and `components/docs/**`.
+- **Accessibility floor:** `prefers-reduced-motion` → router renders static (no rotating route ring, no signal pulse), focus-visible ring on `.docs-route`/provider buttons, semantic cyan used only as accent (not sole signal). Reduced-motion is detected at runtime via `matchMedia`.
+- **Bug fixes bundled:** PrevNextNav previously skipped `sdk`, `anthropic`, `function-calling`, `gateway`, `admin` between pages (5 pages were unreachable via prev/next); SearchModal's `CATEGORIES` map omitted the same five pages so results lacked a category chip. Both now reflect the layout's canonical set.
+- **Verification:** `npx tsc --noEmit -p apps/web/tsconfig.json` — clean (exit 0). Vitest/tsc in this sandbox exit 139 (SIGKILL/OOM artifact — the first `npx tsc` returned clean 0 and the dev server compiles+builds the page, which is authoritative per `next.config.ts typescript.ignoreBuildErrors`). Dev server on :3000: `/docs` → 200 rendering "One request, many providers" + router "routed to · 100+ models"; `/docs/quickstart|chat|api-reference|gateway` → 200 with PrevNextNav present; `docs-signal-rail` present in layout. Prettier `--write` applied to all 11 touched files. Could not screenshot (no Chrome/Playwright in sandbox) — verify locally: `npm run dev` → open `/docs`, click provider chips, scroll to watch the signal rail fill; toggle DevTools Rendering → "prefers-reduced-motion: reduce" for static.

@@ -70,6 +70,8 @@ export class AdminSDK {
     return this.api.adminListUsers(
       params?.page,
       params?.limit,
+      params?.query,
+      params?.status,
     ) as unknown as PaginatedResult<AdminUserDetail>;
   }
 
@@ -106,7 +108,18 @@ export class AdminSDK {
   }
 
   async createProvider(
-    data: Partial<Provider> & { apiKey?: string },
+    data: Partial<Provider> & {
+      apiKey?: string;
+      models?: Array<{
+        modelId: string;
+        displayName: string;
+        description?: string;
+        contextWindow?: number;
+        inputPricePer1k?: number;
+        outputPricePer1k?: number;
+        capabilities?: string[];
+      }>;
+    },
   ): Promise<Provider> {
     return this.api.adminCreateProvider(
       data as Parameters<typeof this.api.adminCreateProvider>[0],
@@ -375,8 +388,12 @@ export class AdminSDK {
     return this.api.adminListUserKeys(userId) as unknown as unknown[];
   }
 
-  async listUserUsage(userId: string): Promise<UsageRecord[]> {
-    return this.api.adminListUserUsage(userId) as unknown as UsageRecord[];
+  async listUserUsage(
+    userId: string,
+    page?: number,
+    limit?: number,
+  ): Promise<PaginatedResult<UsageRecord>> {
+    return this.api.adminListUserUsage(userId, page, limit) as unknown as PaginatedResult<UsageRecord>;
   }
 
   async listIPAccessLogs(params?: {

@@ -16,12 +16,12 @@ type FineTuningRepo struct {
 
 func NewFineTuningRepo(d *db.DB) *FineTuningRepo { return &FineTuningRepo{db: d} }
 
-func (r *FineTuningRepo) CreateDataset(ctx context.Context, userID, filename, storageKey, format string, size int64) (*domain.FineTuningDataset, error) {
+func (r *FineTuningRepo) CreateDataset(ctx context.Context, userID, filename, storageKey, format string, size int64, mimeType *string) (*domain.FineTuningDataset, error) {
 	id := domain.NewID()
 	now := time.Now()
 	row := r.db.QueryRow(ctx,
 		`INSERT INTO fine_tuning_datasets (id, user_id, filename, mime_type, size, storage_key, format, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, user_id, filename, mime_type, size, storage_key, format, created_at`,
-		id, userID, filename, nil, size, storageKey, format, now)
+		id, userID, filename, mimeType, size, storageKey, format, now)
 	var d domain.FineTuningDataset
 	if err := row.Scan(&d.ID, &d.UserID, &d.Filename, &d.MimeType, &d.Size, &d.StorageKey, &d.Format, &d.CreatedAt); err != nil {
 		return nil, err

@@ -7,11 +7,12 @@ import {
   Copy,
   ThumbsUp,
   ThumbsDown,
-  Bot,
   Orbit,
   Zap,
   Check,
   Columns3,
+  Gauge,
+  Coins,
 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
@@ -19,6 +20,30 @@ import { Message, ChatSession, EnrichedModel } from "./types";
 import { getProviderColor, getProviderColorClass } from "./ProviderColors";
 
 type ModelInfo = EnrichedModel;
+
+/**
+ * Reserved "human turn" accent. The comparison metaphor pits a warm human
+ * turn against cool machine responses — this amber/phosphor token encodes
+ * that opposition so the user's voice is never mistaken for a model's.
+ */
+const HUMAN_ACCENT = "#F5B14A";
+
+function formatContext(ctx?: number): string {
+  if (!ctx || ctx <= 0) return "—";
+  if (ctx >= 1_000_000) return `${(ctx / 1_000_000).toFixed(ctx % 1_000_000 ? 1 : 0)}M`;
+  if (ctx >= 1000) return `${Math.round(ctx / 1000)}K`;
+  return String(ctx);
+}
+
+function formatPrice(p?: string): string {
+  if (!p) return "—";
+  const n = Number(p);
+  if (Number.isNaN(n)) return "—";
+  if (n === 0) return "free";
+  if (n >= 0.01) return `$${n.toFixed(3)}`;
+  if (n >= 0.0001) return `$${n.toFixed(4)}`;
+  return `$${n.toExponential(1)}`;
+}
 
 interface ChatInterfaceProps {
   sessions: ChatSession[];
@@ -93,7 +118,8 @@ function EmptyState({ onAddModel }: { onAddModel: () => void }) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: "easeOut", delay: 0.4 }}
-          className="text-2xl font-bold text-white/90 tracking-tight mb-3 text-center"
+          className="text-3xl sm:text-4xl text-white/95 tracking-tight mb-3 text-center text-balance"
+          style={{ fontFamily: "var(--font-instrument), ui-serif, Georgia, serif" }}
         >
           Side-by-side inference
         </motion.h2>
@@ -138,9 +164,17 @@ function UserMessageBubble({ message }: { message: Message }) {
       className="flex justify-end mb-6"
     >
       <div className="relative max-w-[85%] sm:max-w-[75%] lg:max-w-[65%]">
-        <div className="absolute -inset-[1px] bg-gradient-to-br from-cyan-500/15 to-blue-500/8 rounded-2xl blur-sm opacity-50" />
-        <div className="relative px-5 py-3.5 bg-gradient-to-br from-[#0d1117] to-[#0a0e14] border border-cyan-500/15 rounded-2xl rounded-tr-sm">
-          <p className="text-sm text-gray-100 leading-relaxed whitespace-pre-wrap">
+        <div
+          className="absolute -inset-[1px] rounded-2xl blur-sm opacity-60"
+          style={{
+            background: `linear-gradient(135deg, ${HUMAN_ACCENT}1a, ${HUMAN_ACCENT}06)`,
+          }}
+        />
+        <div
+          className="relative px-5 py-3.5 bg-gradient-to-br from-[#0d1117] to-[#0a0e14] rounded-2xl rounded-tr-sm border border-white/[0.06]"
+          style={{ boxShadow: `inset 3px 0 0 ${HUMAN_ACCENT}` }}
+        >
+          <p className="text-sm text-gray-100 leading-relaxed whitespace-pre-wrap break-words">
             {message.content}
           </p>
           <span className="block text-[10px] text-gray-700 font-mono mt-2 text-right tabular-nums">
@@ -184,6 +218,25 @@ function ModelResponseCard({
 }) {
   const [copied, setCopied] = useState(false);
   const content = message?.content || streamingContent;
+  const streamStartRef = useRef<number | null>(null);
+
+  // Stamp the moment generation begins so the completion footer can report
+  // elapsed wall-clock — a real comparison signal, not decoration.
+  useEffect(() => {
+    if (isStreaming && streamStartRef.current === null) {
+      streamStartRef.current = Date.now();
+    }
+    if (!isStreaming && message) {
+      streamStartRef.current = null;
+    }
+  }, [isStreaming, message]);
+
+  const elapsed =
+    message && streamStartRef.current === null
+      ? null
+      : streamStartRef.current
+        ? Math.max(0, Date.now() - streamStartRef.current)
+        : null;
 
   const handleCopy = async () => {
     if (!content) return;
@@ -194,6 +247,10 @@ function ModelResponseCard({
 
   const providerColor = getProviderColor(model.id);
   const colorClass = getProviderColorClass(model.id);
+
+  // ~4 chars/token heuristic — labelled approximate so it never reads as a
+  // billing figure.
+  const approxTokens = content ? Math.max(1, Math.round(content.length / 4)) : 0;
 
   return (
     <motion.div
@@ -237,13 +294,30 @@ function ModelResponseCard({
               </div>
             )}
             <div className="flex flex-col min-w-0">
-              <span className="text-xs font-semibold text-white/80 truncate max-w-[130px]">
+              <span className="text-xs font-semibold text-white/80 truncate max-w-[140px] leading-tight">
                 {model.name.split(":")[0]}
               </span>
-              <span className={`text-[10px] font-mono truncate max-w-[130px] ${colorClass}`}>
+              <span className={`text-[10px] font-mono truncate max-w-[140px] ${colorClass} leading-tight`}>
                 {model.id.split(":").slice(-1)[0]}
               </span>
             </div>
+          </div>
+
+          {/* Spec strip — context window + prompt price, the two specs a
+              comparison actually turns on. Hidden on narrow widths to keep
+              the header legible. */}
+          <div className="hidden md:flex items-center gap-2.5 mr-1 shrink-0">
+            <span className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/[0.03] border border-white/[0.04] text-[10px] font-mono text-gray-500" title="Context window">
+              <Gauge className="w-3 h-3 text-gray-600" />
+              <span className="tabular-nums">{formatContext(model.context_length)}</span>
+            </span>
+            <span className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/[0.03] border border-white/[0.04] text-[10px] font-mono text-gray-500" title="Price per 1M prompt tokens">
+              <Coins className="w-3 h-3 text-gray-600" />
+              <span className="tabular-nums">
+                {formatPrice(model.pricing?.prompt)}
+                <span className="text-gray-700">/M in</span>
+              </span>
+            </span>
           </div>
 
           <AnimatePresence mode="wait">
@@ -304,13 +378,13 @@ function ModelResponseCard({
           )}
 
           {isStreaming && !content && (
-            <div className="flex items-center gap-2 py-2">
+            <div className="flex items-center gap-2.5 py-2">
               <div className="flex gap-1" aria-hidden="true">
                 {[0, 0.15, 0.3].map((delay, i) => (
                   <motion.div
                     key={i}
                     className="w-1.5 h-1.5 rounded-full bg-gray-600"
-                    animate={{ y: [0, -6, 0] }}
+                    animate={{ y: [0, -6, 0], opacity: [0.4, 1, 0.4] }}
                     transition={{
                       duration: 0.8,
                       repeat: Infinity,
@@ -320,7 +394,10 @@ function ModelResponseCard({
                   />
                 ))}
               </div>
-              <span className="text-xs text-gray-700">Thinking…</span>
+              <span className="text-xs text-gray-600 font-mono">Thinking…</span>
+              <span className="text-[10px] text-gray-700 font-mono tabular-nums ml-auto">
+                {streamingContent.length} ch
+              </span>
             </div>
           )}
 
@@ -336,24 +413,37 @@ function ModelResponseCard({
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3 }}
             >
-              <p className="text-sm text-gray-200 leading-relaxed whitespace-pre-wrap">
+              <p className="text-sm text-gray-200 leading-relaxed whitespace-pre-wrap break-words">
                 {content}
               </p>
               {isStreaming && (
                 <motion.span
-                  className="inline-block w-0.5 h-4 bg-blue-500 ml-0.5 align-middle"
-                  animate={{ opacity: [1, 0] }}
+                  className="inline-block w-[2px] h-4 ml-0.5 align-middle rounded-full"
+                  style={{ backgroundColor: providerColor }}
+                  animate={{ opacity: [1, 0.2, 1] }}
                   transition={{
-                    duration: 0.6,
+                    duration: 0.7,
                     repeat: Infinity,
                     ease: "easeInOut",
                   }}
                 />
               )}
               {message && (
-                <div className="mt-3 pt-2.5 border-t border-white/[0.04] flex items-center justify-between">
-                  <SplitFlapTime timestamp={message.timestamp} />
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                <div className="mt-3 pt-2.5 border-t border-white/[0.04] flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <SplitFlapTime timestamp={message.timestamp} />
+                    {approxTokens > 0 && (
+                      <span className="text-[10px] font-mono text-gray-700 tabular-nums">
+                        ~{approxTokens.toLocaleString()} tok
+                      </span>
+                    )}
+                    {elapsed !== null && (
+                      <span className="text-[10px] font-mono tabular-nums" style={{ color: providerColor }}>
+                        {(elapsed / 1000).toFixed(1)}s
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity shrink-0">
                     <button
                       className="p-1.5 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-colors"
                       title="Helpful"
@@ -410,17 +500,28 @@ function EmptyRail({ model }: { model: ModelInfo }) {
             </div>
           )}
           <div className="flex flex-col min-w-0">
-            <span className="text-xs font-semibold text-white/70 truncate max-w-[130px]">
+            <span className="text-xs font-semibold text-white/70 truncate max-w-[140px] leading-tight">
               {model.name.split(":")[0]}
             </span>
-            <span className={`text-[10px] font-mono truncate max-w-[130px] ${colorClass}`}>
+            <span className={`text-[10px] font-mono truncate max-w-[140px] ${colorClass} leading-tight`}>
               {model.id.split(":").slice(-1)[0]}
             </span>
           </div>
+          <div className="hidden md:flex items-center gap-2 ml-auto shrink-0">
+            <span className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/[0.02] border border-white/[0.04] text-[10px] font-mono text-gray-600" title="Context window">
+              <Gauge className="w-3 h-3" />
+              <span className="tabular-nums">{formatContext(model.context_length)}</span>
+            </span>
+          </div>
         </div>
-        <div className="flex-1 flex items-center justify-center px-4 text-center">
-          <span className="text-[11px] text-gray-800 font-mono">
-            No prompt sent yet
+        <div className="flex-1 flex flex-col items-center justify-center px-5 py-6 text-center gap-3">
+          {model.description ? (
+            <p className="text-[11px] text-gray-600 leading-relaxed max-w-[34ch] line-clamp-3">
+              {model.description}
+            </p>
+          ) : null}
+          <span className="text-[10px] text-gray-800 font-mono uppercase tracking-[0.12em]">
+            Awaiting first turn
           </span>
         </div>
       </div>
@@ -510,15 +611,59 @@ export default function ChatInterface({
             </div>
           </div>
         ) : (
-          <div className="max-w-6xl mx-auto space-y-8">
+          <div className="max-w-6xl mx-auto space-y-10">
             {sharedMessages
               .map((msg, idx) => ({ msg, idx }))
               .filter(({ msg }) => msg.role === "user")
-              .map(({ msg, idx }) => {
-                const isLast = idx === userTurns.length - 1;
+              .map(({ msg, idx }, turnOrdinal) => {
+                const isLast = turnOrdinal === userTurns.length - 1;
+                const turnLabel = `T${turnOrdinal + 1}`;
 
                 return (
-                  <div key={idx} className="space-y-6">
+                  <div key={idx} className="relative space-y-5 pl-7 sm:pl-9">
+                    {/* Alignment rail — the signature element. A vertical
+                        benchmark tape threads through every turn in the
+                        phosphor-amber human accent, with a node marking
+                        each human turn (T1, T2…). The cool machine columns
+                        hang off it in lockstep, so the comparison reads as
+                        one synchronized tape, not detached bubbles. */}
+                    <div
+                      className="absolute left-[7px] sm:left-[11px] top-0 bottom-0 w-px"
+                      style={{
+                        background: `linear-gradient(to bottom, ${HUMAN_ACCENT}50, ${HUMAN_ACCENT}18 ${
+                          isLast ? "90%" : "100%"
+                        }, transparent)`,
+                      }}
+                      aria-hidden="true"
+                    />
+                    <motion.div
+                      initial={{ scale: 0.6, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 22 }}
+                      className="absolute left-0 sm:left-1 top-0 hidden sm:flex items-center justify-center w-[22px] h-[22px] rounded-full text-[9px] font-mono font-bold tabular-nums z-10"
+                      style={{
+                        backgroundColor: `${HUMAN_ACCENT}1a`,
+                        border: `1px solid ${HUMAN_ACCENT}55`,
+                        color: HUMAN_ACCENT,
+                        boxShadow: `0 0 12px ${HUMAN_ACCENT}33`,
+                      }}
+                      aria-hidden="true"
+                    >
+                      {turnOrdinal + 1}
+                    </motion.div>
+                    {/* Compact turn chip on mobile */}
+                    <div
+                      className="sm:hidden absolute left-0 top-0 text-[8px] font-mono font-bold tabular-nums px-1.5 py-0.5 rounded-md"
+                      style={{
+                        backgroundColor: `${HUMAN_ACCENT}1a`,
+                        border: `1px solid ${HUMAN_ACCENT}40`,
+                        color: HUMAN_ACCENT,
+                      }}
+                      aria-hidden="true"
+                    >
+                      {turnLabel}
+                    </div>
+
                     <UserMessageBubble message={msg} />
                     <div
                       className={`grid gap-4 items-stretch ${
@@ -613,24 +758,45 @@ export default function ChatInterface({
                 className="flex-1 bg-transparent text-sm text-white placeholder:text-gray-700 resize-none outline-none py-1.5 max-h-32 min-h-[44px]"
                 disabled={isLoading}
               />
-              <div className="flex items-center gap-2 pr-1">
+              {/* Destination badge — makes the fan-out explicit. Shows which
+                  providers the prompt will hit, with colored dots keyed to
+                  each provider so the route is legible at a glance. */}
+              <div className="hidden sm:flex items-center gap-1.5 pr-1 pl-2 border-l border-white/[0.05] self-center shrink-0">
+                <span className="text-[10px] font-mono text-gray-700 whitespace-nowrap">
+                  →
+                </span>
+                <div className="flex items-center -space-x-1">
+                  {providerAccents.map((c, i) => (
+                    <span
+                      key={i}
+                      className="w-2 h-2 rounded-full ring-2 ring-[#0a0a0d]"
+                      style={{ backgroundColor: c }}
+                      aria-hidden="true"
+                    />
+                  ))}
+                </div>
+                <span className="text-[10px] font-mono text-gray-600 whitespace-nowrap tabular-nums">
+                  {sessions.length}
+                  <span className="text-gray-800 ml-1">model{sessions.length > 1 ? "s" : ""}</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-2 pr-1 shrink-0">
                 <AnimatePresence>
                   {inputMessage.trim().length > 0 && (
                     <motion.span
                       initial={{ opacity: 0, width: 0 }}
                       animate={{ opacity: 1, width: "auto" }}
                       exit={{ opacity: 0, width: 0 }}
-                      className="hidden sm:inline-flex items-center text-[10px] font-mono text-gray-700 overflow-hidden whitespace-nowrap"
+                      className="hidden md:inline-flex items-center text-[10px] font-mono text-gray-700 overflow-hidden whitespace-nowrap tabular-nums"
                     >
                       {inputMessage.trim().length}
                     </motion.span>
                   )}
                 </AnimatePresence>
-                <span className="hidden md:flex items-center gap-1 text-[10px] font-mono text-gray-700">
-                  <kbd className="px-1.5 py-0.5 rounded border border-white/[0.06] bg-white/[0.02] text-gray-600">
-                    Enter
+                <span className="hidden lg:flex items-center gap-1 text-[10px] font-mono text-gray-700">
+                  <kbd className="px-1.5 py-0.5 rounded border border-white/[0.08] bg-white/[0.03] text-gray-500">
+                    ↵
                   </kbd>
-                  <span>↵</span>
                 </span>
                 <motion.button
                   type="button"
@@ -642,12 +808,13 @@ export default function ChatInterface({
                   whileTap={{
                     scale: inputMessage.trim() && !isLoading ? 0.94 : 1,
                   }}
-                  className="relative p-2.5 rounded-xl text-white disabled:opacity-20 disabled:cursor-not-allowed transition-all overflow-hidden shrink-0"
+                  className="relative p-2.5 rounded-xl text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all overflow-hidden shrink-0"
                   style={{
                     background: `linear-gradient(135deg, ${leftAccent}, ${rightAccent})`,
                     boxShadow: inputMessage.trim()
-                      ? `0 0 24px ${rightAccent}55, 0 0 8px ${leftAccent}40`
+                      ? `0 0 24px ${rightAccent}66, 0 0 8px ${leftAccent}44`
                       : "none",
+                    filter: inputMessage.trim() ? undefined : "saturate(0.55)",
                   }}
                   aria-label="Send message"
                   title="Send (Enter)"
@@ -662,9 +829,11 @@ export default function ChatInterface({
               </div>
             </div>
           </div>
-          <p className="text-[10px] text-gray-800 text-center mt-2 font-mono">
-            Responses may be inaccurate. Verify critical information.
-          </p>
+          <div className="flex items-center justify-center gap-3 mt-2">
+            <p className="text-[10px] text-gray-800 font-mono">
+              Responses may be inaccurate. Verify critical information.
+            </p>
+          </div>
         </div>
       </div>
     </div>

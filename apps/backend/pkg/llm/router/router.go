@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"dra-platform/backend/pkg/llm"
+	"golang.org/x/sync/singleflight"
 )
 
 // Strategy determines how to route requests.
@@ -59,6 +60,7 @@ type Router struct {
 	errors     map[string]*errorTracker
 	modelCache map[string]*modelCacheEntry // Bug #57: cache ListModels per provider
 	modelTTL   time.Duration
+	sf         singleflight.Group
 }
 
 type latencyTracker struct {
@@ -161,7 +163,7 @@ func (r *Router) Route(ctx context.Context, req *llm.ChatRequest) (llm.Provider,
 	// Filter by capability if needed
 	candidates := r.filterByCapability(providers, req)
 	if len(candidates) == 0 {
-		candidates = providers
+		return nil, fmt.Errorf("no providers support requested capabilities for model %q", req.Model)
 	}
 
 	switch strategy {
@@ -209,6 +211,15 @@ func (r *Router) filterByCapability(providers []llm.Provider, req *llm.ChatReque
 		var filtered []llm.Provider
 		for _, p := range providers {
 			if supportsTools(p) {
+				filtered = append(filtered, p)
+			}
+		}
+		return filtered
+	}
+	if req.Thinking != nil && req.Thinking.Enabled {
+		var filtered []llm.Provider
+		for _, p := range providers {
+			if p.SupportsThinking() {
 				filtered = append(filtered, p)
 			}
 		}
@@ -267,7 +278,7 @@ func (r *Router) routeByCost(ctx context.Context, providers []llm.Provider, req 
 	if best != nil {
 		return best, nil
 	}
-	return providers[0], nil
+	return nil, fmt.Errorf("routeByCost: no provider/model match for %q", req.Model)
 }
 
 // getCachedModels returns cached models for a provider, fetching if expired.
@@ -282,16 +293,24 @@ func (r *Router) getCachedModels(ctx context.Context, p llm.Provider) []llm.Mode
 	}
 	r.mu.RUnlock()
 
-	models, err := p.ListModels(ctx)
+	// Use singleflight to collapse concurrent cache misses into one upstream call.
+	result, err, _ := r.sf.Do("listmodels:"+name, func() (interface{}, error) {
+		models, err := p.ListModels(ctx)
+		if err != nil {
+			return nil, err
+		}
+		r.mu.Lock()
+		r.modelCache[name] = &modelCacheEntry{models: models, fetchedAt: time.Now()}
+		r.mu.Unlock()
+		return models, nil
+	})
 	if err != nil {
 		return nil
 	}
-
-	r.mu.Lock()
-	r.modelCache[name] = &modelCacheEntry{models: models, fetchedAt: time.Now()}
-	r.mu.Unlock()
-
-	return models
+	if models, ok := result.([]llm.ModelInfo); ok {
+		return models
+	}
+	return nil
 }
 
 func (r *Router) routeByLatency(providers []llm.Provider) (llm.Provider, error) {

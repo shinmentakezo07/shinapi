@@ -116,6 +116,9 @@ func (s *WebhookService) Update(ctx context.Context, userID, id string, req doma
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
+	if err := webhook.ValidateWebhookURL(req.URL); err != nil {
+		return nil, domain.NewError(domain.ErrBadRequest, 400, err.Error())
+	}
 	w, err := s.repo.ByID(ctx, id)
 	if err != nil {
 		return nil, domain.Wrap(domain.ErrInternal, 500, "database error", err)
@@ -155,6 +158,9 @@ func (s *WebhookService) Dispatch(ctx context.Context, userID string, event webh
 		if !w.Active {
 			continue
 		}
+		if !webhook.IsEventAllowed(event.Type, w.Events) {
+			continue
+		}
 		cfg := webhook.Config{
 			URL:      w.URL,
 			Secret:   w.Secret,
@@ -164,16 +170,16 @@ func (s *WebhookService) Dispatch(ctx context.Context, userID string, event webh
 		}
 		s.wg.Add(1)
 		go func(webhookID string, c webhook.Config, e webhook.Event) {
+			defer s.wg.Done()
 			defer func() {
-				s.wg.Done()
 				if r := recover(); r != nil {
 					logger.Error("webhook_dispatch_panic", "webhook_id", webhookID, "recover", r)
 				}
 			}()
 			select {
 			case s.sem <- struct{}{}:
+				defer func() { <-s.sem }()
 				s.sendAndTrack(s.ctx, webhookID, c, e)
-				<-s.sem
 			case <-s.ctx.Done():
 				return
 			}
@@ -184,7 +190,7 @@ func (s *WebhookService) Dispatch(ctx context.Context, userID string, event webh
 func (s *WebhookService) sendAndTrack(ctx context.Context, webhookID string, cfg webhook.Config, event webhook.Event) {
 	payload, _ := json.Marshal(event)
 
-	idempotencyKey := fmt.Sprintf("%s:%s:%d", webhookID, event.Type, event.Timestamp.Unix())
+	idempotencyKey := fmt.Sprintf("%s:%s:%d", webhookID, event.Type, event.Timestamp.UnixNano())
 	isDup, err := s.repo.HasSuccessfulIdempotencyKey(ctx, idempotencyKey)
 	if err != nil {
 		logger.Error("webhook_idempotency_check_failed", "error", err.Error())
@@ -195,14 +201,15 @@ func (s *WebhookService) sendAndTrack(ctx context.Context, webhookID string, cfg
 	}
 
 	delivery := &domain.WebhookDelivery{
-		ID:          domain.NewID(),
-		WebhookID:   webhookID,
-		EventType:   event.Type,
-		Payload:     payload,
-		Attempts:    0,
-		MaxAttempts: webhookMaxAttempts,
-		Status:      "pending",
-		CreatedAt:   time.Now(),
+		ID:             domain.NewID(),
+		WebhookID:      webhookID,
+		EventType:      event.Type,
+		Payload:        payload,
+		IdempotencyKey: idempotencyKey,
+		Attempts:       0,
+		MaxAttempts:    webhookMaxAttempts,
+		Status:         "pending",
+		CreatedAt:      time.Now(),
 	}
 	if err := s.repo.CreateDelivery(ctx, delivery); err != nil {
 		logger.Error("webhook_create_delivery_failed", "error", err.Error())
@@ -313,6 +320,9 @@ func (s *WebhookService) ProcessPendingRetries(ctx context.Context) error {
 		if err != nil || w == nil || !w.Active {
 			continue
 		}
+		if !webhook.IsEventAllowed(d.EventType, w.Events) {
+			continue
+		}
 		cfg := webhook.Config{
 			URL:      w.URL,
 			Secret:   w.Secret,
@@ -327,12 +337,14 @@ func (s *WebhookService) ProcessPendingRetries(ctx context.Context) error {
 			Timestamp: d.CreatedAt,
 			Payload:   payload,
 		}
-		idempotencyKey := fmt.Sprintf("%s:%s:%d", d.WebhookID, d.EventType, d.CreatedAt.Unix())
+		idempotencyKey := d.IdempotencyKey
 
 		select {
 		case s.sem <- struct{}{}:
-			s.attemptDelivery(ctx, &d, cfg, event, idempotencyKey)
-			<-s.sem
+			go func(delivery domain.WebhookDelivery) {
+				defer func() { <-s.sem }()
+				s.attemptDelivery(ctx, &delivery, cfg, event, idempotencyKey)
+			}(d)
 		case <-ctx.Done():
 			return ctx.Err()
 		}
@@ -372,12 +384,14 @@ func (s *WebhookService) RetryDelivery(ctx context.Context, deliveryID string) *
 		Timestamp: d.CreatedAt,
 		Payload:   payload,
 	}
-	idempotencyKey := fmt.Sprintf("%s:%s:%d", d.WebhookID, d.EventType, d.CreatedAt.Unix())
+	idempotencyKey := d.IdempotencyKey
 
 	select {
 	case s.sem <- struct{}{}:
-		s.attemptDelivery(ctx, d, cfg, event, idempotencyKey)
-		<-s.sem
+		go func(delivery *domain.WebhookDelivery) {
+			defer func() { <-s.sem }()
+			s.attemptDelivery(ctx, delivery, cfg, event, idempotencyKey)
+		}(d)
 	case <-ctx.Done():
 		return domain.NewError(domain.ErrServiceUnavailable, 503, "Context cancelled")
 	}

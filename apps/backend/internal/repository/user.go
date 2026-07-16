@@ -7,6 +7,7 @@ import (
 
 	"dra-platform/backend/internal/db"
 	"dra-platform/backend/internal/domain"
+	"dra-platform/backend/internal/pkg/logger"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -85,7 +86,11 @@ func (r *UserRepo) UpdateProfile(ctx context.Context, id, name, email string) er
 	// Fetch old email before update so we can invalidate the old cache key (Bug #37)
 	var oldEmail string
 	if r.cache != nil {
-		_ = r.db.QueryRow(ctx, `SELECT email FROM users WHERE id = $1`, id).Scan(&oldEmail)
+		if err := r.db.QueryRow(ctx, `SELECT email FROM users WHERE id = $1`, id).Scan(&oldEmail); err != nil && err != pgx.ErrNoRows {
+			logger.Warn("user_repo_updateprofile_old_email_lookup", "user_id", id, "error", err)
+			// On lookup error, invalidate the ID key unconditionally to avoid stale data.
+			_ = r.cache.Delete(ctx, userCacheKey(id))
+		}
 	}
 	_, err := r.db.Exec(ctx, `UPDATE users SET name = $2, email = $3 WHERE id = $1`, id, name, email)
 	if err == nil && r.cache != nil {

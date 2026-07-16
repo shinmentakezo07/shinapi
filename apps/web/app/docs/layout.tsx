@@ -102,6 +102,24 @@ const navGroups: NavGroup[] = [
 
 const allNavItems = navGroups.flatMap((g) => g.items);
 
+/* ── Drives the left-gutter signal rail fill from scroll progress ── */
+function SignalRailFill() {
+  useEffect(() => {
+    const rail = document.querySelector<HTMLElement>(".docs-signal-rail");
+    if (!rail) return;
+    const onScroll = () => {
+      const top = window.scrollY;
+      const h = document.documentElement.scrollHeight - window.innerHeight;
+      const pct = h > 0 ? Math.min(top / h, 1) * 100 : 0;
+      rail.style.setProperty("--gw-rail-fill", `${pct}%`);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  return null;
+}
+
 export default function DocsLayout({
   children,
 }: {
@@ -216,8 +234,11 @@ export default function DocsLayout({
         />
       </aside>
 
-      {/* Main content */}
+      {/* Main content — gateway shell with left-gutter signal rail */}
       <div className="lg:ml-[260px] relative z-10">
+        {/* Persistent signal rail — fills as the reader scrolls the page */}
+        <div className="docs-signal-rail hidden lg:block" aria-hidden style={{ ["--gw-rail-fill" as string]: "0%" }} />
+        <SignalRailFill />
         <main className="max-w-[800px] mx-auto px-6 sm:px-10 pt-[80px] pb-20">
           <DocsPageShell>{children}</DocsPageShell>
         </main>

@@ -54,11 +54,21 @@ func registerRoutes(
 
 	// CORS
 	corsOrigins := cfg.AllowedOrigins
+	allowCredentials := true
+	// Security: if any origin is the wildcard "*", credentials must be
+	// disabled — browsers reject wildcard + credentials, and allowing it
+	// would be a CSRF/credential-leak footgun. Normalize at CORS setup.
+	for _, o := range corsOrigins {
+		if o == "*" {
+			allowCredentials = false
+			break
+		}
+	}
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   corsOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Api-Key", "X-Sandbox", "X-Request-ID", "X-Webhook-Signature", "X-Webhook-ID", "X-Event-Type", "X-Idempotency-Key"},
-		AllowCredentials: true,
+		AllowCredentials: allowCredentials,
 		MaxAge:           300,
 	}))
 
@@ -96,16 +106,9 @@ func registerRoutes(
 		},
 	)
 
-	// Token blacklist — skip in SQLite mode (token_blacklist table doesn't
-	// exist in LiteDDL; middleware would log errors on every request).
-	var tokenBlacklistMW func(http.Handler) http.Handler
-	if database.Type != db.DBTypeSQLite {
-		tokenBlacklistSvc := service.NewTokenBlacklistService(repository.NewTokenBlacklistRepo(database))
-		tokenBlacklistMW = appmiddleware.TokenBlacklist(tokenBlacklistSvc)
-	} else {
-		tokenBlacklistMW = func(next http.Handler) http.Handler { return next }
-		logger.Info("token_blacklist_skipped", "reason", "sqlite_lite_mode")
-	}
+	// Token blacklist (Postgres + SQLite lite; token_blacklist is in LiteDDL).
+	tokenBlacklistSvc := service.NewTokenBlacklistService(repository.NewTokenBlacklistRepo(database))
+	tokenBlacklistMW := appmiddleware.TokenBlacklist(tokenBlacklistSvc)
 
 	// Quota tracker
 	var quotaTracker appmiddleware.QuotaTrackerInterface
@@ -119,7 +122,16 @@ func registerRoutes(
 	quotaMW := appmiddleware.QuotaCheck(
 		quotaTracker,
 		func(r *http.Request) *appmiddleware.ScopedAPIKey {
-			return appmiddleware.ToScoped(appmiddleware.GetAPIKey(r))
+			if key := appmiddleware.GetAPIKey(r); key != nil {
+				return appmiddleware.ToScoped(key)
+			}
+			// No API key present (Bearer/JWT/session-cookie path): resolve the
+			// quota subject from the authenticated user so session/JWT requests
+			// are also quota-enforced rather than silently unlimited.
+			if u := appmiddleware.GetUser(r); u != nil {
+				return appmiddleware.ToScopedUser(u)
+			}
+			return nil
 		},
 		func(r *http.Request) (string, int) {
 			var req struct {
@@ -147,6 +159,9 @@ func registerRoutes(
 	// Public
 	r.Get("/health", h.Health)
 	r.Get("/health/providers", h.ProviderHealth)
+	// Public model catalog for /models and playground (no auth).
+	// Chat and authenticated list remain under authMW.
+	r.Get("/api/models/catalog", h.ListModelCatalog)
 
 	// First-time bootstrap endpoints (always public; gated by needsSetup
 	// flag inside service.SetupService so a second admin can never be
@@ -381,7 +396,7 @@ func registerRoutes(
 
 		r.Get("/api/admin/admins", appmiddleware.RequireAdmin(h.AdminListAdminUsers))
 		r.Post("/api/admin/admins", appmiddleware.RequireAdmin(h.AdminCreateAdminUser))
-		r.Delete("/api/admin/admins/{id}", appmiddleware.RequireAdmin(h.AdminRemoveAdmin))
+		r.Delete("/api/admin/admins/{id}", appmiddleware.RequirePermission("superadmin")(h.AdminRemoveAdmin))
 
 		r.Get("/api/admin/sso", appmiddleware.RequireAdmin(h.AdminListSSOConfigs))
 
@@ -445,9 +460,9 @@ func registerRoutes(
 		r.Use(tokenBlacklistMW)
 
 		// Virtual Keys
-		r.Get("/api/virtual-keys", h.ListVirtualKeys)
+		r.Get("/api/virtual-keys", appmiddleware.RequireAdmin(h.ListVirtualKeys))
 		r.Post("/api/virtual-keys", h.CreateVirtualKey)
-		r.Post("/api/virtual-keys/{id}/deactivate", h.DeactivateVirtualKey)
+		r.Post("/api/virtual-keys/{id}/deactivate", appmiddleware.RequireAdmin(h.DeactivateVirtualKey))
 
 		// WebSocket
 		r.Get("/ws", h.WebSocketHandler)

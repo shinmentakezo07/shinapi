@@ -240,9 +240,11 @@ func (h *Handler) handleAnthropicStream(w http.ResponseWriter, r *http.Request, 
 
 	flusher, ok := w.(http.Flusher)
 	var outputTokens int
+	var upstreamUsage *llm.Usage
 	sentMessageStart := false
 	streamState := &anthropic.StreamingState{}
 	modelForStream := req.Model
+	completedNormally := false
 
 	done := r.Context().Done()
 	for {
@@ -250,6 +252,12 @@ func (h *Handler) handleAnthropicStream(w http.ResponseWriter, r *http.Request, 
 		case chunk, more := <-ch:
 			if !more {
 				goto ANTHROPIC_FINISH
+			}
+
+			// Capture upstream usage if the provider emits it (typically on the
+			// final chunk). Prefer this over token estimates when present.
+			if chunk.Usage != nil {
+				upstreamUsage = chunk.Usage
 			}
 
 			// Send message_start on first chunk
@@ -278,7 +286,7 @@ func (h *Handler) handleAnthropicStream(w http.ResponseWriter, r *http.Request, 
 				sentMessageStart = true
 			}
 
-			// Track output for token estimation
+			// Track output for token estimation (fallback only; upstream usage wins)
 			if chunk.Delta.Content != "" {
 				outputTokens += llm.EstimateTokens(chunk.Delta.Content)
 			}
@@ -299,24 +307,41 @@ func (h *Handler) handleAnthropicStream(w http.ResponseWriter, r *http.Request, 
 	}
 
 ANTHROPIC_FINISH:
+	// Only emit message_stop and bill when the stream finished because the
+	// upstream provider closed it (not because the client disconnected). A
+	// disconnected/canceled request must not be charged for a partial response.
+	completedNormally = r.Context().Err() == nil
+
+	if completedNormally {
+		stopData, _ := json.Marshal(anthropic.StreamEvent{Type: "message_stop"})
+		fmt.Fprintf(w, "event: message_stop\ndata: %s\n\n", stopData)
+		if ok {
+			flusher.Flush()
+		}
+	}
+
 	// Estimate input tokens from messages if streaming didn't provide usage info
 	// outputTokens tracks actual output, inputTokens should be estimated from input
 	inputTokens := 0
 	for _, m := range req.Messages {
 		inputTokens += llm.EstimateTokens(string(m.Role)) + llm.EstimateTokens(m.Content)
 	}
+
+	// Prefer the upstream usage object when present; only fall back to the
+	// accumulated delta estimates (or the inputTokens/2 heuristic) when absent.
+	if upstreamUsage != nil {
+		if upstreamUsage.CompletionTokens > 0 {
+			outputTokens = upstreamUsage.CompletionTokens
+		}
+		if upstreamUsage.PromptTokens > 0 {
+			inputTokens = upstreamUsage.PromptTokens
+		}
+	}
 	if outputTokens == 0 {
 		outputTokens = inputTokens / 2
 	}
 
-	// Send message_stop event
-	stopData, _ := json.Marshal(anthropic.StreamEvent{Type: "message_stop"})
-	fmt.Fprintf(w, "event: message_stop\ndata: %s\n\n", stopData)
-	if ok {
-		flusher.Flush()
-	}
-
-	if !isSandbox {
+	if !isSandbox && completedNormally {
 		h.asyncLogAndDeductAnthropic(r.Context(), userID, apiKeyID, req.Model, inputTokens, outputTokens)
 	}
 }

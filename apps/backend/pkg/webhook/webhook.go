@@ -6,6 +6,7 @@ import (
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -108,7 +109,12 @@ func (d *Dispatcher) SendWithIdempotency(ctx context.Context, cfg Config, event 
 		req.Header.Set(k, v)
 	}
 
-	resp, err := d.client.Do(req)
+	pinnedClient, err := newPinnedHTTPClient(cfg.URL)
+	if err != nil {
+		delivery.Error = err.Error()
+		return delivery, err
+	}
+	resp, err := pinnedClient.Do(req)
 	if err != nil {
 		delivery.Error = err.Error()
 		return delivery, err
@@ -176,6 +182,12 @@ func signPayload(payload []byte, secret string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
+// IsEventAllowed reports whether an event type is subscribed to by the given
+// allow-list. Exported so the webhook service can pre-filter before dispatch.
+func IsEventAllowed(eventType string, allowed []string) bool {
+	return isEventAllowed(eventType, allowed)
+}
+
 func isEventAllowed(eventType string, allowed []string) bool {
 	if len(allowed) == 0 {
 		return true
@@ -186,6 +198,56 @@ func isEventAllowed(eventType string, allowed []string) bool {
 		}
 	}
 	return false
+}
+
+// newPinnedHTTPClient validates the URL's resolved IPs and returns an HTTP
+// client that dials the first validated IP directly, preventing DNS rebinding.
+// The Host header and TLS SNI remain the original hostname so HTTPS works.
+func newPinnedHTTPClient(rawURL string) (*http.Client, error) {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid URL")
+	}
+	host := u.Hostname()
+	if host == "" {
+		return nil, fmt.Errorf("missing hostname")
+	}
+	ips, err := net.LookupIP(host)
+	if err != nil {
+		return nil, fmt.Errorf("cannot resolve hostname: %w", err)
+	}
+	if len(ips) == 0 {
+		return nil, fmt.Errorf("no IPs resolved for hostname")
+	}
+	for _, ip := range ips {
+		if ip.IsUnspecified() || ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
+			return nil, fmt.Errorf("URL resolves to private/reserved IP %s", ip)
+		}
+	}
+	dialIP := ips[0]
+	port := u.Port()
+	if port == "" {
+		if u.Scheme == "https" {
+			port = "443"
+		} else {
+			port = "80"
+		}
+	}
+	transport := &http.Transport{
+		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			dialAddr := net.JoinHostPort(dialIP.String(), port)
+			d := net.Dialer{Timeout: 10 * time.Second}
+			return d.DialContext(ctx, network, dialAddr)
+		},
+	}
+	if u.Scheme == "https" {
+		transport.TLSClientConfig = &tls.Config{ServerName: host}
+	}
+	return &http.Client{
+		Timeout:       30 * time.Second,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error { return http.ErrUseLastResponse },
+		Transport:     transport,
+	}, nil
 }
 
 func generateID() string {
@@ -217,10 +279,10 @@ func ValidateWebhookURL(rawURL string) error {
 	}
 	ips, err := net.LookupIP(host)
 	if err != nil {
-		return nil
+		return fmt.Errorf("cannot resolve webhook URL hostname: %w", err)
 	}
 	for _, ip := range ips {
-		if ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
+		if ip.IsUnspecified() || ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
 			return fmt.Errorf("webhook URL resolves to private/reserved IP %s", ip)
 		}
 	}

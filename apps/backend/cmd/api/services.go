@@ -127,15 +127,9 @@ func initServices(ctx context.Context, cfg *config.Config, database *db.DB, redi
 	pricingSvc.RefreshCache(ctx)
 	logger.Info("pricing_service_initialized")
 	webhookSvc := service.NewWebhookService(repository.NewWebhookRepo(database))
-	// The webhook retry worker polls webhook_deliveries, which only exists in
-	// the Postgres/Neon schema. In SQLite (lite) mode the table is absent and
-	// the repo SQL uses Postgres-specific functions (NOW()), so skip the
-	// worker to avoid log spam every tick.
-	if database.Type != db.DBTypeSQLite {
-		webhookSvc.StartRetryWorker(ctx, 10*time.Second)
-	} else {
-		logger.Info("webhook_retry_worker_skipped", "reason", "sqlite_lite_mode")
-	}
+	// Retry worker is safe on SQLite now that webhook_deliveries is in LiteDDL
+	// and NOW() is rewritten by the SQLite querier.
+	webhookSvc.StartRetryWorker(ctx, 10*time.Second)
 	orgSvc := service.NewOrganizationService(repository.NewOrganizationRepo(database), userRepo)
 
 	// Admin services
@@ -460,12 +454,16 @@ func initAdminServices(ctx context.Context, database *db.DB, repoCache repositor
 	adminProviderRepo.SetCache(repoCache, cfg.CacheDefaultTTL)
 	adminModelRepo.SetCache(repoCache, cfg.CacheDefaultTTL)
 	adminSettingsRepo.SetCache(repoCache, cfg.CacheDefaultTTL)
+	adminBillingRepo.SetCache(repoCache, cfg.CacheDefaultTTL)
+	adminFeaturesRepo.SetCache(repoCache, cfg.CacheDefaultTTL)
 
 	adminAuditSvc := service.NewAuditService(adminAuditRepo, 1000)
 	adminSvc := service.NewAdminService(adminUserRepo, adminProviderRepo, adminModelRepo,
 		adminBillingRepo, adminSettingsRepo, adminAuditRepo,
 		adminSecurityRepo, adminFeaturesRepo, adminAuditSvc)
 	adminSvc.SetLLMRuntime(llmRegistry, llmCache, llmWatcher)
+	// Encrypt provider API keys at rest (AUTH_SECRET) so they survive restarts.
+	adminSvc.SetKeyEncryptionSecret(cfg.AuthSecret)
 	adminSvc.EnsureBuiltinProviders(ctx)
 	adminSvc.LoadProvidersFromDB(ctx, llmRegistry)
 	adminSvc.SyncModelRegistryOverlay(ctx)

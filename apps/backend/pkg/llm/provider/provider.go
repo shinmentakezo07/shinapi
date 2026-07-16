@@ -440,12 +440,20 @@ func (r *Registry) GetByModel(modelID string) (llm.Provider, string, bool) {
 		}
 	}
 
-	// Try to find by model prefix
-	for name, p := range r.providers {
+	// Try to find by model prefix.
+	// Track the LONGEST matching prefix so that e.g. "openai" doesn't
+	// shadow a more specific provider registered as "openai-eu".
+	bestName := ""
+	for name := range r.providers {
 		if strings.HasPrefix(modelID, name+"/") {
-			_, m := llm.ParseModelID(modelID)
-			return p, m, true
+			if len(name) > len(bestName) {
+				bestName = name
+			}
 		}
+	}
+	if bestName != "" {
+		_, m := llm.ParseModelID(modelID)
+		return r.providers[bestName], m, true
 	}
 
 	return nil, "", false

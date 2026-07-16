@@ -84,18 +84,18 @@ docker-compose --profile mongo up -d  # Start Postgres + Mongo profile
 
 - `apps/web`: Next.js 16 canary frontend — App Router, React 19, Tailwind CSS v4, NextAuth v5, Drizzle, React Query.
 - `apps/backend`: Go 1.25 API — chi, pgx, JWT/API-key auth, layered service/repository architecture.
-- `packages/`: Reserved for shared packages (currently empty).
+- Root `package.json` workspaces include `packages/*`, but no `packages/` directory is checked in yet.
 - `scripts/dev.sh`: Full-stack launcher (deps, Postgres, schema, seed, both apps).
 - `scripts/smoke-test.sh`: Repo-specific wiring audit (dashboard mock data, SDK imports, route coverage, SSE wiring).
-- `AGENTS.md`, `apps/web/AGENTS.md`, `apps/backend/AGENTS.md`: App-specific guidance.
+- `AGENTS.md`, `apps/web/AGENTS.md`, `apps/backend/AGENTS.md`, `apps/backend/pkg/llm/AGENTS.md`: App/layer guidance.
 - `ops.md`: Operational debt and known issues (P0–P3). Canonical source for "what's broken or missing."
-- `olla.md`: Exhaustive project reference (architecture, full DB schema, all API endpoints, auth flows, env config).
-- `UPDATE.md`: Historical record of completed refactors and feature wiring.
+- `osa.md` / `FIXES_APPLIED.md`: Security and bug-audit history.
+- `UPDATE.md`: Mandatory per-change log — append an entry for every edit (see Hard Constraints).
 
 ### Frontend architecture
 
 - **Next.js 16 canary is NOT your training data.** Breaking changes from v14/15 — APIs, conventions, and file structure differ. Read `node_modules/next/dist/docs/` before writing any code and heed deprecation notices. `"use cache"` replaces old `revalidate`/`dynamic` — implicit caching is gone. `fetch()` is no longer cached by default.
-- **App Router routes**: `app/dashboard/` (protected), `app/playground/`, `app/pricing/`, `app/models/`, `app/gateway/`, `app/admin/`, `app/login/`, `app/signup/`, `app/docs/`, `app/forgot-password/`. API routes in `app/api/*` proxy to Go backend through `lib/api/proxy.ts`.
+- **App Router routes**: Product/auth surfaces — `app/dashboard/` (protected), `app/playground/`, `app/pricing/`, `app/models/`, `app/gateway/`, `app/admin/`, `app/login/`, `app/signup/`, `app/docs/`, `app/forgot-password/`, `app/enterprise/`, `app/status/`. Marketing/shell surfaces — `app/about/`, `app/blog/`, `app/changelog/`, `app/contact/`, `app/legal/`, `app/roadmap/`. API routes in `app/api/*` proxy to Go backend through `lib/api/proxy.ts`.
 - **Auth**: NextAuth v5 in `auth.ts`/`auth.config.ts`. JWT HS256 secrets must match the backend. OAuth: GitHub + Google. Fallback: `AUTH_SECRET || NEXTAUTH_SECRET`.
 - **Proxy middleware** (`proxy.ts`): redirects unauthenticated `/dashboard/*` to login, authenticated `/login`/`/signup` to dashboard.
 - **Dashboard is SDK-driven.** Components use `getSDK()` / `DraSDK` from `lib/api/sdk.ts`. `tests/wiring-verification.test.ts` enforces no mock data.
@@ -105,38 +105,38 @@ docker-compose --profile mongo up -d  # Start Postgres + Mongo profile
 - **Admin panel** (`app/admin/`) uses a separate auth flow from the main NextAuth dashboard. The first-time admin bootstrap is handled by `internal/handler/setup.go` (exposes `GET /api/setup/status` and `POST /api/setup/bootstrap` when no admin exists).
 - **Styling**: Tailwind CSS v4 — CSS-first config (`globals.css @theme`), NOT `tailwind.config.ts`. Uses `cva` + `tailwind-merge` for variants.
 - **Charts**: Recharts. **Animations**: Framer Motion (components) + GSAP (scroll-triggered).
-- **Frontend API layer** (`lib/api/`): `sdk.ts` (~1700 lines, typed client), `admin-sdk.ts` (admin endpoints), `hooks.ts` (~800 lines, React Query wrappers), `errors.ts`, `proxy.ts`, `types.ts`, `key-auth.ts`, `rate-limit.ts`, `require-auth.ts`.
-- **Legacy SDK**: `pkg/llmsdk/` — avoid for new code.
+- **Frontend API layer** (`lib/api/`): `sdk.ts` (~2240 lines, typed client), `admin-sdk.ts` (admin endpoints), `hooks.ts` (~900 lines, React Query wrappers), `errors.ts`, `proxy.ts`, `types.ts`, `key-auth.ts`, `rate-limit.ts`, `require-auth.ts`.
+- **Legacy SDK**: backend `pkg/llmsdk/` — avoid for new code.
 
 ### Backend architecture
 
 - **Layered**: `cmd/api/main.go` → `internal/handler/` → `internal/service/` → `internal/repository/` → `internal/domain/`. Handlers own HTTP only; services own business logic (never import `net/http`); repositories own raw SQL (all parameterized via pgx).
-- **Route registration**: `cmd/api/main.go` (server setup, metrics), `cmd/api/routes.go` (~455 lines, all route definitions with middleware), `cmd/api/services.go` (~492 lines, dependency injection via `initServices()`).
+- **Route registration**: `cmd/api/main.go` (server setup, metrics), `cmd/api/routes.go` (~475 lines, all route definitions with middleware), `cmd/api/services.go` (~494 lines, dependency injection via `initServices()`).
 - **Standard API responses** via `internal/pkg/response` — consistent envelope: `success`, `data`, `error`, optional `meta`.
 - **Errors** flow through `domain.AppError`, not ad-hoc HTTP errors. Admin handlers use `adminError()` / `adminErrorWithStatus()` from `admin_errors.go` — logs full error, returns generic message to client (never leak `err.Error()` directly).
-- **Middleware** (14 files): JWT/API-key auth, CORS, rate limiting, quota, request logging, tracing, metrics, body limits, validation, token blacklist.
+- **Middleware** (`internal/middleware/`, 14 files): JWT/API-key auth, rate limiting, quota (in-memory + Redis), request logging, tracing, metrics, body limits, token blacklist, transform.
 - **Three auth modes**: `Authorization: Bearer <jwt>`, `authjs.session-token` cookie, `x-api-key`.
 - **Go module path**: `dra-platform/backend`.
-- **Raw SQL migrations** in `migrations/`, numbered `001_*.sql`–`022_*.sql` (e.g. `022_enterprise_features.sql.disabled`). Hand-applied, no auto-migrator.
+- **Raw SQL migrations** in `migrations/`, numbered `001_*.sql`–`025_*.sql` (some numbers collide / are disabled, e.g. `022_enterprise_features.sql.disabled`, dual `008_*`, `022_*`, `024_*`). Hand-applied, no auto-migrator.
 - **First-time admin bootstrap** via `internal/handler/setup.go` (`SetupHandler`). Exposes unauthenticated `GET /api/setup/status` and `POST /api/setup/bootstrap` when no admin exists. Gated by `service.SetupService` / `repository.ErrFirstAdminAlreadyExists`.
 - **Key internal packages**: `config/` (env-based config loader), `db/` (pgx pool + auto-migrate/seed + SQLite lite schema), `middleware/`, `pkg/logger/` (slog), `pkg/response/`, `pkg/token/` (JWT), `testutil/` (integration test harness with `NewTestServer()`).
 
 ### LLM gateway architecture
 
 - OpenAI-compatible proxy (`/v1/chat/completions`, `/v1/embeddings`, `/v1/models`) built on `pkg/llm/`.
-- 10-stage pipeline: **validator → router → cache → guardrails → moderation → translator → provider → telemetry → circuit breaker → watcher**. Orchestrated by `pkg/llm/pipeline/pipeline.go`.
-- 18+ subpackages under `pkg/llm/`: `provider/` (registry, key rotation, health, fallback, OpenAI SDK integration), `router/` (model→provider mapping, A/B, budget-aware), `cache/` (TTL + semantic dedup + Redis), `guardrails/`, `moderation/`, `translator/` (Anthropic ↔ OpenAI ↔ Generic), `tools/` (function calling, `websearch/`), `telemetry/`, `tokens/`, `embeddings/`, `batch/`, `circuitbreaker/`, `watcher/`, `openai/` (schema types), `validator/`, `pipeline/`, `anthropic/` (Anthropic format), `sdk.go` (facade).
+- 10-stage pipeline: **validator → router → cache → guardrails → moderation → translator → provider → telemetry → circuit breaker → watcher**. Orchestrated by `pkg/llm/pipeline/pipeline.go`. Full map in `apps/backend/pkg/llm/AGENTS.md`.
+- ~30 subpackages under `pkg/llm/` (not just the stage names): core stages (`provider/`, `router/`, `cache/`, `guardrails/`, `moderation/`, `translator/`, `pipeline/`, `validator/`, `circuitbreaker/`, `watcher/`, `openai/`, `anthropic/`, `tools/`) plus supporting packages (`embeddings/`, `batch/`, `tokens/`, `streaming/`, `loadbalancer/`, `budget/`, `registry/`, `virtualkeys/`, `security/`, `thinking/`, `ws/`, `otel/`, `usage/`, `audit/`, `credentials/`, `stores/`, `interfaces/`, `util/`, etc.). The package root (`pkg/llm/`) holds `types.go`, `helper.go`, and `llm_test.go` — there is no `sdk.go` facade at this level despite the old reference to one; entry points live in the per-stage subpackages and `pkg/sdk/` (the Go SDK) is a separate client.
 - Anthropic compatibility at `/v1/messages` via `internal/handler/anthropic_messages.go` + `pkg/llm/anthropic/`, reusing the same auth/quota/billing pipeline. Streaming uses Anthropic SSE events (`message_start`, `content_block_delta`, `message_delta`, `message_stop`).
 - Official Go SDKs: `github.com/openai/openai-go/v3`, `github.com/anthropics/anthropic-sdk-go`, `github.com/sashabaranov/go-openai`.
-- `X-Sandbox: true` on `/v1/chat/completions` disables quota, cost, and logging for testing.
+- `X-Sandbox: true` on `/v1/chat/completions` bypasses billing/quota/logging **only for admin callers**. Non-admins get `403 permission_error` — do not document or use sandbox as a free-usage escape hatch.
 
 ### Important architecture quirks
 
-- `pkg/llm/provider/` is the canonical provider registry. Legacy `internal/provider/` was **eliminated** (2026-05-15 — see `UPDATE.md`).
-- **SDK parity matters.** Backend API changes need matching updates in Go SDK (`pkg/sdk/`, ~1860 lines) then TypeScript SDK (`lib/api/sdk.ts`, ~1700 lines), in that order. Both implement ~40 methods.
+- `pkg/llm/provider/` is the canonical provider registry. Legacy `internal/provider/` was **eliminated** (2026-05-15 — see `ops.md` / `UPDATE.md`).
+- **SDK parity matters.** Backend API changes need matching updates in Go SDK (`pkg/sdk/client.go`, ~1860 lines) then TypeScript SDK (`apps/web/lib/api/sdk.ts`, ~2240 lines), in that order.
 - Webhook delivery: `pkg/webhook/` + `internal/service/webhook.go` + `internal/repository/webhook.go` (exponential backoff retry, DLQ, delivery logs).
 - `pkg/email/` (SMTP), `pkg/trace/` (distributed tracing).
-- Batch jobs, SSE notifications, uploads, telemetry, and embeddings all have dedicated handlers/services — check for existing subsystems before adding parallel logic.
+- Batch jobs, SSE notifications, uploads, telemetry, credits/billing, fine-tuning, and embeddings all have dedicated handlers/services — check for existing subsystems before adding parallel logic.
 - `internal/pkg/` contains shared packages (`logger/`, `response/`, `token/`). Use these instead of rolling your own.
 
 ## Hard Constraints
@@ -234,33 +234,33 @@ bash scripts/smoke-test.sh  # Wiring verification after significant changes
 ## Environment and Repo Quirks
 
 - `AUTH_SECRET` must be identical in frontend and backend. Fallback: `AUTH_SECRET || NEXTAUTH_SECRET`.
-- Root `.env` uses Docker network URLs (`BACKEND_URL=http://backend:8080`); local dev needs `.env.local` with `BACKEND_URL=http://localhost:8080`.
+- Local env templates: `apps/web/.env.local.example`, `apps/backend/.env.example`. Root/Docker compose may use Docker network URLs (`BACKEND_URL=http://backend:8080`); local dev needs `BACKEND_URL=http://localhost:8080`.
 - Backend Makefile prepends `$(HOME)/.local/go/bin` to `PATH`.
 - `apps/web/tsconfig.json` excludes `db/seed*.ts` and `scripts/**/*` from type checking.
-- `turbo.json` passes build env vars but **NOT** `ANTHROPIC_API_KEY`, `GROQ_API_KEY`, or `GEMINI_API_KEY` — these are runtime-only.
-- `next.config.ts` enables `output: 'standalone'` and sets security headers. Production Docker entry: `apps/web/server.js` inside `.next/standalone/`.
+- Provider API keys (`ANTHROPIC_API_KEY`, `GROQ_API_KEY`, `GEMINI_API_KEY`, etc.) are runtime-only — not build-time turbo env.
+- `next.config.ts` enables `output: 'standalone'` and `typescript.ignoreBuildErrors: true`. Production Docker entry: `apps/web/server.js` inside `.next/standalone/`.
 - Backend Makefile uses `go list -f` filter to only test packages with test files (Go 1.26+ compat since `covdata` removed).
 - `.npmrc` sets `legacy-peer-deps=true` — do not remove.
 - **Frontend `@/` path alias** maps to `apps/web/` root. Example: `@/lib/api/sdk` → `apps/web/lib/api/sdk.ts`.
 - **Backend `ENV=development`** enables `slog.LevelDebug` logging. `ENV=production` in Docker.
 - **`DB_TYPE` modes**: `postgres` (default), `neon` (cloud, skips local container), `mongodb` (backend auto-setup), `sqlite` (lite runtime with embedded schema + seed in `internal/db/lite_schema.go`).
 - **MongoDB** in `docker-compose.yml` is behind a `mongo` profile — NOT started by default.
-- **`opencode.json`** configures the project to use its own Yapapa instance as the LLM provider.
+- **`opencode.json`** configures an OpenAI-compatible provider at `http://localhost:20128/v1` (a `ptcider` provider with models `mimo-v2.5-pro` / `GLM-5.1` and the `oh-my-openagent` plugin) for the OpenCode tool — note this is a generic localhost endpoint, not the app's own backend (`:8080`).
 - **Package overrides** in root `package.json`: dompurify, esbuild, postcss, uuid — pinned across all workspaces.
 - **Frontend dual DB driver**: Uses `@neondatabase/serverless` for cloud Neon databases, `pg` for local Postgres. Check `DATABASE_URL` for `neon.tech` to determine which driver is active.
-- **Docker entrypoint** is `start.sh` with supervisord. In production, the backend binary is `/app/backend/server` and the frontend runs `apps/web/server.js` in standalone `output: 'standalone'` mode.
-- **API Sandbox Mode**: Send `X-Sandbox: true` header on `/v1/chat/completions` to disable quota, cost tracking, and logging. Useful for testing — never ship with it enabled.
+- **Docker entrypoint** is `start.sh` with supervisord. In production, the backend binary is `/app/backend/server` and the frontend runs `apps/web/server.js` in standalone mode.
+- **API Sandbox Mode**: `X-Sandbox: true` on `/v1/chat/completions` disables quota/cost/logging **for admins only**. Non-admin sandbox requests are rejected.
 
 ## Files Worth Checking Before Non-Trivial Changes
 
-- `AGENTS.md` — repo-level guidance
-- `apps/web/AGENTS.md` — frontend-specific rules (Next.js 16 breaking changes, SDK enforcement)
-- `apps/backend/AGENTS.md` — backend-specific rules (layered architecture, auth, migrations)
+- `AGENTS.md` — short repo index + env var table (points at this file as canonical)
+- `apps/web/AGENTS.md` — frontend rules (Next.js 16, SDK enforcement, component layers)
+- `apps/backend/AGENTS.md` — backend rules (layers, auth, migrations, Anthropic proxy)
 - `apps/backend/pkg/llm/AGENTS.md` — LLM pipeline stages and subpackage map
 - `ops.md` — operational debt and known issues
 - `osa.md` — comprehensive security and bug audit (Round 2, 2026-05-26)
 - `FIXES_APPLIED.md` — recent security and bug fix record (OLLA audit, 2026-05-25)
-- `UPDATE.md` — records of completed cleanup and feature wiring
+- `UPDATE.md` — mandatory per-change log
 - `apps/backend/cmd/api/main.go` — dependency wiring
 - `apps/backend/cmd/api/routes.go` — all route definitions (100+ endpoints)
 - `apps/backend/cmd/api/services.go` — dependency injection factory
@@ -269,5 +269,6 @@ bash scripts/smoke-test.sh  # Wiring verification after significant changes
 - `apps/backend/internal/db/lite_schema.go` — SQLite runtime schema and seed
 - `apps/web/lib/api/sdk.ts` — TypeScript SDK
 - `apps/web/lib/api/hooks.ts` — React Query hooks
-- `apps/web/lib/api/proxy.ts` — server-side proxy middleware
+- `apps/web/lib/api/proxy.ts` / `apps/web/proxy.ts` — backend proxy vs NextAuth route middleware
 - `apps/web/db/schema.ts` — Drizzle ORM schema
+- `apps/web/auth.ts` / `apps/web/auth.config.ts` — NextAuth v5 config

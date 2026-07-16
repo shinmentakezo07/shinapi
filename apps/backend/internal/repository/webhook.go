@@ -60,7 +60,7 @@ func (r *WebhookRepo) Delete(ctx context.Context, userID, id string) error {
 func (r *WebhookRepo) Update(ctx context.Context, userID, id, url, secret string, events []string, headers map[string]string, active bool) (*domain.Webhook, error) {
 	headersBytes, _ := json.Marshal(headers)
 	row := r.db.QueryRow(ctx,
-		`UPDATE webhooks SET url = $1, secret = $2, events = $3, headers = $4, active = $5
+		`UPDATE webhooks SET url = $1, secret = CASE WHEN $2 <> '' THEN $2 ELSE secret END, events = $3, headers = $4, active = $5
 		WHERE id = $6 AND user_id = $7
 		RETURNING id, user_id, url, secret, events, headers, active, created_at`,
 		url, secret, events, headersBytes, active, id, userID)

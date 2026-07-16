@@ -10,11 +10,18 @@ import (
 )
 
 type AdminBillingRepo struct {
-	db *db.DB
+	db    *db.DB
+	cache RepoCache
+	ttl   time.Duration
 }
 
 func NewAdminBillingRepo(d *db.DB) *AdminBillingRepo {
 	return &AdminBillingRepo{db: d}
+}
+
+func (r *AdminBillingRepo) SetCache(c RepoCache, ttl time.Duration) {
+	r.cache = c
+	r.ttl = ttl
 }
 
 func (r *AdminBillingRepo) AdjustCredits(ctx context.Context, adj *domain.CreditAdjustment) error {
@@ -23,6 +30,17 @@ func (r *AdminBillingRepo) AdjustCredits(ctx context.Context, adj *domain.Credit
 		return fmt.Errorf("begin tx: %w", err)
 	}
 	defer tx.Rollback(ctx)
+
+	// Ensure the user_credits row exists before selecting it; otherwise new
+	// users without any prior credit activity would fail with pgx.ErrNoRows.
+	_, err = tx.Exec(ctx, `
+		INSERT INTO user_credits (id, user_id, balance, total_purchased, total_spent)
+		VALUES ($1, $2, 0, 0, 0)
+		ON CONFLICT (user_id) DO NOTHING
+	`, domain.NewID(), adj.UserID)
+	if err != nil {
+		return fmt.Errorf("ensure user_credits row: %w", err)
+	}
 
 	var balance int
 	err = tx.QueryRow(ctx, `SELECT COALESCE(balance, 0) FROM user_credits WHERE user_id=$1 FOR UPDATE`, adj.UserID).Scan(&balance)
@@ -33,7 +51,7 @@ func (r *AdminBillingRepo) AdjustCredits(ctx context.Context, adj *domain.Credit
 	adj.BalanceBefore = balance
 	adj.BalanceAfter = balance + adj.Amount
 
-	_, err = tx.Exec(ctx, `UPDATE user_credits SET balance = balance + $2, total_purchased = total_purchased + GREATEST($2, 0), total_spent = total_spent + GREATEST(-$2, 0), updated_at = NOW() WHERE user_id = $1`,
+	_, err = tx.Exec(ctx, `UPDATE user_credits SET balance = balance + $2, total_purchased = total_purchased + GREATEST($2, 0), total_spent = total_spent + LEAST($2, 0), updated_at = NOW() WHERE user_id = $1`,
 		adj.UserID, adj.Amount)
 	if err != nil {
 		return fmt.Errorf("update credits: %w", err)
@@ -47,7 +65,13 @@ func (r *AdminBillingRepo) AdjustCredits(ctx context.Context, adj *domain.Credit
 		return fmt.Errorf("insert adjustment: %w", err)
 	}
 
-	return tx.Commit(ctx)
+	if err := tx.Commit(ctx); err != nil {
+		return err
+	}
+	if r.cache != nil {
+		_ = r.cache.Delete(ctx, creditsCacheKey(adj.UserID))
+	}
+	return nil
 }
 
 func (r *AdminBillingRepo) ListAdjustments(ctx context.Context, userID string, page, limit int) ([]domain.CreditAdjustment, int, error) {

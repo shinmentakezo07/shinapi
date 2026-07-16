@@ -77,7 +77,9 @@ func (r *FileRepo) ByUser(ctx context.Context, userID string, page, limit int) (
 	}
 
 	var total int
-	_ = r.db.QueryRow(ctx, `SELECT COUNT(*) FROM files WHERE user_id = $1`, userID).Scan(&total)
+	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM files WHERE user_id = $1`, userID).Scan(&total); err != nil {
+		return nil, 0, err
+	}
 	return files, total, nil
 }
 

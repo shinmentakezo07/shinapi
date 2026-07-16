@@ -185,6 +185,21 @@ func GenerateTestJWT(userID, email, name string) string {
 	return s
 }
 
+// GenerateTestJWTWithRole creates a valid JWT carrying a "role" claim, used by
+// RBAC tests that need to assert behavior for specific roles (admin, superadmin).
+func GenerateTestJWTWithRole(userID, email, name, role string) string {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub":   userID,
+		"email": email,
+		"name":  name,
+		"role":  role,
+		"exp":   time.Now().Add(time.Hour).Unix(),
+		"iat":   time.Now().Unix(),
+	})
+	s, _ := token.SignedString([]byte(TestAuthSecret))
+	return s
+}
+
 // BearerHeader returns an Authorization header with a test JWT.
 func BearerHeader(userID, email, name string) http.Header {
 	h := http.Header{}
@@ -221,6 +236,18 @@ func SeedAdmin(d *db.DB, name, email, pass string) (*domain.User, error) {
 	}
 	repo := repository.NewUserRepo(d)
 	return repo.Create(ctx, name, email, hash, "admin")
+}
+
+// SeedSuperAdmin seeds a superadmin user, used by RBAC tests that exercise
+// superadmin-only guards (e.g. privilege-escalation prevention).
+func SeedSuperAdmin(d *db.DB, name, email, pass string) (*domain.User, error) {
+	ctx := context.Background()
+	hash, err := password.Hash(pass)
+	if err != nil {
+		return nil, err
+	}
+	repo := repository.NewUserRepo(d)
+	return repo.Create(ctx, name, email, hash, "superadmin")
 }
 
 // SeedCredits creates initial credits for a user.

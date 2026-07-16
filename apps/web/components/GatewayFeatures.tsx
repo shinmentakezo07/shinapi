@@ -221,41 +221,29 @@ function AtmosphericBackground() {
       className="pointer-events-none absolute inset-0 overflow-hidden"
       aria-hidden
     >
-      <motion.div
-        className="absolute top-0 left-1/4 w-[800px] h-[800px] rounded-full"
+      <div
+        className="absolute top-0 left-1/4 w-[800px] h-[800px] rounded-full gf-drift-a"
         style={{
           background:
             "radial-gradient(circle, rgba(99,102,241,0.16) 0%, transparent 65%)",
           mixBlendMode: "screen",
         }}
-        initial={{ scale: 1, y: 0 }}
-        whileInView={{ scale: [1, 1.08, 1], y: [0, -30, 0] }}
-        viewport={{ amount: 0.05 }}
-        transition={{ duration: 24, repeat: Infinity, ease: "easeInOut" }}
       />
-      <motion.div
-        className="absolute bottom-0 right-1/4 w-[700px] h-[700px] rounded-full"
+      <div
+        className="absolute bottom-0 right-1/4 w-[700px] h-[700px] rounded-full gf-drift-b"
         style={{
           background:
             "radial-gradient(circle, rgba(139,92,246,0.13) 0%, transparent 65%)",
           mixBlendMode: "screen",
         }}
-        initial={{ scale: 1, x: 0 }}
-        whileInView={{ scale: [1, 1.1, 1], x: [0, 30, 0] }}
-        viewport={{ amount: 0.05 }}
-        transition={{ duration: 28, repeat: Infinity, ease: "easeInOut" }}
       />
-      <motion.div
-        className="absolute top-2/3 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full"
+      <div
+        className="absolute top-2/3 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full gf-drift-c"
         style={{
           background:
             "radial-gradient(ellipse, rgba(56,189,248,0.08) 0%, transparent 65%)",
           mixBlendMode: "screen",
         }}
-        initial={{ scale: 1 }}
-        whileInView={{ scale: [1, 1.05, 1] }}
-        viewport={{ amount: 0.05 }}
-        transition={{ duration: 32, repeat: Infinity, ease: "easeInOut" }}
       />
       <div
         className="absolute inset-0 opacity-[0.025] mix-blend-overlay"

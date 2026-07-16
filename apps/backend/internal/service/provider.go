@@ -314,10 +314,27 @@ func (s *ProviderService) FindModel(ctx context.Context, modelID string) (*llm.M
 	if err != nil {
 		return nil, domain.Wrap(domain.ErrInternal, 500, "failed to list models", err)
 	}
+	// Prefer an exact match.
 	for _, m := range models {
-		if m.ID == modelID || strings.HasSuffix(m.ID, modelID) {
+		if m.ID == modelID {
 			return &m, nil
 		}
+	}
+	// Fall back to suffix matching, but only when it resolves to a single
+	// unambiguous model. Otherwise a short substring (e.g. "gpt") could match
+	// multiple models and route to the wrong one.
+	var match *llm.ModelInfo
+	for _, m := range models {
+		if strings.HasSuffix(m.ID, modelID) {
+			if match != nil {
+				return nil, domain.NewError(domain.ErrNotFound, 404, "model not found")
+			}
+			mm := m
+			match = &mm
+		}
+	}
+	if match != nil {
+		return match, nil
 	}
 	return nil, domain.NewError(domain.ErrNotFound, 404, "model not found")
 }
@@ -425,5 +442,6 @@ func toLLMChatRequest(req domain.ChatRequest) *llm.ChatRequest {
 		Model:    req.Model,
 		Messages: messages,
 		System:   system,
+		Metadata: req.Metadata,
 	}
 }

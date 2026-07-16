@@ -76,6 +76,7 @@ func (r *CreditsRepo) Deduct(ctx context.Context, userID string, amount int) (bo
 }
 
 // DeductTx runs Deduct within an existing transaction.
+// Cache invalidation is the caller's responsibility after the transaction commits.
 func (r *CreditsRepo) DeductTx(ctx context.Context, tx db.Querier, userID string, amount int) (bool, error) {
 	tag, err := tx.Exec(ctx, `
 		UPDATE user_credits
@@ -91,6 +92,7 @@ func (r *CreditsRepo) DeductTx(ctx context.Context, tx db.Querier, userID string
 }
 
 // UpsertTx runs Upsert within an existing transaction.
+// Cache invalidation is the caller's responsibility after the transaction commits.
 func (r *CreditsRepo) UpsertTx(ctx context.Context, tx db.Querier, userID string, balanceDelta, purchasedDelta int) error {
 	_, err := tx.Exec(ctx, `
 		INSERT INTO user_credits (id, user_id, balance, total_purchased, total_spent)
@@ -101,6 +103,16 @@ func (r *CreditsRepo) UpsertTx(ctx context.Context, tx db.Querier, userID string
 			updated_at = NOW()
 	`, domain.NewID(), userID, balanceDelta, purchasedDelta)
 	return err
+}
+
+// InvalidateCache removes the cached credits entry for a user.
+// Callers that mutate credits inside a transaction should call this after
+// the transaction commits successfully.
+func (r *CreditsRepo) InvalidateCache(ctx context.Context, userID string) error {
+	if r.cache != nil {
+		return r.cache.Delete(ctx, creditsCacheKey(userID))
+	}
+	return nil
 }
 
 func (r *CreditsRepo) Totals(ctx context.Context) (balance, purchased, spent int64, err error) {

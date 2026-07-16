@@ -57,10 +57,13 @@ export function checkRateLimit(
 
 export function getRateLimitInfo(
   identifier: string,
+  isAuthenticated = false,
 ): { remaining: number; resetAt: number } | null {
   const entry = store.get(identifier);
   if (!entry) return null;
-  const maxRequests = MAX_REQUESTS_PER_WINDOW;
+  const maxRequests = isAuthenticated
+    ? MAX_REQUESTS_PER_WINDOW
+    : MAX_ANONYMOUS_REQUESTS;
   return {
     remaining: Math.max(0, maxRequests - entry.count),
     resetAt: entry.resetAt,

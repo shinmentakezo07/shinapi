@@ -192,8 +192,8 @@ export const CodeBlock = ({
       {/* Top highlight */}
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent pointer-events-none" />
 
-      {/* Atmospheric accent */}
-      <div className="absolute -top-12 right-0 w-72 h-24 bg-indigo-500/[0.04] rounded-full blur-3xl pointer-events-none" />
+      {/* Atmospheric accent — indigo→cyan signal wash */}
+      <div className="absolute -top-12 right-0 w-72 h-24 bg-gradient-to-br from-indigo-500/[0.05] to-cyan-400/[0.03] rounded-full blur-3xl pointer-events-none" />
 
       {/* Header bar */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.05] bg-gradient-to-r from-white/[0.02] to-transparent">

@@ -51,25 +51,38 @@ func (m *MultiKeyProvider) SupportsThinking() bool {
 
 // Chat sends a request using the next API key in rotation.
 func (m *MultiKeyProvider) Chat(ctx context.Context, req *llm.ChatRequest) (*llm.ChatResponse, error) {
-	inst := m.nextInstance()
-	if inst == nil {
-		return nil, fmt.Errorf("multi-key %s: no instances available", m.name)
+	var lastErr error
+	for range m.instances {
+		inst := m.nextInstance()
+		if inst == nil {
+			return nil, fmt.Errorf("multi-key %s: no instances available", m.name)
+		}
+		resp, err := inst.Provider.Chat(ctx, req)
+		if err == nil {
+			resp.Provider = m.name
+			return resp, nil
+		}
+		lastErr = err
 	}
-	resp, err := inst.Provider.Chat(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	resp.Provider = m.name
-	return resp, nil
+	return nil, lastErr
 }
 
-// ChatStream sends a streaming request using the next API key.
+// ChatStream sends a streaming request using the next API key, failing over
+// to the next instance if the selected one errors on setup.
 func (m *MultiKeyProvider) ChatStream(ctx context.Context, req *llm.ChatRequest) (<-chan llm.StreamChunk, error) {
-	inst := m.nextInstance()
-	if inst == nil {
-		return nil, fmt.Errorf("multi-key %s: no instances available", m.name)
+	var lastErr error
+	for range m.instances {
+		inst := m.nextInstance()
+		if inst == nil {
+			return nil, fmt.Errorf("multi-key %s: no instances available", m.name)
+		}
+		ch, err := inst.Provider.ChatStream(ctx, req)
+		if err == nil {
+			return ch, nil
+		}
+		lastErr = err
 	}
-	return inst.Provider.ChatStream(ctx, req)
+	return nil, lastErr
 }
 
 // ListModels returns models from the first instance.
@@ -89,6 +102,13 @@ func (m *MultiKeyProvider) nextInstance() *KeyInstance {
 		return nil
 	}
 
+	// Advance the round-robin counter so each call (and therefore each
+	// Chat/ChatStream request) rotates the starting key. Previously the
+	// counter was only mutated here but the rotation starting index was
+	// effectively fixed because callers used a separate unused helper;
+	// incrementing here makes rotation actually happen across requests.
+	idx := atomic.AddUint64(&m.counter, 1) - 1
+
 	// Weighted round-robin
 	totalWeight := 0
 	for _, inst := range m.instances {
@@ -99,7 +119,6 @@ func (m *MultiKeyProvider) nextInstance() *KeyInstance {
 		totalWeight += w
 	}
 
-	idx := atomic.AddUint64(&m.counter, 1) - 1
 	pos := int(idx % uint64(totalWeight))
 	for i := range m.instances {
 		w := m.instances[i].Weight

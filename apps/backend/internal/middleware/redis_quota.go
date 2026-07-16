@@ -73,8 +73,10 @@ func (qt *RedisQuotaTracker) CheckRequest(ctx context.Context, key *ScopedAPIKey
 		pipe.Expire(timeoutCtx, dailyKey, 48*time.Hour)
 		results, err := pipe.Exec(timeoutCtx)
 		if err != nil {
+			// Fail closed: a configured limit with a store error must deny,
+			// not silently allow unlimited requests.
 			logger.Error("redis_quota_daily_failed", "error", err.Error(), "key", key.Key)
-			// Fail open
+			return fmt.Errorf("quota check unavailable: %w", err)
 		} else if len(results) > 0 {
 			if countCmd, ok := results[0].(*redis.IntCmd); ok {
 				count := int(countCmd.Val())
@@ -99,8 +101,9 @@ func (qt *RedisQuotaTracker) CheckRequest(ctx context.Context, key *ScopedAPIKey
 		`)
 		result, err := script.Run(timeoutCtx, qt.client, []string{monthlyKey}, estimatedTokens, key.MonthlyTokenLimit, 40*24*3600).Int()
 		if err != nil {
+			// Fail closed: a configured limit with a store error must deny.
 			logger.Error("redis_quota_monthly_failed", "error", err.Error(), "key", key.Key)
-			// Fail open
+			return fmt.Errorf("quota check unavailable: %w", err)
 		} else if result == -1 {
 			return fmt.Errorf("monthly token limit %d exceeded", key.MonthlyTokenLimit)
 		}

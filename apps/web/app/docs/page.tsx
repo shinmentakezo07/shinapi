@@ -1,8 +1,8 @@
 "use client";
 
-import { motion, useMotionValue, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import Link from "next/link";
-import { useRef, useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Zap,
   Key,
@@ -33,23 +33,17 @@ import {
   Search,
   Rocket,
   Building2,
-  Scale,
-  Mail,
   Newspaper,
 } from "lucide-react";
 import type { NavItem } from "@/components/docs/types";
 import { cn } from "@/lib/utils";
-import {
-  DocsCard,
-  DocsIconTile,
-  DocsTag,
-  DocsGrid,
-} from "@/components/docs/DocsCard";
+import { DocsRouteRow, DocsCard, DocsIconTile } from "@/components/docs/DocsCard";
 
 interface DocSection extends NavItem {
   desc: string;
   category: string;
   href: string;
+  wire?: boolean; // represents the response / return side of a request
 }
 
 const sections: DocSection[] = [
@@ -100,6 +94,7 @@ const sections: DocSection[] = [
     desc: "SSE streaming and standard chat.",
     category: "Core Features",
     href: "/docs/chat",
+    wire: true,
   },
   {
     id: "anthropic",
@@ -116,6 +111,7 @@ const sections: DocSection[] = [
     desc: "Generate text embeddings.",
     category: "Core Features",
     href: "/docs/embeddings",
+    wire: true,
   },
   {
     id: "conversations",
@@ -140,6 +136,7 @@ const sections: DocSection[] = [
     desc: "Tool use and structured outputs.",
     category: "Core Features",
     href: "/docs/function-calling",
+    wire: true,
   },
   {
     id: "gateway",
@@ -172,6 +169,7 @@ const sections: DocSection[] = [
     desc: "Event-driven outbound delivery.",
     category: "Platform",
     href: "/docs/webhooks",
+    wire: true,
   },
   {
     id: "rate-limits",
@@ -249,68 +247,13 @@ const sections: DocSection[] = [
 
 const categories = ["Getting Started", "Core Features", "Platform", "Reference"] as const;
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 20, filter: "blur(6px)" },
-  visible: (i: number = 0) => ({
-    opacity: 1,
-    y: 0,
-    filter: "blur(0px)",
-    transition: {
-      delay: 0.1 + i * 0.05,
-      duration: 0.6,
-      ease: [0.22, 1, 0.36, 1] as const,
-    },
-  }),
+/* A short tagline per category that delivers the gateway vocabulary. */
+const categoryTaglines: Record<string, string> = {
+  "Getting Started": "the route in",
+  "Core Features": "the request & its return",
+  Platform: "the machinery behind the gateway",
+  Reference: "the map of the territory",
 };
-
-const quickSteps = [
-  {
-    step: "01",
-    title: "Sign up",
-    desc: "Create an account in under 30 seconds",
-    icon: Key,
-    href: "/docs/authentication",
-  },
-  {
-    step: "02",
-    title: "Get a key",
-    desc: "Generate your first API credential",
-    icon: Zap,
-    href: "/docs/authentication",
-  },
-  {
-    step: "03",
-    title: "Make a call",
-    desc: "Hit any of 100+ models in one line",
-    icon: Code2,
-    href: "/docs/chat",
-  },
-];
-
-const popularPages = [
-  { id: "quickstart", label: "Quick Start", href: "/docs/quickstart" },
-  { id: "authentication", label: "Authentication", href: "/docs/authentication" },
-  { id: "chat", label: "Chat & Streaming", href: "/docs/chat" },
-  { id: "api-reference", label: "API Reference", href: "/docs/api-reference" },
-];
-
-const recentUpdates = [
-  {
-    date: "2026-05-30",
-    title: "SSE streaming for Claude 4 Sonnet",
-    page: "chat",
-  },
-  {
-    date: "2026-05-28",
-    title: "Webhooks v2 with retries and DLQ",
-    page: "webhooks",
-  },
-  {
-    date: "2026-05-26",
-    title: "Batch API async submissions",
-    page: "batch",
-  },
-];
 
 const resourceLinks = [
   {
@@ -351,111 +294,209 @@ const resourceLinks = [
   },
 ];
 
-/* ── Atmospheric background with breathing orbs ── */
-function Atmosphere() {
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none -mx-6 sm:-mx-10">
-      <div className="absolute -top-40 -left-32 w-[600px] h-[600px] rounded-full bg-indigo-500/[0.07] blur-[120px] animate-[breathe_14s_ease-in-out_infinite]" />
-      <div className="absolute -top-20 right-0 w-[500px] h-[500px] rounded-full bg-violet-500/[0.06] blur-[120px] animate-[breathe_18s_ease-in-out_infinite_3s]" />
-      <div className="absolute top-40 left-1/3 w-[400px] h-[400px] rounded-full bg-indigo-400/[0.04] blur-[100px] animate-[breathe_22s_ease-in-out_infinite_6s]" />
+/* Providers the gateway routes to — drives the interactive router. */
+const PROVIDERS = [
+  { id: "openai", label: "gpt-4o", vendor: "OpenAI" },
+  { id: "anthropic", label: "claude-4-sonnet", vendor: "Anthropic" },
+  { id: "google", label: "gemini-2.5-pro", vendor: "Google" },
+  { id: "groq", label: "llama-4-scout", vendor: "Groq" },
+  { id: "nvidia", label: "deepseek-r1", vendor: "NVIDIA NIM" },
+];
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 16, filter: "blur(6px)" },
+  visible: (i: number = 0) => ({
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: { delay: 0.08 + i * 0.04, duration: 0.5, ease: [0.22, 1, 0.36, 1] as const },
+  }),
+};
+
+/* ── Interactive provider router — the page's signature element ──
+   A literal diagram of one request being routed to many providers.
+   Click a provider: the signal line (indigo→cyan) animates to that
+   branch and the `{model}` token updates live. Reduced-motion users
+   get a static diagram with the active branch pre-lit. */
+function ProviderRouter() {
+  const [active, setActive] = useState(0);
+  const [reduced, setReduced] = useState(false);
+  const activeId = PROVIDERS[active].id;
+  const activeLabel = PROVIDERS[active].label;
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const on = () => setReduced(mq.matches);
+    on();
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+
+  return (
+    <div
+      className={cn(
+        "relative rounded-2xl overflow-hidden",
+        "border border-white/[0.07] bg-gradient-to-br from-white/[0.025] via-white/[0.008] to-transparent",
+        "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05),0_24px_80px_-32px_rgba(0,0,0,0.7)]",
+      )}
+    >
+      {/* top hairline */}
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent opacity-60" />
+      {/* faint static wash (replaces the breathing orbs) */}
       <div
-        className="absolute inset-0 opacity-[0.025]"
+        className="absolute inset-0 opacity-[0.5] pointer-events-none"
         style={{
-          backgroundImage:
-            "linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)",
-          backgroundSize: "80px 80px",
-          maskImage:
-            "radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 80%)",
-          WebkitMaskImage:
-            "radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 80%)",
+          background:
+            "radial-gradient(ellipse 70% 60% at 20% 0%, rgba(99,102,241,0.08), transparent 70%), radial-gradient(ellipse 60% 50% at 100% 100%, rgba(34,211,238,0.06), transparent 70%)",
         }}
       />
+
+      <div className="relative p-6 sm:p-8">
+        {/* request line */}
+        <div className="flex items-center gap-2 mb-6 font-mono text-[11px] sm:text-xs">
+          <span className="px-2 py-0.5 rounded-md border border-emerald-400/20 bg-emerald-400/[0.06] text-emerald-200/90 tracking-[0.06em]">
+            POST
+          </span>
+          <span className="text-white/45">/v1/chat/completions</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-y-6 sm:gap-6 items-center">
+          {/* CALL (left) */}
+          <div className="relative rounded-xl border border-white/[0.07] bg-white/[0.02] p-4 sm:p-5">
+            <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-white/30">
+              your call
+            </span>
+            <pre className="mt-2 font-mono text-[12px] sm:text-[13px] leading-relaxed text-white/65 overflow-x-auto">
+              <span className="text-amber-200/90">{`"messages"`}</span>
+              {": [ … ],\n"}
+              <span className="text-amber-200/90">{`"stream"`}</span>
+              {": "}
+              <span className="text-violet-300">true</span>
+              {",\n"}
+              <span className="text-amber-200/90">{`"model"`}</span>
+              {": "}
+              <span className="text-cyan-300">{`"${activeLabel}"`}</span>
+            </pre>
+          </div>
+
+          {/* GATEWAY (center) */}
+          <div className="relative flex flex-col items-center justify-center sm:px-2">
+            <div className="relative w-16 h-16 rounded-2xl border border-indigo-500/25 bg-gradient-to-br from-indigo-500/12 to-transparent flex items-center justify-center shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_0_28px_-6px_rgba(99,102,241,0.5)]">
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+              {/* spinning route ring, paused when reduced motion */}
+              <motion.div
+                className="absolute inset-0 rounded-2xl border border-cyan-300/20"
+                animate={reduced ? {} : { rotate: 360 }}
+                transition={{ duration: 14, repeat: Infinity, ease: "linear" }}
+                style={{ borderStyle: "dashed" }}
+              />
+              <span className="font-mono text-xl text-indigo-200 relative z-10">⊙</span>
+            </div>
+            <span className="mt-2 text-[9px] font-mono uppercase tracking-[0.2em] text-indigo-200/70">
+              gateway
+            </span>
+            <span className="text-[9px] font-mono text-white/25 mt-0.5">10-stage route</span>
+          </div>
+
+          {/* PROVIDERS (right) */}
+          <div className="relative">
+            <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-white/30 mb-2 block">
+              routed to · 100+ models
+            </span>
+            <div className="flex flex-col gap-1.5">
+              {PROVIDERS.map((p, i) => {
+                const isActive = i === active;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setActive(i)}
+                    aria-pressed={isActive}
+                    className="docs-route group relative flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-lg border bg-white/[0.015] transition-all duration-200 cursor-pointer"
+                    style={{
+                      borderColor: isActive ? "rgba(34,211,238,0.35)" : "rgba(255,255,255,0.06)",
+                      background: isActive
+                        ? "linear-gradient(to right, rgba(34,211,238,0.08), rgba(34,211,238,0.01))"
+                        : undefined,
+                    }}
+                  >
+                    <span
+                      className={cn(
+                        "w-1.5 h-1.5 rounded-full flex-shrink-0 transition-all",
+                        isActive ? "bg-cyan-300 shadow-[0_0_8px_rgba(34,211,238,0.9)]" : "bg-white/20",
+                      )}
+                    />
+                    <span
+                      className={cn(
+                        "font-mono text-[12px] tracking-[-0.01em] transition-colors",
+                        isActive ? "text-cyan-100" : "text-white/55 group-hover:text-white/85",
+                      )}
+                    >
+                      {p.label}
+                    </span>
+                    <span
+                      className={cn(
+                        "ml-auto text-[9px] font-mono uppercase tracking-[0.12em] transition-colors",
+                        isActive ? "text-cyan-200/80" : "text-white/20",
+                      )}
+                    >
+                      {p.vendor}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <p className="mt-6 text-[11.5px] text-white/35 leading-relaxed">
+          One OpenAI-compatible request. Swap the{" "}
+          <code className="px-1 py-0.5 rounded bg-white/[0.05] text-cyan-200/90 font-mono text-[11px]">
+            model
+          </code>{" "}
+          string to switch providers — no client refactor.
+        </p>
+      </div>
     </div>
   );
 }
 
-/* ── 3D parallax card with cursor reactivity ── */
-function ParallaxCard({
-  children,
-  className,
-  intensity = 8,
+/* ── Section heading for a category ── */
+function CategoryHeader({
+  index,
+  category,
+  count,
 }: {
-  children: React.ReactNode;
-  className?: string;
-  intensity?: number;
+  index: number;
+  category: string;
+  count: number;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const mx = useMotionValue(0.5);
-  const my = useMotionValue(0.5);
-  const rx = useTransform(my, [0, 1], [intensity, -intensity]);
-  const ry = useTransform(mx, [0, 1], [-intensity, intensity]);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const onMove = (e: MouseEvent) => {
-      const r = el.getBoundingClientRect();
-      mx.set((e.clientX - r.left) / r.width);
-      my.set((e.clientY - r.top) / r.height);
-    };
-    el.addEventListener("mousemove", onMove);
-    return () => el.removeEventListener("mousemove", onMove);
-  }, [mx, my]);
-
   return (
-    <motion.div
-      ref={ref}
-      style={{ rotateX: rx, rotateY: ry, transformStyle: "preserve-3d" }}
-      className={cn("relative", className)}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
-/* ── Section card with editorial hover state ── */
-function SectionCard({ section, idx }: { section: DocSection; idx: number }) {
-  return (
-    <motion.div variants={fadeUp} custom={idx}>
-      <DocsCard interactive className="h-full">
-        <Link
-          href={section.href}
-          className="group relative block p-5 cursor-pointer h-full"
-        >
-          <div className="relative flex items-center gap-4">
-            <DocsIconTile icon={section.icon} size="lg" className="!w-11 !h-11" />
-
-            <div className="min-w-0 flex-1">
-              <p className="text-[14px] font-semibold text-white/70 group-hover:text-white transition-colors duration-200 truncate tracking-[-0.01em]">
-                {section.label}
-              </p>
-              <p className="text-[11.5px] text-white/30 truncate mt-0.5 group-hover:text-white/45 transition-colors leading-relaxed">
-                {section.desc}
-              </p>
-            </div>
-
-            <ArrowRight
-              className="w-3.5 h-3.5 text-white/[0.1] group-hover:text-indigo-200 group-hover:translate-x-0.5 transition-all duration-200 flex-shrink-0"
-            />
-          </div>
-        </Link>
-      </DocsCard>
-    </motion.div>
+    <header className="flex items-baseline gap-3 mb-5">
+      <span className="font-mono text-[10px] tabular-nums tracking-[0.2em] text-indigo-200/45">
+        §{String(index + 1).padStart(2, "0")}
+      </span>
+      <h2 className="text-[18px] sm:text-[22px] font-semibold tracking-[-0.025em] text-white">
+        {category}
+      </h2>
+      <span className="font-display italic font-normal text-indigo-200/80 text-[15px] sm:text-[17px] -ml-1">
+        — {categoryTaglines[category]}
+      </span>
+      <div className="h-px flex-1 bg-gradient-to-r from-indigo-500/15 via-white/[0.05] to-transparent" />
+      <span className="font-mono text-[9px] tabular-nums tracking-[0.15em] text-white/25">
+        {String(count).padStart(2, "0")} ROUTES
+      </span>
+    </header>
   );
 }
 
 export default function DocsIndexPage() {
-  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
-
   return (
     <div className="relative">
-      <Atmosphere />
-
       {/* ═══════════════════════════════════════════
-          EDITORIAL HERO
+          GATEWAY HERO
           ═══════════════════════════════════════════ */}
-      <section className="relative mb-24 sm:mb-32 pt-6 sm:pt-10">
+      <section className="relative mb-24 sm:mb-28 pt-4 sm:pt-8">
         <div className="relative z-10">
           {/* Eyebrow */}
           <motion.div
@@ -472,21 +513,19 @@ export default function DocsIndexPage() {
               Documentation
             </span>
             <div className="h-px w-12 bg-gradient-to-r from-white/[0.1] to-transparent" />
-            <span className="text-[10px] font-mono text-white/25 tracking-[0.2em]">
-              v1.0
-            </span>
+            <span className="text-[10px] font-mono text-white/25 tracking-[0.2em]">v1.0</span>
           </motion.div>
 
-          {/* Title with editorial italic */}
+          {/* Title */}
           <motion.h1
             initial={{ opacity: 0, y: 20, filter: "blur(8px)" }}
             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             transition={{ delay: 0.15, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-            className="text-[2.75rem] sm:text-[3.75rem] lg:text-[4.5rem] font-semibold tracking-[-0.04em] leading-[0.96] mb-8"
+            className="text-[2.5rem] sm:text-[3.4rem] lg:text-[4.5rem] font-semibold tracking-[-0.04em] leading-[0.96] mb-6"
           >
-            <span className="text-white/95">Build with</span>{" "}
-            <span className="font-display italic font-normal bg-clip-text text-transparent bg-gradient-to-br from-indigo-200 via-violet-200 to-indigo-300">
-              Yapapa
+            <span className="text-white/95">One request,</span>{" "}
+            <span className="font-display italic font-normal bg-clip-text text-transparent bg-gradient-to-br from-indigo-200 via-violet-200 to-cyan-200">
+              many providers
             </span>
             <span className="text-white/40">.</span>
           </motion.h1>
@@ -496,11 +535,11 @@ export default function DocsIndexPage() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25, duration: 0.5 }}
-            className="text-[15px] sm:text-[17px] text-white/45 max-w-xl leading-[1.7] mb-10"
+            className="text-[15px] sm:text-[17px] text-white/45 max-w-xl leading-[1.7] mb-8"
           >
-            One unified API for 100+ AI models. OpenAI-compatible drop-in
-            replacement with credit-based billing, real-time analytics, and
-            full conversation control.
+            A universal LLM gateway: an OpenAI-compatible API that routes to
+            100+ models, with credit-based billing, real-time analytics, and
+            full conversation control. This is the map of every route through it.
           </motion.p>
 
           {/* CTAs */}
@@ -508,7 +547,7 @@ export default function DocsIndexPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35, duration: 0.5 }}
-            className="flex flex-wrap items-center gap-3"
+            className="flex flex-wrap items-center gap-3 mb-12"
           >
             <Link
               href="/docs/quickstart"
@@ -566,7 +605,7 @@ export default function DocsIndexPage() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.5 }}
-            className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-12 text-[11px] font-mono text-white/30"
+            className="flex flex-wrap items-center gap-x-5 gap-y-2 mb-12 text-[11px] font-mono text-white/30"
           >
             <span className="flex items-center gap-1.5">
               <Activity className="w-3 h-3 text-emerald-400/80" />
@@ -579,216 +618,66 @@ export default function DocsIndexPage() {
             </span>
             <span className="text-white/10">·</span>
             <span className="flex items-center gap-1.5">
-              <Clock className="w-3 h-3 text-violet-200/70" />
+              <Clock className="w-3 h-3 text-cyan-200/70" />
               <span>Last updated 2 days ago</span>
             </span>
+          </motion.div>
+
+          {/* The router — signature element */}
+          <motion.div
+            initial={{ opacity: 0, y: 20, filter: "blur(6px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{ delay: 0.6, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <ProviderRouter />
           </motion.div>
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════
-          QUICK START RAIL
-          ═══════════════════════════════════════════ */}
-      <section className="relative mb-24 sm:mb-32">
-        <header className="flex items-center gap-3 mb-8">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg border border-indigo-500/15 bg-indigo-500/[0.06] flex items-center justify-center shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
-              <Zap className="w-3.5 h-3.5 text-indigo-200" />
-            </div>
-            <h2 className="text-[20px] sm:text-[24px] font-semibold tracking-[-0.025em] text-white">
-              From zero to{" "}
-              <span className="font-display italic font-normal text-indigo-200/95">
-                production
-              </span>
-            </h2>
-          </div>
-          <div className="h-px flex-1 bg-gradient-to-r from-indigo-500/15 via-white/[0.05] to-transparent" />
-          <span className="text-[9px] font-mono text-white/25 tracking-[0.18em]">
-            03 STEPS
-          </span>
-        </header>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {quickSteps.map((item, i) => (
-            <ParallaxCard key={item.step} intensity={6}>
-              <Link
-                href={item.href}
-                className={cn(
-                  "group relative block rounded-2xl overflow-hidden p-6",
-                  "border border-white/[0.07] bg-gradient-to-br from-white/[0.025] via-white/[0.01] to-transparent",
-                  "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04),0_8px_24px_-12px_rgba(0,0,0,0.4)]",
-                  "hover:border-indigo-500/25 hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_12px_32px_-12px_rgba(99,102,241,0.3)]",
-                  "transition-all duration-400 cursor-pointer",
-                )}
-              >
-                {/* Top hairline highlight */}
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-60" />
-                {/* Hover glow */}
-                <div
-                  className="absolute -top-16 -right-16 w-40 h-40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
-                  style={{
-                    background:
-                      "radial-gradient(circle, rgba(99,102,241,0.18), transparent 70%)",
-                    filter: "blur(20px)",
-                  }}
-                />
-
-                <div className="relative">
-                  <div className="flex items-center gap-3 mb-5">
-                    <div className="flex items-center justify-center w-9 h-9 rounded-xl border border-indigo-500/20 bg-indigo-500/[0.08] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
-                      <span className="text-[11px] font-mono font-bold text-indigo-200 tracking-[0.05em]">
-                        {item.step}
-                      </span>
-                    </div>
-                    {i < quickSteps.length - 1 && (
-                      <div className="hidden sm:block flex-1 h-px bg-gradient-to-r from-indigo-500/20 via-white/[0.05] to-transparent" />
-                    )}
-                    {i < quickSteps.length - 1 && (
-                      <ArrowRight className="hidden sm:block w-3 h-3 text-indigo-200/30" />
-                    )}
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <div
-                      className={cn(
-                        "w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0",
-                        "border border-white/[0.06] bg-white/[0.02]",
-                        "group-hover:border-indigo-500/25 group-hover:bg-indigo-500/[0.06]",
-                        "transition-all duration-300",
-                      )}
-                    >
-                      <item.icon className="w-4 h-4 text-white/40 group-hover:text-indigo-200 transition-colors" />
-                    </div>
-                    <div>
-                      <p className="text-[14px] font-semibold text-white/75 group-hover:text-white transition-colors tracking-[-0.01em]">
-                        {item.title}
-                      </p>
-                      <p className="text-[11.5px] text-white/35 mt-1 leading-[1.55] group-hover:text-white/50 transition-colors">
-                        {item.desc}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            </ParallaxCard>
-          ))}
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════
-          POPULAR + RECENT
-          ═══════════════════════════════════════════ */}
-      <section className="relative mb-24 sm:mb-32 grid grid-cols-1 lg:grid-cols-5 gap-3">
-        {/* Popular pages */}
-        <DocsCard className="lg:col-span-3 p-6">
-          <div className="flex items-center gap-2.5 mb-5">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-200" />
-            <span className="text-[9px] font-mono font-semibold uppercase tracking-[0.2em] text-indigo-200/70">
-              Most Read
-            </span>
-            <div className="h-px flex-1 bg-gradient-to-r from-indigo-500/15 to-transparent" />
-          </div>
-          <div className="space-y-1">
-            {popularPages.map((p, i) => (
-              <Link
-                key={p.id}
-                href={p.href}
-                className="group flex items-center justify-between px-3 py-2.5 -mx-3 rounded-lg hover:bg-indigo-500/[0.04] transition-all duration-200"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="text-[10px] font-mono text-white/20 tabular-nums w-4">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <span className="text-[13px] font-medium text-white/60 group-hover:text-white transition-colors truncate">
-                    {p.label}
-                  </span>
-                </div>
-                <ArrowRight className="w-3 h-3 text-white/[0.1] group-hover:text-indigo-200 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
-              </Link>
-            ))}
-          </div>
-        </DocsCard>
-
-        {/* Recent updates */}
-        <DocsCard className="lg:col-span-2 p-6">
-          <div className="flex items-center gap-2.5 mb-5">
-            <Activity className="w-3.5 h-3.5 text-indigo-200" />
-            <span className="text-[9px] font-mono font-semibold uppercase tracking-[0.2em] text-indigo-200/70">
-              Recent Updates
-            </span>
-            <div className="h-px flex-1 bg-gradient-to-r from-indigo-500/15 to-transparent" />
-          </div>
-          <div className="space-y-3">
-            {recentUpdates.map((u, i) => (
-              <Link
-                key={i}
-                href={`/docs/${u.page}`}
-                className="group block"
-              >
-                <div className="flex items-baseline gap-2.5">
-                  <span className="text-[9px] font-mono text-white/25 tabular-nums">
-                    {u.date.slice(5)}
-                  </span>
-                  <p className="text-[12.5px] text-white/60 group-hover:text-white transition-colors leading-snug">
-                    {u.title}
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </DocsCard>
-      </section>
-
-      {/* ═══════════════════════════════════════════
-          CATEGORY SECTIONS
+          CATEGORY ROUTES — a routing table, not a card grid
           ═══════════════════════════════════════════ */}
       {categories.map((category, catIdx) => {
         const catSections = sections.filter((s) => s.category === category);
         const catCount = catSections.length;
 
         return (
-          <section
+          <motion.section
             key={category}
             id={`cat-${category.toLowerCase().replace(/\s+/g, "-")}`}
-            ref={(el) => {
-              sectionRefs.current[category] = el;
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-60px" }}
+            variants={{
+              hidden: { opacity: 0 },
+              visible: {
+                opacity: 1,
+                transition: { staggerChildren: 0.03, delayChildren: catIdx * 0.03 },
+              },
             }}
-            className="relative mb-16 sm:mb-20 last:mb-8 scroll-mt-24"
+            className="relative mb-20 sm:mb-24 last:mb-8 scroll-mt-24"
           >
-            {/* Category header */}
-            <header className="flex items-center gap-3 mb-7">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg border border-indigo-500/15 bg-indigo-500/[0.06] flex items-center justify-center shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
-                  <BookOpen className="w-3.5 h-3.5 text-indigo-200" />
-                </div>
-                <h2 className="text-[18px] sm:text-[22px] font-semibold tracking-[-0.025em] text-white">
-                  {category}
-                </h2>
-              </div>
-              <div className="h-px flex-1 bg-gradient-to-r from-indigo-500/15 via-white/[0.05] to-transparent" />
-              <span className="text-[9px] font-mono text-white/30 tabular-nums tracking-[0.15em]">
-                {String(catCount).padStart(2, "0")} PAGES
-              </span>
-            </header>
+            <CategoryHeader index={catIdx} category={category} count={catCount} />
 
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-50px" }}
-              variants={{
-                hidden: { opacity: 0 },
-                visible: {
-                  opacity: 1,
-                  transition: { staggerChildren: 0.04, delayChildren: catIdx * 0.05 },
-                },
-              }}
-              className="grid grid-cols-1 sm:grid-cols-2 gap-2.5"
-            >
-              {catSections.map((section, idx) => (
-                <SectionCard key={section.id} section={section} idx={idx} />
-              ))}
-            </motion.div>
-          </section>
+            {/* row list — hairline-separated, not boxed */}
+            <div className="relative rounded-2xl border border-white/[0.05] bg-white/[0.012] overflow-hidden">
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent opacity-50" />
+              <div className="divide-y divide-white/[0.04]">
+                {catSections.map((section, idx) => (
+                  <motion.div key={section.id} variants={fadeUp} custom={idx}>
+                    <DocsRouteRow
+                      id={section.id}
+                      label={section.label}
+                      desc={section.desc}
+                      href={section.href}
+                      wire={section.wire}
+                    />
+                  </motion.div>
+                ))}
+              </div>
+              <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-40" />
+            </div>
+          </motion.section>
         );
       })}
 
@@ -796,15 +685,13 @@ export default function DocsIndexPage() {
           MORE FROM YAPAPA
           ═══════════════════════════════════════════ */}
       <section className="relative mb-16 sm:mb-20 scroll-mt-24">
-        <header className="flex items-center gap-3 mb-7">
-          <div className="w-8 h-8 rounded-lg border border-indigo-500/15 bg-indigo-500/[0.06] flex items-center justify-center shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-200" />
-          </div>
+        <header className="flex items-baseline gap-3 mb-5">
+          <span className="font-mono text-[10px] tabular-nums tracking-[0.2em] text-indigo-200/45">
+            §{(categories.length + 1).toString().padStart(2, "0")}
+          </span>
           <h2 className="text-[18px] sm:text-[22px] font-semibold tracking-[-0.025em] text-white">
             More from{" "}
-            <span className="font-display italic font-normal text-indigo-200/95">
-              Yapapa
-            </span>
+            <span className="font-display italic font-normal text-indigo-200/95">Yapapa</span>
           </h2>
           <div className="h-px flex-1 bg-gradient-to-r from-indigo-500/15 via-white/[0.05] to-transparent" />
           <span className="text-[9px] font-mono text-white/30 tabular-nums tracking-[0.15em]">
@@ -823,17 +710,14 @@ export default function DocsIndexPage() {
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5"
         >
           {resourceLinks.map((res, idx) => (
-            <motion.div
-              key={res.href}
-              variants={fadeUp}
-              custom={idx}
-            >
+            <motion.div key={res.href} variants={fadeUp} custom={idx}>
               <DocsCard interactive className="h-full">
                 <Link
                   href={res.href}
                   className="group relative block p-5 cursor-pointer h-full"
                 >
                   <div className="relative flex items-start gap-3.5">
+                    <div className="pointer-events-none absolute -top-16 -right-16 w-40 h-40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700" style={{ background: "radial-gradient(circle, rgba(99,102,241,0.16), transparent 70%)", filter: "blur(36px)" }} />
                     <DocsIconTile icon={res.icon} />
                     <div className="min-w-0 flex-1">
                       <p className="text-[14px] font-semibold text-white/70 group-hover:text-white transition-colors tracking-[-0.01em] flex items-center gap-1.5">
@@ -852,7 +736,9 @@ export default function DocsIndexPage() {
         </motion.div>
       </section>
 
-      {/* Bottom CTA */}
+      {/* ═══════════════════════════════════════════
+          FOOTER CTA
+          ═══════════════════════════════════════════ */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -865,10 +751,7 @@ export default function DocsIndexPage() {
         <div className="relative">
           <h3 className="text-[24px] sm:text-[30px] font-semibold tracking-[-0.03em] text-white mb-3">
             Ready to ship{" "}
-            <span className="font-display italic font-normal text-indigo-200/95">
-              faster
-            </span>
-            ?
+            <span className="font-display italic font-normal text-indigo-200/95">faster</span>?
           </h3>
           <p className="text-[14px] text-white/55 max-w-md leading-[1.7] mb-6">
             Open the playground to test prompts against any model in your

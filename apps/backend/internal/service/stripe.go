@@ -103,15 +103,6 @@ func (s *StripeService) FulfillCheckout(ctx context.Context, session *stripe.Che
 		return domain.NewError(domain.ErrBadRequest, 400, "Missing user_id in session metadata")
 	}
 
-	// Check if already fulfilled
-	exists, err := s.stripeRepo.InvoiceExists(ctx, session.ID)
-	if err != nil {
-		return domain.Wrap(domain.ErrInternal, 500, "failed to check invoice", err)
-	}
-	if exists {
-		return nil // Already fulfilled
-	}
-
 	credits := int(session.AmountTotal)
 	if c, ok := session.Metadata["credits"]; ok {
 		fmt.Sscanf(c, "%d", &credits)
@@ -119,6 +110,16 @@ func (s *StripeService) FulfillCheckout(ctx context.Context, session *stripe.Che
 
 	if s.database != nil {
 		if err := s.database.WithTx(ctx, func(tx db.Querier) error {
+			// Idempotency check runs INSIDE the transaction so a replayed or
+			// racy checkout.session.completed event cannot double-credit. The
+			// uq_stripe_invoice_id UNIQUE constraint is the DB-level backstop.
+			exists, existsErr := s.stripeRepo.InvoiceExistsTx(ctx, tx, session.ID)
+			if existsErr != nil {
+				return fmt.Errorf("failed to check invoice: %w", existsErr)
+			}
+			if exists {
+				return nil // Already fulfilled (idempotent no-op)
+			}
 			if err := s.stripeRepo.CreateInvoiceTx(ctx, tx, userID, session.ID, session.AmountTotal); err != nil {
 				return fmt.Errorf("failed to record invoice: %w", err)
 			}
@@ -132,6 +133,7 @@ func (s *StripeService) FulfillCheckout(ctx context.Context, session *stripe.Che
 		}); err != nil {
 			return domain.Wrap(domain.ErrInternal, 500, "credit fulfillment failed", err)
 		}
+		_ = s.creditsRepo.InvalidateCache(ctx, userID)
 		return nil
 	}
 

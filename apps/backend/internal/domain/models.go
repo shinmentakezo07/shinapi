@@ -203,8 +203,9 @@ func (r *PurchaseRequest) Validate() *AppError {
 }
 
 type ChatRequest struct {
-	Messages []ChatMessage `json:"messages"`
-	Model    string        `json:"model"`
+	Messages []ChatMessage     `json:"messages"`
+	Model    string            `json:"model"`
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 type ChatMessage struct {
@@ -304,13 +305,14 @@ func isValidWebhookEvent(event string) bool {
 }
 
 type WebhookDelivery struct {
-	ID          string     `json:"id"`
-	WebhookID   string     `json:"webhookId"`
-	EventType   string     `json:"eventType"`
-	Payload     []byte     `json:"payload"`
-	StatusCode  *int       `json:"statusCode,omitempty"`
-	Error       string     `json:"error,omitempty"`
-	Attempts    int        `json:"attempts"`
+	ID               string     `json:"id"`
+	WebhookID        string     `json:"webhookId"`
+	EventType        string     `json:"eventType"`
+	Payload          []byte     `json:"payload"`
+	IdempotencyKey   string     `json:"idempotencyKey,omitempty"`
+	StatusCode       *int       `json:"statusCode,omitempty"`
+	Error            string     `json:"error,omitempty"`
+	Attempts         int        `json:"attempts"`
 	MaxAttempts int        `json:"maxAttempts"`
 	Status      string     `json:"status"`
 	DeliveredAt *time.Time `json:"deliveredAt,omitempty"`

@@ -44,12 +44,23 @@ func (hub *NotificationHub) broadcast() {
 		clients := hub.clients[event.UserID]
 		hub.mu.RUnlock()
 		for _, ch := range clients {
-			select {
-			case ch <- event:
-			default:
-			}
+			dispatch(ch, event)
 		}
 	}
+}
+
+// dispatch delivers an event to a single subscriber channel. The SSE reader
+// goroutine (NotificationsStream) is the ONLY consumer of this channel and
+// drains it continuously, so a blocking send applies local backpressure to the
+// single consumer without deadlocking. On disconnect the channel is closed by
+// Unsubscribe, so we recover from the resulting panic rather than crashing the
+// broadcast goroutine. A non-blocking send (or a bounded select) silently
+// drops targeted notifications under burst even though the message was
+// persisted — this guarantees every event is delivered until the consumer is
+// gone or has read it.
+func dispatch(ch chan SSEEvent, event SSEEvent) {
+	defer func() { _ = recover() }() // channel closed by Unsubscribe on disconnect
+	ch <- event
 }
 
 // Subscribe adds a client channel for a user. Returns nil if the user has reached the max client limit.
@@ -78,13 +89,12 @@ func (hub *NotificationHub) Unsubscribe(userID string, ch chan SSEEvent) {
 	}
 }
 
-// Send delivers an event to a specific user.
+// Send delivers an event to a specific user. The enqueue blocks cooperatively
+// (no non-blocking default) so a burst that exceeds the broadcast buffer is
+// absorbed by backpressure instead of dropping the persisted notification.
 func (hub *NotificationHub) Send(userID, eventType string, payload interface{}) {
 	data, _ := json.Marshal(payload)
-	select {
-	case hub.broadcastCh <- SSEEvent{UserID: userID, Type: eventType, Payload: data, Time: time.Now()}:
-	default:
-	}
+	hub.broadcastCh <- SSEEvent{UserID: userID, Type: eventType, Payload: data, Time: time.Now()}
 }
 
 // Broadcast sends an event to all connected users.
@@ -98,10 +108,7 @@ func (hub *NotificationHub) Broadcast(eventType string, payload interface{}) {
 	hub.mu.RUnlock()
 
 	for _, uid := range userIDs {
-		select {
-		case hub.broadcastCh <- SSEEvent{UserID: uid, Type: eventType, Payload: data, Time: time.Now()}:
-		default:
-		}
+		hub.broadcastCh <- SSEEvent{UserID: uid, Type: eventType, Payload: data, Time: time.Now()}
 	}
 }
 
@@ -109,10 +116,7 @@ func (hub *NotificationHub) Broadcast(eventType string, payload interface{}) {
 func (hub *NotificationHub) SendToUsers(userIDs []string, eventType string, payload interface{}) {
 	data, _ := json.Marshal(payload)
 	for _, uid := range userIDs {
-		select {
-		case hub.broadcastCh <- SSEEvent{UserID: uid, Type: eventType, Payload: data, Time: time.Now()}:
-		default:
-		}
+		hub.broadcastCh <- SSEEvent{UserID: uid, Type: eventType, Payload: data, Time: time.Now()}
 	}
 }
 

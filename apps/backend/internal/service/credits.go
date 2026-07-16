@@ -70,6 +70,7 @@ func (s *CreditService) Purchase(ctx context.Context, userID string, req domain.
 		}
 		return nil, domain.Wrap(domain.ErrInternal, 500, "purchase transaction failed", err)
 	}
+	_ = s.creditsRepo.InvalidateCache(ctx, userID)
 	return result, nil
 }
 
@@ -91,6 +92,7 @@ func (s *CreditService) DeductForUsage(ctx context.Context, userID string, amoun
 		}
 		return domain.Wrap(domain.ErrInternal, 500, "failed to deduct credits", err)
 	}
+	_ = s.creditsRepo.InvalidateCache(ctx, userID)
 	return nil
 }
 
@@ -148,22 +150,21 @@ func (s *CreditService) SetBudget(ctx context.Context, userID string, dailyBudge
 	if err != nil {
 		return domain.Wrap(domain.ErrInternal, 500, "failed to update budget", err)
 	}
+	_ = s.creditsRepo.InvalidateCache(ctx, userID)
 	return nil
 }
 
 func (s *CreditService) LogAndDeduct(ctx context.Context, userID string, apiKeyID *string, model string, inputTokens, outputTokens, cost, latency int) (*domain.APILog, *domain.AppError) {
 	var result domain.APILog
-
 	err := s.db.WithTx(ctx, func(tx db.Querier) error {
-		// 1. Verify balance and budget
+		// 1. Lock row and check budget (balance was already validated at the
+		//    request gate; allow deduction to proceed so concurrent in-flight
+		//    requests are billed rather than rolled back due to a race).
 		var credits domain.UserCredits
 		if err := tx.QueryRow(ctx,
 			`SELECT balance, monthly_budget, daily_budget, daily_spent, monthly_spent, budget_reset_at FROM user_credits WHERE user_id = $1 FOR UPDATE`, userID).Scan(
 			&credits.Balance, &credits.MonthlyBudget, &credits.DailyBudget, &credits.DailySpent, &credits.MonthlySpent, &credits.BudgetResetAt); err != nil {
 			return domain.Wrap(domain.ErrInternal, 500, "failed to lock balance", err)
-		}
-		if credits.Balance < cost {
-			return domain.ErrNoCredits
 		}
 		if bErr := s.checkBudget(&credits, cost); bErr != nil {
 			return bErr
@@ -227,6 +228,8 @@ func (s *CreditService) LogAndDeduct(ctx context.Context, userID string, apiKeyI
 		}
 		return nil, domain.Wrap(domain.ErrInternal, 500, "billing transaction failed", err)
 	}
+
+	_ = s.creditsRepo.InvalidateCache(ctx, userID)
 
 	// Async budget alert check
 	go s.checkBudgetAlert(userID)

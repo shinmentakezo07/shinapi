@@ -84,6 +84,7 @@ type ToolResult struct {
 type ToolCall struct {
 	ID       string           `json:"id"`
 	Type     string           `json:"type"`
+	Index    int              `json:"index,omitempty"`
 	Function ToolCallFunction `json:"function"`
 }
 

@@ -21,8 +21,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { z } from "zod";
 import { MotionConfig } from "framer-motion";
-import openRouterModels from "../models/openrouter-models-2026.json";
-import { getProviderLogo } from "@/lib/provider-logos";
 import {
   HistoryChat,
   ChatSession,
@@ -33,6 +31,8 @@ import ModelSelector from "@/components/playground/ModelSelector";
 import ChatInterface from "@/components/playground/ChatInterface";
 import { getProviderColor } from "@/components/playground/ProviderColors";
 import { getSDK, configureSDK, ChatMessage } from "@/lib/api/sdk";
+import { useModelCatalog } from "@/lib/api/hooks";
+import { mapCatalogToEnriched } from "@/lib/api/model-catalog";
 
 const HISTORY_KEY = "yapapa.playground.history.v2";
 const ACTIVE_KEY = "yapapa.playground.activeChatId.v2";
@@ -81,20 +81,9 @@ function deriveTitle(messages: Message[]): string {
   return raw.length > 40 ? `${raw.slice(0, 40)}…` : raw;
 }
 
-function enrichModels(models: any[]): EnrichedModel[] {
-  return models.map((model) => ({
-    id: model.id,
-    name: model.name,
-    logo: getProviderLogo(model.id),
-    provider: model.id.split("/")[0],
-    context_length: model.context_length,
-    pricing: model.pricing,
-    description: model.description,
-  }));
-}
-
 export default function PlaygroundPage() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const sessionsRef = useRef<ChatSession[]>(sessions);
   const [selectedModels, setSelectedModels] = useState<EnrichedModel[]>([]);
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [inputMessage, setInputMessage] = useState("");
@@ -120,7 +109,12 @@ export default function PlaygroundPage() {
     )
   `;
 
-  const allModels = enrichModels(openRouterModels);
+  const {
+    data: catalog,
+    isLoading: catalogLoading,
+    isError: catalogError,
+  } = useModelCatalog();
+  const allModels = mapCatalogToEnriched(catalog ?? []);
 
   useEffect(() => {
     setIsMounted(true);
@@ -163,6 +157,10 @@ export default function PlaygroundPage() {
   useEffect(() => {
     isLoadingRef.current = isLoading;
   }, [isLoading]);
+
+  useEffect(() => {
+    sessionsRef.current = sessions;
+  }, [sessions]);
 
   useEffect(() => {
     function handleMouseMove({
@@ -296,8 +294,18 @@ export default function PlaygroundPage() {
 
     // Fire all model streams in parallel
     const promises = selectedModels.map(async (model) => {
-      const messages: ChatMessage[] = sharedMessages
-        .filter((m) => m.role === "user" || m.role === "assistant")
+      // Always read the latest sessions so assistant replies from prior
+      // turns are included in the next request's history.
+      const currentSessions = sessionsRef.current;
+      const targetSession = currentSessions.find((s) => s.id === model.id);
+      const priorMessages = targetSession
+        ? targetSession.messages.filter(
+            (m) => m.role === "user" || m.role === "assistant",
+          )
+        : sharedMessages.filter(
+            (m) => m.role === "user" || m.role === "assistant",
+          );
+      const messages: ChatMessage[] = priorMessages
         .map((m) => ({ role: m.role, content: m.content }))
         .concat({ role: "user", content: inputMessage });
 
@@ -353,7 +361,7 @@ export default function PlaygroundPage() {
     // Wait for all streams, then clear loading
     await Promise.all(promises);
     setIsLoading(false);
-  }, [inputMessage, selectedModels, sharedMessages]);
+  }, [inputMessage, selectedModels]);
 
   if (!isMounted) return null;
 
@@ -671,6 +679,25 @@ export default function PlaygroundPage() {
             </div>
           </div>
         </div>
+
+        {/* Empty catalog notice */}
+        {!catalogLoading && !catalogError && allModels.length === 0 && (
+          <div className="mx-4 sm:mx-6 mb-4 p-4 rounded-2xl border border-white/10 bg-white/[0.02] text-center">
+            <p className="text-sm text-white/80 font-medium mb-1">
+              No models configured
+            </p>
+            <p className="text-xs text-gray-500 max-w-md mx-auto">
+              Ask an admin to add a provider (endpoint, API key, and model IDs)
+              under Admin → Providers. The catalog is shared with the models page.
+            </p>
+          </div>
+        )}
+        {catalogLoading && allModels.length === 0 && (
+          <div className="flex items-center justify-center py-16 gap-3 text-gray-500 text-sm font-mono">
+            <div className="w-5 h-5 rounded-full border-2 border-blue-500/30 border-t-blue-400 animate-spin" />
+            Loading model catalog…
+          </div>
+        )}
 
         {/* Chat Area */}
         <ChatInterface

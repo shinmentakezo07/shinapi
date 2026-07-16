@@ -55,6 +55,10 @@ export default function NotificationsPage() {
   const isMountedRef = useRef(true);
 
   const connectStream = useCallback(async () => {
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
     if (abortRef.current) {
       abortRef.current.abort();
     }
@@ -93,6 +97,17 @@ export default function NotificationsPage() {
 
         setNotifications((prev) => [notif, ...prev].slice(0, 200));
         showBrowserToast(notif.title, notif.message, notif.type);
+      }
+
+      // Normal stream end (backend close / timeout) with no error:
+      // mark disconnected and schedule a reconnect so the stream restarts.
+      setConnected(false);
+      if (isMountedRef.current) {
+        reconnectTimeoutRef.current = setTimeout(() => {
+          if (isMountedRef.current) {
+            connectStream();
+          }
+        }, 5000);
       }
     } catch (err) {
       if (controller.signal.aborted) return;

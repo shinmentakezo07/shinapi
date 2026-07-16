@@ -130,12 +130,15 @@ type Provider struct {
 }
 
 type ProviderKey struct {
-	ID           string              `json:"id"`
-	ProviderID   string              `json:"providerId"`
-	Label        string              `json:"label"`
-	KeyPrefix    string              `json:"keyPrefix"`
-	KeyHash      string              `json:"-"`
-	KeyLastFour  string              `json:"keyLastFour"`
+	ID          string `json:"id"`
+	ProviderID  string `json:"providerId"`
+	Label       string `json:"label"`
+	KeyPrefix   string `json:"keyPrefix"`
+	KeyHash     string `json:"-"`
+	KeyLastFour string `json:"keyLastFour"`
+	// EncryptedKey is AES-GCM ciphertext (base64) for restart-safe runtime auth.
+	// Never returned to API clients.
+	EncryptedKey string              `json:"-"`
 	Strategy     ProviderKeyStrategy `json:"strategy"`
 	Weight       int                 `json:"weight"`
 	SortOrder    int                 `json:"sortOrder"`

@@ -128,7 +128,7 @@ func (cb *CircuitBreaker) beforeCall() error {
 	case StateOpen:
 		if time.Since(cb.lastFailureTime) > cb.config.Timeout {
 			cb.state = StateHalfOpen
-			cb.halfOpenCalls = 0
+			cb.halfOpenCalls = 1 // count this trial immediately on transition
 			return nil
 		}
 		return fmt.Errorf("circuit breaker open for %s", cb.provider.Name())
@@ -157,6 +157,7 @@ func (cb *CircuitBreaker) recordResult(err error) {
 		case StateHalfOpen:
 			cb.state = StateOpen
 			cb.halfOpenCalls = 0
+			cb.successes = 0
 		case StateClosed:
 			if cb.failures >= cb.config.FailureThreshold {
 				cb.state = StateOpen
@@ -176,6 +177,7 @@ func (cb *CircuitBreaker) recordResult(err error) {
 		case StateClosed:
 			if cb.successes >= cb.config.SuccessThreshold {
 				cb.failures = 0
+				cb.successes = 0
 			}
 		}
 	}
@@ -188,27 +190,44 @@ func (cb *CircuitBreaker) wrapStream(ch <-chan llm.StreamChunk) <-chan llm.Strea
 		success := false
 		// Bug #41: 5s timeout killed streams from reasoning models (o1, deepseek-r1, etc.)
 		// that can pause 10-30s between chunks during thinking. 120s is safe for all models.
-		timer := time.NewTimer(120 * time.Second)
+		timeout := 120 * time.Second
+		timer := time.NewTimer(timeout)
 		defer timer.Stop()
-		for chunk := range ch {
-			timer.Reset(120 * time.Second)
+		for {
 			select {
-			case out <- chunk:
+			case chunk, ok := <-ch:
+				if !ok {
+					if success {
+						cb.recordResult(nil)
+					} else {
+						cb.recordResult(fmt.Errorf("stream ended without success"))
+					}
+					return
+				}
+				// Drain the timer channel before resetting to avoid immediate fire.
+				if !timer.Stop() {
+					select {
+					case <-timer.C:
+					default:
+					}
+				}
+				timer.Reset(timeout)
+				select {
+				case out <- chunk:
+				case <-timer.C:
+					cb.recordResult(fmt.Errorf("stream timeout after 120s"))
+					return
+				}
+				if chunk.FinishReason != nil {
+					// Any recognized finish reason means the stream completed
+					// successfully from the provider's perspective. Only
+					// transport/5xx errors should count as failures.
+					success = true
+				}
 			case <-timer.C:
 				cb.recordResult(fmt.Errorf("stream timeout after 120s"))
 				return
 			}
-			if chunk.FinishReason != nil {
-				reason := *chunk.FinishReason
-				if reason == llm.FinishReasonStop || reason == llm.FinishReasonToolCalls {
-					success = true
-				}
-			}
-		}
-		if success {
-			cb.recordResult(nil)
-		} else {
-			cb.recordResult(fmt.Errorf("stream ended without success"))
 		}
 	}()
 	return out

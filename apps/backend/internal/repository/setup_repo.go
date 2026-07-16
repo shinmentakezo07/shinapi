@@ -3,10 +3,17 @@ package repository
 import (
 	"context"
 	"errors"
+	"sync"
 
 	"dra-platform/backend/internal/db"
 	"dra-platform/backend/internal/domain"
 )
+
+// sqliteBootstrapMu serializes first-admin bootstrap attempts under SQLite.
+// SQLite's default deferred transactions allow two concurrent writers to both
+// pass the COUNT=0 check before either acquires the write lock, so we guard
+// the bootstrap path with this process-wide mutex.
+var sqliteBootstrapMu sync.Mutex
 
 // ErrFirstAdminAlreadyExists is returned by CreateFirstAdmin when the
 // admin_users table already has rows. Callers should map this to 403.
@@ -37,10 +44,16 @@ func (r *SetupRepo) CountAdmins(ctx context.Context) (int, error) {
 // bootstrap requests racing in the same instant cannot both succeed.
 //
 // In SQLite (lite) mode the advisory lock is skipped (SQLite has no
-// equivalent; the BEGIN IMMEDIATE tx provides serialization) and the
-// permissions value is stored as a JSON string instead of a Postgres
-// TEXT[] literal.
+// equivalent). A process-wide mutex serializes bootstrap attempts so two
+// concurrent requests cannot both pass the COUNT=0 check before the
+// deferred write lock is acquired. The permissions value is stored as a
+// JSON string instead of a Postgres TEXT[] literal.
 func (r *SetupRepo) CreateFirstAdmin(ctx context.Context, name, email, hashedPassword string) (userID string, err error) {
+	if r.db.Type == db.DBTypeSQLite {
+		sqliteBootstrapMu.Lock()
+		defer sqliteBootstrapMu.Unlock()
+	}
+
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return "", err

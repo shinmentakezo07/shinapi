@@ -46,12 +46,14 @@ type Conn interface {
 }
 
 // Handler processes incoming WebSocket messages.
-type Handler func(conn Conn, msg *Message) error
+// The ConnectionState is provided so handlers can use SendLocked for
+// thread-safe writes to this connection.
+type Handler func(cs *ConnectionState, msg *Message) error
 
 // Gateway manages WebSocket connections.
 type Gateway struct {
 	mu           sync.RWMutex
-	connections  map[string]*connectionState
+	connections  map[string]*ConnectionState
 	handlers     map[string]Handler
 	maxConns     int
 	maxPerUser   int // Bug #47: per-user connection limit
@@ -60,7 +62,10 @@ type Gateway struct {
 	connCount    atomic.Int64
 }
 
-type connectionState struct {
+// ConnectionState holds the runtime state for a single WebSocket connection.
+// It is exported so external handler registrations can reference it in their
+// signature, while its fields remain internal.
+type ConnectionState struct {
 	conn          Conn
 	id            string
 	userID        string
@@ -68,12 +73,14 @@ type connectionState struct {
 	subscriptions map[string]bool
 	lastPing      time.Time
 	createdAt     time.Time
+	disconnected  sync.Once
+	writeMu       sync.Mutex
 }
 
 // NewGateway creates a new WebSocket gateway.
 func NewGateway(maxConns int) *Gateway {
 	g := &Gateway{
-		connections:  make(map[string]*connectionState),
+		connections:  make(map[string]*ConnectionState),
 		handlers:     make(map[string]Handler),
 		maxConns:     maxConns,
 		maxPerUser:   10, // Bug #47: default per-user connection limit
@@ -82,19 +89,12 @@ func NewGateway(maxConns int) *Gateway {
 	}
 
 	// Register default handlers
-	g.handlers[TypePing] = func(conn Conn, msg *Message) error {
-		return g.Send(conn, &Message{Type: TypePong, Timestamp: time.Now().UnixMilli()})
+	g.handlers[TypePing] = func(cs *ConnectionState, msg *Message) error {
+		return g.SendLocked(cs, &Message{Type: TypePong, Timestamp: time.Now().UnixMilli()})
 	}
 	// Bug #48: pong handler updates lastPing so pingLoop knows the peer is alive
-	g.handlers[TypePong] = func(conn Conn, msg *Message) error {
-		g.mu.Lock()
-		for _, cs := range g.connections {
-			if cs.conn == conn {
-				cs.lastPing = time.Now()
-				break
-			}
-		}
-		g.mu.Unlock()
+	g.handlers[TypePong] = func(cs *ConnectionState, msg *Message) error {
+		cs.lastPing = time.Now()
 		return nil
 	}
 
@@ -132,7 +132,7 @@ func (g *Gateway) HandleHTTP(w http.ResponseWriter, r *http.Request, conn Conn, 
 	}
 
 	connID := fmt.Sprintf("ws-%d", time.Now().UnixNano())
-	cs := &connectionState{
+	cs := &ConnectionState{
 		conn:          conn,
 		id:            connID,
 		userID:        userID,
@@ -158,14 +158,28 @@ func (g *Gateway) HandleHTTP(w http.ResponseWriter, r *http.Request, conn Conn, 
 	return nil
 }
 
-// Send sends a message to a connection.
-func (g *Gateway) Send(conn Conn, msg *Message) error {
+// send writes a message to a connection. It is not concurrency-safe;
+// use SendLocked when multiple goroutines may write to the same conn.
+func (g *Gateway) send(conn Conn, msg *Message) error {
 	msg.Timestamp = time.Now().UnixMilli()
 	data, err := json.Marshal(msg)
 	if err != nil {
 		return fmt.Errorf("marshal message: %w", err)
 	}
+	// Guard against slow/hung clients by bounding write time.
+	if err := conn.SetWriteDeadline(time.Now().Add(30 * time.Second)); err != nil {
+		return err
+	}
 	return conn.WriteMessage(1, data) // TextMessage = 1
+}
+
+// SendLocked sends a message to a connection while holding that connection's
+// write lock. Use this when sending from goroutines that may race with other
+// writers (e.g. Broadcast, pingLoop).
+func (g *Gateway) SendLocked(cs *ConnectionState, msg *Message) error {
+	cs.writeMu.Lock()
+	defer cs.writeMu.Unlock()
+	return g.send(cs.conn, msg)
 }
 
 // Broadcast sends a message to all connections subscribed to a topic.
@@ -175,7 +189,7 @@ func (g *Gateway) Broadcast(topic string, msg *Message) {
 
 	for _, cs := range g.connections {
 		if cs.subscriptions[topic] {
-			if err := g.Send(cs.conn, msg); err != nil {
+			if err := g.SendLocked(cs, msg); err != nil {
 				slog.Warn("ws_broadcast_error", "conn_id", cs.id, "error", err.Error())
 			}
 		}
@@ -189,27 +203,35 @@ func (g *Gateway) SendToUser(userID string, msg *Message) {
 
 	for _, cs := range g.connections {
 		if cs.userID == userID {
-			if err := g.Send(cs.conn, msg); err != nil {
+			if err := g.SendLocked(cs, msg); err != nil {
 				slog.Warn("ws_send_to_user_error", "conn_id", cs.id, "error", err.Error())
 			}
 		}
 	}
 }
 
-// Disconnect disconnects a connection.
+// Disconnect disconnects a connection. Guarded by a sync.Once on the
+// connection so that both readLoop's deferred call and pingLoop's timeout
+// path can call it safely without double-closing the conn or double
+// decrementing the connection counter.
 func (g *Gateway) Disconnect(connID string) {
 	g.mu.Lock()
 	cs, ok := g.connections[connID]
-	if ok {
-		delete(g.connections, connID)
+	if !ok {
+		g.mu.Unlock()
+		return
 	}
 	g.mu.Unlock()
 
-	if ok {
+	cs.disconnected.Do(func() {
+		g.mu.Lock()
+		delete(g.connections, connID)
+		g.mu.Unlock()
+
 		cs.conn.Close()
 		g.connCount.Add(-1)
 		slog.Info("ws_disconnected", "conn_id", connID)
-	}
+	})
 }
 
 // ActiveConnections returns the number of active connections.
@@ -238,11 +260,11 @@ func (g *Gateway) ConnectionInfo() []map[string]any {
 // Stop stops the gateway and disconnects all clients.
 func (g *Gateway) Stop() {
 	g.mu.Lock()
-	conns := make([]*connectionState, 0, len(g.connections))
+	conns := make([]*ConnectionState, 0, len(g.connections))
 	for _, cs := range g.connections {
 		conns = append(conns, cs)
 	}
-	g.connections = make(map[string]*connectionState)
+	g.connections = make(map[string]*ConnectionState)
 	g.mu.Unlock()
 
 	for _, cs := range conns {
@@ -251,7 +273,9 @@ func (g *Gateway) Stop() {
 	g.connCount.Store(0)
 }
 
-func (g *Gateway) readLoop(cs *connectionState) {
+func (g *Gateway) readLoop(cs *ConnectionState) {
+	// pingLoop owns disconnection (on ping timeout or pong failure);
+	// readLoop just returns so Disconnect is called exactly once per conn.
 	defer g.Disconnect(cs.id)
 
 	for {
@@ -266,7 +290,7 @@ func (g *Gateway) readLoop(cs *connectionState) {
 
 		var msg Message
 		if err := json.Unmarshal(data, &msg); err != nil {
-			g.Send(cs.conn, &Message{
+			g.SendLocked(cs, &Message{
 				Type:      TypeChatError,
 				Error:     "invalid message format",
 				Timestamp: time.Now().UnixMilli(),
@@ -302,7 +326,7 @@ func (g *Gateway) readLoop(cs *connectionState) {
 		g.mu.RUnlock()
 
 		if !ok {
-			g.Send(cs.conn, &Message{
+			g.SendLocked(cs, &Message{
 				Type:      TypeChatError,
 				Error:     fmt.Sprintf("unknown message type: %s", msg.Type),
 				Timestamp: time.Now().UnixMilli(),
@@ -310,8 +334,8 @@ func (g *Gateway) readLoop(cs *connectionState) {
 			continue
 		}
 
-		if err := handler(cs.conn, &msg); err != nil {
-			g.Send(cs.conn, &Message{
+		if err := handler(cs, &msg); err != nil {
+			g.SendLocked(cs, &Message{
 				Type:      TypeChatError,
 				RequestID: msg.RequestID,
 				Error:     err.Error(),
@@ -321,7 +345,7 @@ func (g *Gateway) readLoop(cs *connectionState) {
 	}
 }
 
-func (g *Gateway) pingLoop(cs *connectionState) {
+func (g *Gateway) pingLoop(cs *ConnectionState) {
 	ticker := time.NewTicker(g.pingInterval)
 	defer ticker.Stop()
 
@@ -339,7 +363,7 @@ func (g *Gateway) pingLoop(cs *connectionState) {
 			return
 		}
 
-		if err := g.Send(cs.conn, &Message{Type: TypePing}); err != nil {
+		if err := g.SendLocked(cs, &Message{Type: TypePing}); err != nil {
 			g.Disconnect(cs.id)
 			return
 		}

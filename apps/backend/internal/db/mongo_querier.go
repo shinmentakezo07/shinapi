@@ -702,29 +702,29 @@ func matchDelete(clean string, p *parsedSQL, args []any) bool {
 // parseWhere converts simple WHERE clauses to a MongoDB filter.
 func parseWhere(where string, args []any) bson.M {
 	filter := bson.M{}
-	// Handle AND conditions
-	parts := strings.Split(where, " and ")
+	// Handle AND conditions, splitting only on " and " outside single-quoted literals
+	parts := splitOnAndRespectingQuotes(where)
 	argIdx := 0
 	for _, part := range parts {
 		part = strings.TrimSpace(part)
 		if part == "" {
 			continue
 		}
-		// Check for IS NULL / IS NOT NULL
-		if strings.Contains(part, " is null") {
-			col := strings.TrimSpace(strings.Split(part, " is null")[0])
+		// Check for IS NULL / IS NOT NULL (only outside quotes)
+		if idx := findOpOutsideQuotes(part, " is null"); idx >= 0 {
+			col := strings.TrimSpace(part[:idx])
 			filter[col] = bson.M{"$exists": false}
 			continue
 		}
-		if strings.Contains(part, " is not null") {
-			col := strings.TrimSpace(strings.Split(part, " is not null")[0])
+		if idx := findOpOutsideQuotes(part, " is not null"); idx >= 0 {
+			col := strings.TrimSpace(part[:idx])
 			filter[col] = bson.M{"$exists": true}
 			continue
 		}
-		// Check for >=, <=, >, <, <>
+		// Check for >=, <=, >, <, <> (only outside quotes)
 		for _, op := range []string{">=", "<=", "<>", ">", "<", "="} {
-			if strings.Contains(part, op) {
-				sides := strings.SplitN(part, op, 2)
+			if idx := findOpOutsideQuotes(part, op); idx >= 0 {
+				sides := []string{part[:idx], part[idx+len(op):]}
 				if len(sides) == 2 {
 					col := strings.TrimSpace(sides[0])
 					valStr := strings.TrimSpace(sides[1])
@@ -780,6 +780,47 @@ func parseWhere(where string, args []any) bson.M {
 		}
 	}
 	return filter
+}
+
+func splitOnAndRespectingQuotes(s string) []string {
+	var parts []string
+	var b strings.Builder
+	inQuote := false
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c == '\'' {
+			inQuote = !inQuote
+			b.WriteByte(c)
+			continue
+		}
+		if !inQuote && i+5 <= len(s) && s[i:i+5] == " and " {
+			parts = append(parts, b.String())
+			b.Reset()
+			i += 4
+			continue
+		}
+		b.WriteByte(c)
+	}
+	if b.Len() > 0 {
+		parts = append(parts, b.String())
+	}
+	return parts
+}
+
+// findOpOutsideQuotes returns the index of needle in s, but only when it occurs
+// outside single-quoted string literals. Returns -1 if not found outside quotes.
+func findOpOutsideQuotes(s, needle string) int {
+	inQuote := false
+	for i := 0; i+len(needle) <= len(s); i++ {
+		if s[i] == '\'' {
+			inQuote = !inQuote
+			continue
+		}
+		if !inQuote && s[i:i+len(needle)] == needle {
+			return i
+		}
+	}
+	return -1
 }
 
 func splitColumns(s string) []string {

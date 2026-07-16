@@ -268,6 +268,21 @@ func anthropicStopReason(fr llm.FinishReason) string {
 type StreamingState struct {
 	HasTextBlock     bool
 	HasThinkingBlock bool
+	// TextBlockIndex is the Anthropic content-block index for the active text block.
+	TextBlockIndex int
+	// ThinkingBlockIndex is the Anthropic content-block index for the active thinking block.
+	ThinkingBlockIndex int
+	// NextBlockIndex is the next available index for a new content block.
+	NextBlockIndex int
+}
+
+func (s *StreamingState) nextIndex() int {
+	if s == nil {
+		return 0
+	}
+	idx := s.NextBlockIndex
+	s.NextBlockIndex++
+	return idx
 }
 
 // FromInternalStreamChunk converts a unified stream chunk to Anthropic SSE events.
@@ -286,9 +301,10 @@ func FromInternalStreamChunk(chunk *llm.StreamChunk, state *StreamingState) []St
 
 	// content_block_start for text if not started yet and we have content
 	if chunk.Delta.Content != "" && !state.HasTextBlock {
+		state.TextBlockIndex = state.nextIndex()
 		events = append(events, StreamEvent{
 			Type:  "content_block_start",
-			Index: chunk.Index,
+			Index: state.TextBlockIndex,
 			ContentBlock: &ResponseBlock{
 				Type: "text",
 				Text: "",
@@ -300,7 +316,7 @@ func FromInternalStreamChunk(chunk *llm.StreamChunk, state *StreamingState) []St
 	if chunk.Delta.Content != "" {
 		events = append(events, StreamEvent{
 			Type:  "content_block_delta",
-			Index: chunk.Index,
+			Index: state.TextBlockIndex,
 			Delta: &StreamDelta{
 				Type: "text_delta",
 				Text: chunk.Delta.Content,
@@ -310,9 +326,10 @@ func FromInternalStreamChunk(chunk *llm.StreamChunk, state *StreamingState) []St
 
 	// content_block_start for thinking if not started yet
 	if chunk.Thinking != "" && !state.HasThinkingBlock {
+		state.ThinkingBlockIndex = state.nextIndex()
 		events = append(events, StreamEvent{
 			Type:  "content_block_start",
-			Index: chunk.Index,
+			Index: state.ThinkingBlockIndex,
 			ContentBlock: &ResponseBlock{
 				Type:     "thinking",
 				Thinking: "",
@@ -324,11 +341,43 @@ func FromInternalStreamChunk(chunk *llm.StreamChunk, state *StreamingState) []St
 	if chunk.Thinking != "" {
 		events = append(events, StreamEvent{
 			Type:  "content_block_delta",
-			Index: chunk.Index,
+			Index: state.ThinkingBlockIndex,
 			Delta: &StreamDelta{
 				Type:     "thinking_delta",
 				Thinking: chunk.Thinking,
 			},
+		})
+	}
+
+	// content_block events for tool calls (mirrors AnthropicStreamWriter).
+	for _, tc := range chunk.Delta.ToolCalls {
+		// Tool call start
+		toolIdx := state.nextIndex()
+		events = append(events, StreamEvent{
+			Type:  "content_block_start",
+			Index: toolIdx,
+			ContentBlock: &ResponseBlock{
+				Type:  "tool_use",
+				ID:    tc.ID,
+				Name:  tc.Function.Name,
+				Input: json.RawMessage("{}"),
+			},
+		})
+		// Tool call argument delta
+		if len(tc.Function.Arguments) > 0 {
+			events = append(events, StreamEvent{
+				Type:  "content_block_delta",
+				Index: toolIdx,
+				Delta: &StreamDelta{
+					Type:        "input_json_delta",
+					PartialJSON: string(tc.Function.Arguments),
+				},
+			})
+		}
+		// Tool call stop
+		events = append(events, StreamEvent{
+			Type:  "content_block_stop",
+			Index: toolIdx,
 		})
 	}
 
@@ -337,13 +386,13 @@ func FromInternalStreamChunk(chunk *llm.StreamChunk, state *StreamingState) []St
 		if state.HasTextBlock {
 			events = append(events, StreamEvent{
 				Type:  "content_block_stop",
-				Index: chunk.Index,
+				Index: state.TextBlockIndex,
 			})
 		}
 		if state.HasThinkingBlock {
 			events = append(events, StreamEvent{
 				Type:  "content_block_stop",
-				Index: chunk.Index,
+				Index: state.ThinkingBlockIndex,
 			})
 		}
 		events = append(events, StreamEvent{

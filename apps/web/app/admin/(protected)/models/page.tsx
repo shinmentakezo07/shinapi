@@ -421,6 +421,7 @@ export default function AdminModelsPage() {
       getAdminSDK().createModel(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "models"] });
+      queryClient.invalidateQueries({ queryKey: ["models", "catalog"] });
       setShowAddModel(false);
     },
   });
@@ -430,6 +431,7 @@ export default function AdminModelsPage() {
       getAdminSDK().updateModel(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "models"] });
+      queryClient.invalidateQueries({ queryKey: ["models", "catalog"] });
       setEditingModel(null);
     },
   });
@@ -438,6 +440,7 @@ export default function AdminModelsPage() {
     mutationFn: (id: string) => getAdminSDK().deleteModel(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "models"] });
+      queryClient.invalidateQueries({ queryKey: ["models", "catalog"] });
     },
   });
 
@@ -446,6 +449,7 @@ export default function AdminModelsPage() {
       getAdminSDK().updateModelStatus(id, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "models"] });
+      queryClient.invalidateQueries({ queryKey: ["models", "catalog"] });
     },
   });
 

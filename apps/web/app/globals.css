@@ -27,6 +27,86 @@
   --color-neon-pink: #ff00ff;
   --color-neon-green: #00ff00;
   --animate-pulse-slow: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+  /* ── Signal Gateway docs tokens ──
+     A request→response vocabulary layered on the Glass Atelier palette.
+     `signal` (indigo) is the outbound/active route; `wire` (cyan) is the
+     return path / live stream. Indigo stays dominant (≥90%); cyan is a
+     *semantic* second accent, never decorative. */
+  --color-gw-signal: #a5b4fc;
+  --color-gw-signal-strong: #818cf8;
+  --color-gw-wire: #22d3ee;
+  --color-gw-wire-strong: #67e8f9;
+  --color-gw-ground: #06060a;
+}
+
+/* ── Signal Gateway: persistent left-gutter rail ──
+   A thin indigo→cyan line that threads every docs section, filling as the
+   reader scrolls the index. It is the page's one persistent ambient motion. */
+.docs-signal-rail {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(99, 102, 241, 0.06),
+    rgba(34, 211, 238, 0.04)
+  );
+  border-right: 1px solid rgba(255, 255, 255, 0.03);
+}
+.docs-signal-rail::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 0;
+  width: 4px;
+  height: var(--gw-rail-fill, 0%);
+  border-radius: 9999px;
+  background: linear-gradient(
+    to bottom,
+    rgba(165, 180, 252, 0.9),
+    rgba(34, 211, 238, 0.85)
+  );
+  box-shadow: 0 0 12px 2px rgba(99, 102, 241, 0.35),
+    0 0 18px 0px rgba(34, 211, 238, 0.25);
+  transition: height 0.15s ease-out;
+}
+
+/* ── Active route pulse: a signal traveling along a connector ── */
+@keyframes signal-pulse {
+  from {
+    transform: scaleX(0);
+    transform-origin: left;
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  to {
+    transform: scaleX(1);
+    transform-origin: left;
+    opacity: 0.85;
+  }
+}
+.animate-signal-pulse {
+  animation: signal-pulse 1.1s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-signal-pulse {
+    animation: none !important;
+    transform: scaleX(1) !important;
+    opacity: 0.85 !important;
+  }
+}
+
+/* Visible keyboard focus on route rows / router buttons — quality floor */
+.docs-route:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(6, 6, 10, 1), 0 0 0 4px rgba(34, 211, 238, 0.5);
 }
 
 /* ── Docs sidebar custom scrollbar ── */

@@ -3,7 +3,9 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"dra-platform/backend/internal/domain"
@@ -58,7 +60,22 @@ func (h *Handler) AdminLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	if h.adminSessionRepo != nil {
 		ip := r.Header.Get("X-Forwarded-For")
-		if ip == "" {
+		isTrustedProxyAddr := func(addr string) bool {
+			host, _, err := net.SplitHostPort(addr)
+			if err != nil {
+				host = addr
+			}
+			p := net.ParseIP(host)
+			if p == nil {
+				return false
+			}
+			return p.IsLoopback() || p.IsPrivate()
+		}
+		if !isTrustedProxyAddr(r.RemoteAddr) {
+			ip = r.RemoteAddr
+		} else if ip != "" {
+			ip = strings.TrimSpace(strings.SplitN(ip, ",", 2)[0])
+		} else {
 			ip = r.RemoteAddr
 		}
 		_, _ = h.adminSessionRepo.Create(r.Context(), auth.User.ID, "", ip, r.UserAgent(), time.Now().Add(24*time.Hour))
@@ -198,11 +215,8 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 		tokenStr = auth[7:]
 	}
 	if tokenStr == "" {
-		for _, name := range []string{"authjs.session-token", "__Secure-authjs.session-token", "next-auth.session-token", "__Secure-next-auth.session-token"} {
-			if c, err := r.Cookie(name); err == nil {
-				tokenStr = c.Value
-				break
-			}
+		if c, err := r.Cookie("dra_backend_token"); err == nil {
+			tokenStr = c.Value
 		}
 	}
 
@@ -232,6 +246,16 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   -1,
 		HttpOnly: true,
 		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	})
+	// Clear the dedicated backend token cookie so client-side SDK requests
+	// stop being authenticated after logout.
+	http.SetCookie(w, &http.Cookie{
+		Name:     "dra_backend_token",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 	})
 

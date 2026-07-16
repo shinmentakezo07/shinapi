@@ -2,11 +2,44 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
+import { cookies } from "next/headers";
 import { authConfig } from "./auth.config";
 import { z } from "zod";
 
 const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8080";
+
+const BACKEND_TOKEN_COOKIE = "dra_backend_token";
+
+async function setBackendTokenCookie(token: string) {
+  // Max-age matches the backend JWT expiry (7 days).
+  const maxAge = 60 * 60 * 24 * 7;
+  const secure = process.env.NODE_ENV === "production";
+  const sameSite = secure ? "none" : "lax";
+  const domain = process.env.BACKEND_TOKEN_COOKIE_DOMAIN || undefined;
+  const cookieStore = await cookies();
+  cookieStore.set(BACKEND_TOKEN_COOKIE, token, {
+    httpOnly: true,
+    secure,
+    sameSite: sameSite as "lax" | "none",
+    path: "/",
+    maxAge,
+    ...(domain ? { domain } : {}),
+  });
+}
+
+export async function clearBackendTokenCookie() {
+  const secure = process.env.NODE_ENV === "production";
+  const domain = process.env.BACKEND_TOKEN_COOKIE_DOMAIN || undefined;
+  const cookieStore = await cookies();
+  cookieStore.set(BACKEND_TOKEN_COOKIE, "", {
+    httpOnly: true,
+    secure,
+    path: "/",
+    maxAge: 0,
+    ...(domain ? { domain } : {}),
+  });
+}
 
 if (!secret) {
   throw new Error(
@@ -93,12 +126,24 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
       }
       return true;
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger }) {
       if (user) {
         token.id = user.id;
         token.role = user.role;
         token.backendToken = user.backendToken;
         token.provider = account?.provider;
+      }
+
+      // Persist the backend JWT in a dedicated cookie so client-side SDK
+      // requests can authenticate via cookie. We set it both on sign-in
+      // (when user is present) and whenever the token is refreshed.
+      if (token.backendToken && (trigger === "signIn" || trigger === "signUp")) {
+        try {
+          await setBackendTokenCookie(token.backendToken as string);
+        } catch {
+          // Cookie setting may fail in edge/runtime contexts; the
+          // Authorization header fallback in proxyToBackend still works.
+        }
       }
 
       if (token.backendToken && isTokenExpired(token.backendToken as string)) {

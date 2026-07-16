@@ -270,11 +270,19 @@ function FetchModelsPanel({
   const [fetching, setFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [manualIds, setManualIds] = useState("");
   const queryClient = useQueryClient();
 
   const registerModels = useMutation({
     mutationFn: async (modelIds: string[]) => {
+      const seen = new Set<string>();
+      const ids: string[] = [];
       for (const modelId of modelIds) {
+        if (!modelId || seen.has(modelId)) continue;
+        seen.add(modelId);
+        ids.push(modelId);
+      }
+      for (const modelId of ids) {
         await getAdminSDK().createModel({
           modelId,
           providerId,
@@ -284,7 +292,9 @@ function FetchModelsPanel({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "models"] });
+      queryClient.invalidateQueries({ queryKey: ["models", "catalog"] });
       setSelectedIds(new Set());
+      setManualIds("");
     },
   });
 
@@ -437,6 +447,43 @@ function FetchModelsPanel({
           </div>
         </div>
       )}
+
+      <div className="mt-3">
+        <label className="block text-[9px] text-[var(--admin-text-dim)] mb-1 uppercase tracking-wider font-semibold">
+          Manual model IDs
+        </label>
+        <textarea
+          placeholder={"model-id-one\nmodel-id-two"}
+          value={manualIds}
+          onChange={(e) => setManualIds(e.target.value)}
+          rows={2}
+          className="admin-input w-full text-[12px] py-[7px] font-mono resize-y min-h-[56px]"
+        />
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <p className="text-[10px] text-[var(--admin-text-dim)]">
+            Optional. Merged with fetched selection when registering.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              const manual = manualIds
+                .split(/[\n,]/)
+                .map((s) => s.trim())
+                .filter(Boolean);
+              const ids = [...Array.from(selectedIds), ...manual];
+              if (ids.length === 0) return;
+              registerModels.mutate(ids);
+            }}
+            disabled={
+              registerModels.isPending ||
+              (selectedIds.size === 0 && !manualIds.trim())
+            }
+            className="admin-btn admin-btn-primary text-[10px] py-[4px] px-2.5 disabled:opacity-50 shrink-0"
+          >
+            {registerModels.isPending ? "Registering..." : "Register models"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -672,10 +719,18 @@ export default function AdminProvidersPage() {
   });
 
   const createProvider = useMutation({
-    mutationFn: (data: Partial<Provider>) => getAdminSDK().createProvider(data),
+    mutationFn: (data: Partial<Provider> & {
+      apiKey?: string;
+      models?: { modelId: string; displayName: string }[];
+    }) => getAdminSDK().createProvider(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "providers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "models"] });
+      queryClient.invalidateQueries({ queryKey: ["models", "catalog"] });
       setShowAddForm(false);
+      setManualModelIds("");
+      setFetchedModels([]);
+      setSelectedModelIds(new Set());
     },
   });
 
@@ -691,6 +746,8 @@ export default function AdminProvidersPage() {
     mutationFn: (id: string) => getAdminSDK().deleteProvider(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "providers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "models"] });
+      queryClient.invalidateQueries({ queryKey: ["models", "catalog"] });
       setDeleteConfirm(null);
     },
   });
@@ -713,6 +770,14 @@ export default function AdminProvidersPage() {
   );
   const [fetchingModels, setFetchingModels] = useState(false);
   const [fetchModelsError, setFetchModelsError] = useState<string | null>(null);
+  const [manualModelIds, setManualModelIds] = useState("");
+
+  const parseManualModelIds = (raw: string): string[] => {
+    return raw
+      .split(/[\n,]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+  };
 
   const handleFetchModels = async () => {
     if (!form.baseUrl) {
@@ -767,15 +832,26 @@ export default function AdminProvidersPage() {
     if (form.apiKey) {
       payload.apiKey = form.apiKey;
     }
-    if (selectedModelIds.size > 0) {
-      payload.models = fetchedModels
-        .filter((m) => selectedModelIds.has(m.id))
-        .map((m) => ({
-          modelId: m.id,
-          displayName: m.id,
-        }));
+    // Merge fetch selection + manual model IDs (dedupe by modelId).
+    const fromFetch = fetchedModels
+      .filter((m) => selectedModelIds.has(m.id))
+      .map((m) => ({ modelId: m.id, displayName: m.id }));
+    const fromManual = parseManualModelIds(manualModelIds).map((id) => ({
+      modelId: id,
+      displayName: id,
+    }));
+    const seen = new Set<string>();
+    const models: { modelId: string; displayName: string }[] = [];
+    for (const m of [...fromFetch, ...fromManual]) {
+      if (seen.has(m.modelId)) continue;
+      seen.add(m.modelId);
+      models.push(m);
     }
-    createProvider.mutate(payload as Partial<Provider>);
+    if (models.length > 0) {
+      payload.models = models;
+    }
+    // If models omitted, backend auto-discovers from upstream /v1/models.
+    createProvider.mutate(payload as never);
   };
 
   const resetForm = () => {
@@ -791,6 +867,7 @@ export default function AdminProvidersPage() {
     setFetchedModels([]);
     setSelectedModelIds(new Set());
     setFetchModelsError(null);
+    setManualModelIds("");
     setShowAddForm(false);
   };
 
@@ -1005,6 +1082,23 @@ export default function AdminProvidersPage() {
               </div>
             </div>
           )}
+
+          <div className="mt-3">
+            <label className="block text-[9px] text-[var(--admin-text-dim)] mb-1 uppercase tracking-wider font-semibold">
+              Manual model IDs
+            </label>
+            <textarea
+              placeholder={"model-id-one\nmodel-id-two\nor comma,separated,ids"}
+              value={manualModelIds}
+              onChange={(e) => setManualModelIds(e.target.value)}
+              rows={3}
+              className="admin-input w-full text-[12px] py-[7px] font-mono resize-y min-h-[72px]"
+            />
+            <p className="mt-1 text-[10px] text-[var(--admin-text-dim)]">
+              Optional. Comma or newline separated. Merged with fetched selection.
+              Leave empty and skip fetch to auto-discover from the endpoint.
+            </p>
+          </div>
 
           {createProvider.isError && (
             <div className="mt-3 p-2.5 rounded-[10px] bg-red-500/[0.04] border border-red-500/10 text-[11px] text-red-400">

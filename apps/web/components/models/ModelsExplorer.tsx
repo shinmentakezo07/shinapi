@@ -18,6 +18,8 @@ import { useRouter } from "next/navigation";
 import { ModelCard } from "./ModelCard";
 import { getProviderLogo } from "@/lib/provider-logos";
 import type { OpenRouterModelData } from "@/types/model";
+import { useModelCatalog } from "@/lib/api/hooks";
+import { mapCatalogToOpenRouter } from "@/lib/api/model-catalog";
 
 interface Model {
   id: string;
@@ -214,7 +216,8 @@ const providerIcons: Record<
 };
 
 interface ModelsExplorerProps {
-  initialModels: OpenRouterModelData[];
+  /** Optional SSR/seed models; live catalog is preferred. */
+  initialModels?: OpenRouterModelData[];
 }
 
 export function ModelsExplorer({ initialModels }: ModelsExplorerProps) {
@@ -226,8 +229,23 @@ export function ModelsExplorer({ initialModels }: ModelsExplorerProps) {
   const deferredProvider = useDeferredValue(selectedProvider);
   const isSearchStale = searchQuery !== deferredQuery;
 
+  const {
+    data: catalog,
+    isLoading: catalogLoading,
+    isError: catalogError,
+    error: catalogErr,
+    refetch: refetchCatalog,
+  } = useModelCatalog();
+
+  const sourceModels = useMemo(() => {
+    if (catalog != null) {
+      return mapCatalogToOpenRouter(catalog);
+    }
+    return initialModels ?? [];
+  }, [catalog, initialModels]);
+
   const models = useMemo(() => {
-    return initialModels.map((model) => {
+    return sourceModels.map((model) => {
       const providerId = getProviderFromId(model.id);
       const config = providerConfig[providerId] || {
         icon: Cpu,
@@ -262,7 +280,7 @@ export function ModelsExplorer({ initialModels }: ModelsExplorerProps) {
         speed: (model.context_length ?? 0) > 500000 ? "Fast" : "Very Fast",
       };
     });
-  }, [initialModels]);
+  }, [sourceModels]);
 
   const filteredModels = useMemo(() => {
     return models.filter((model) => {
@@ -302,6 +320,36 @@ export function ModelsExplorer({ initialModels }: ModelsExplorerProps) {
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto">
+        {catalogLoading && !sourceModels.length && (
+          <div className="flex flex-col items-center justify-center py-24 gap-3">
+            <div className="w-8 h-8 rounded-full border-2 border-blue-500/30 border-t-blue-400 animate-spin" />
+            <p className="text-sm text-gray-500 font-mono">Loading model catalog…</p>
+          </div>
+        )}
+        {catalogError && (
+          <div className="mb-8 p-4 rounded-2xl border border-red-500/20 bg-red-500/5 text-center">
+            <p className="text-sm text-red-400 mb-2">
+              Failed to load models
+              {catalogErr instanceof Error ? `: ${catalogErr.message}` : ""}
+            </p>
+            <button
+              type="button"
+              onClick={() => refetchCatalog()}
+              className="text-xs font-mono text-blue-400 hover:text-blue-300 underline"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+        {!catalogLoading && !catalogError && sourceModels.length === 0 && (
+          <div className="mb-12 p-8 rounded-2xl border border-white/10 bg-white/[0.02] text-center">
+            <p className="text-white font-semibold mb-2">No models configured</p>
+            <p className="text-sm text-gray-400 max-w-md mx-auto">
+              An admin can add a provider (endpoint, API key, and model IDs) under
+              Admin → Providers. Models appear here and in the playground automatically.
+            </p>
+          </div>
+        )}
         {/* Section Header */}
         <div className="text-center mb-16">
           <motion.div
@@ -338,8 +386,11 @@ export function ModelsExplorer({ initialModels }: ModelsExplorerProps) {
             className="text-lg text-gray-400 max-w-2xl mx-auto font-light"
           >
             Search and filter through{" "}
-            <span className="text-white font-medium">100+ AI models</span> from
-            leading providers. Compare pricing, context windows, and
+            <span className="text-white font-medium">
+              {sourceModels.length || "your"} AI model
+              {sourceModels.length === 1 ? "" : "s"}
+            </span>{" "}
+            from configured providers. Compare pricing, context windows, and
             capabilities.
           </motion.p>
         </div>

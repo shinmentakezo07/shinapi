@@ -88,6 +88,15 @@ func (s *ExportService) exportLogs(ctx context.Context, userID, format, dir stri
 	}
 	defer f.Close()
 
+	if format == "json" {
+		enc := json.NewEncoder(f)
+		enc.SetIndent("", "  ")
+		if err := enc.Encode(logs); err != nil {
+			return "", err
+		}
+		return filePath, nil
+	}
+
 	w := csv.NewWriter(f)
 	defer w.Flush()
 
@@ -112,6 +121,15 @@ func (s *ExportService) exportAuditLogs(ctx context.Context, userID, format, dir
 		return "", err
 	}
 	defer f.Close()
+
+	if format == "json" {
+		enc := json.NewEncoder(f)
+		enc.SetIndent("", "  ")
+		if err := enc.Encode(logs); err != nil {
+			return "", err
+		}
+		return filePath, nil
+	}
 
 	w := csv.NewWriter(f)
 	defer w.Flush()

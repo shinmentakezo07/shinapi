@@ -31,11 +31,8 @@ func TokenBlacklist(checker TokenBlacklistChecker) func(http.Handler) http.Handl
 				tokenStr = auth[7:]
 			}
 			if tokenStr == "" {
-				for _, name := range []string{"authjs.session-token", "__Secure-authjs.session-token", "next-auth.session-token", "__Secure-next-auth.session-token"} {
-					if c, err := r.Cookie(name); err == nil {
-						tokenStr = c.Value
-						break
-					}
+				if c, err := r.Cookie("dra_backend_token"); err == nil {
+					tokenStr = c.Value
 				}
 			}
 			if tokenStr == "" {

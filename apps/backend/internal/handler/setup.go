@@ -65,7 +65,7 @@ func (h *SetupHandler) Bootstrap(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		// Log the full error server-side so on-call can diagnose.
-		logger.Error("first_admin_bootstrap_failed", "error", err.Error(), "name", name, "email", email)
+		logger.Error("first_admin_bootstrap_failed", "error", err.Error())
 
 		// Map common, expose-friendly cases to specific HTTP codes + copy.
 		msg := err.Error()

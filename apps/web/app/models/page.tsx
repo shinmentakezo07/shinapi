@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
-import modelData from "./openrouter-models-2026.json";
 import { ModelsExplorer } from "@/components/models/ModelsExplorer";
 import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "Model Registry — Yapapa",
   description:
-    "Browse 100+ AI models with transparent per-token pricing. Compare capabilities, context windows, and costs.",
+    "Browse AI models with transparent per-token pricing. Compare capabilities, context windows, and costs.",
 };
 
 function LoadingFallback() {
@@ -21,7 +20,7 @@ export default function ModelsPage() {
   return (
     <div className="flex flex-col items-center w-full overflow-hidden bg-[#000000] text-foreground selection:bg-primary/30 selection:text-white">
       <Suspense fallback={<LoadingFallback />}>
-        <ModelsExplorer initialModels={modelData} />
+        <ModelsExplorer />
       </Suspense>
     </div>
   );

@@ -81,9 +81,9 @@ export const Section = ({
           )}
         </div>
 
-        {/* Hairline + section id */}
+        {/* Hairline + section id — indigo→cyan signal */}
         <div className="flex items-center gap-3">
-          <div className="h-[2px] w-16 bg-gradient-to-r from-indigo-400/70 via-indigo-400/30 to-transparent rounded-full" />
+          <div className="h-[2px] w-16 bg-gradient-to-r from-indigo-400/70 via-indigo-400/30 to-cyan-300/30 rounded-full" />
           <div className="h-px flex-1 bg-gradient-to-r from-white/[0.08] to-transparent" />
           <span className="text-[9px] font-mono tracking-[0.2em] uppercase text-white/20">
             §{id}

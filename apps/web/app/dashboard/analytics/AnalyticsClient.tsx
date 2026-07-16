@@ -84,12 +84,17 @@ export default function AnalyticsClient() {
   const recentLogs = analytics?.recentLogs ?? [];
 
   // Calculate stats
-  const totalCost = recentLogs.reduce((sum, log) => sum + log.cost, 0);
+  const totalCost = recentLogs.reduce(
+    (sum, log) => sum + (Number(log.cost) || 0),
+    0,
+  );
   const avgLatency =
     recentLogs.length > 0
       ? Math.round(
-          recentLogs.reduce((sum, log) => sum + log.latency, 0) /
-            recentLogs.length,
+          recentLogs.reduce(
+            (sum, log) => sum + (Number(log.latency) || 0),
+            0,
+          ) / recentLogs.length,
         )
       : 0;
   const successRate =
@@ -97,10 +102,10 @@ export default function AnalyticsClient() {
       ? ((summary.successRequests / summary.totalRequests) * 100).toFixed(1)
       : "0.0";
 
-  // Filter daily usage by time range
+  // Filter daily usage by time range (last N days)
   const daysMap: Record<string, number> = { "7d": 7, "30d": 30, "90d": 90 };
   const days = daysMap[timeRange];
-  const filteredDaily = dailyUsage.slice(0, days).reverse();
+  const filteredDaily = dailyUsage.slice(-days);
 
   // Format model breakdown for charts
   const totalModelRequests = modelBreakdown.reduce(

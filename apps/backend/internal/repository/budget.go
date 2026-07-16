@@ -105,7 +105,7 @@ func (r *BudgetRepo) CheckCapExceeded(ctx context.Context, userID string, cost i
 
 	var spent int
 	_ = r.db.QueryRow(ctx,
-		`SELECT COALESCE(SUM(cost), 0) FROM credit_transactions WHERE user_id = $1 AND type = 'debit' AND created_at > NOW() - INTERVAL '30 days'`, userID).
+		`SELECT COALESCE(SUM(ABS(amount)), 0) FROM credit_transactions WHERE user_id = $1 AND type = 'usage' AND created_at > NOW() - INTERVAL '30 days'`, userID).
 		Scan(&spent)
 
 	if spent+cost > hardLimit {

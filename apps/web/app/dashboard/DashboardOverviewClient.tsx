@@ -1,244 +1,558 @@
 "use client";
 
-import { useState, useEffect, type SVGProps } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
-  Key,
-  BarChart3,
   DollarSign,
   Zap,
+  Key,
+  Server,
   TrendingUp,
   ArrowRight,
-  Braces,
-  Gauge,
-  AlertCircle,
+  AlertTriangle,
   Clock,
+  Cpu,
+  ShieldCheck,
+  BarChart3,
+  Radio,
+  Eye,
 } from "lucide-react";
 import Link from "next/link";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
-import { useAnalytics, useCredits, useKeys } from "@/lib/api/hooks";
+import { getSDK } from "@/lib/api/sdk";
+import { useCredits, useKeys } from "@/lib/api/hooks";
 
-/* ------------------------------------------------------------------ */
-/*  Utilities                                                          */
-/* ------------------------------------------------------------------ */
+/* ─── Animation Variants (matches admin dashboard) ─── */
 
-function CostDisplay({ cost }: { cost: number }) {
-  const dollars = cost / 100000;
-  if (dollars < 0.01)
-    return <span className="text-emerald-400/60">&lt;$0.01</span>;
-  return <span>${dollars.toFixed(dollars < 1 ? 4 : 2)}</span>;
-}
+const stagger = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.05, delayChildren: 0.03 },
+  },
+};
 
-/* ------------------------------------------------------------------ */
-/*  Enhanced Metric Card — Intentional Minimalism                     */
-/*  Purpose: Present data with clinical precision and subtle depth.   */
-/* ------------------------------------------------------------------ */
+const fadeUp = {
+  hidden: { opacity: 0, y: 16 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring" as const, stiffness: 120, damping: 22 },
+  },
+};
 
-interface MetricCardProps {
-  title: string;
-  value: string | number;
-  change?: string;
-  changeType?: "positive" | "negative" | "neutral";
-  icon: React.ElementType;
-  accent: string;
-  index: number;
-}
+const fadeUpCss = {
+  hidden: { opacity: 0, y: 16 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] as const },
+  },
+};
 
-function MetricCard({
+/* ─── Shared Components (mirrors admin dashboard) ─── */
+
+function SectionHeading({
   title,
-  value,
-  change,
-  changeType = "neutral",
-  icon: Icon,
-  accent,
-  index,
-}: MetricCardProps) {
-  const changeColors = {
-    positive: "text-emerald-400",
-    negative: "text-red-400",
-    neutral: "text-slate-400",
-  };
+  subtitle,
+  action,
+}: {
+  title: string;
+  subtitle?: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-end justify-between mb-5">
+      <div>
+        <h2 className="text-[14px] font-semibold text-[var(--admin-text)] tracking-[-0.01em]">
+          {title}
+        </h2>
+        {subtitle && (
+          <p className="text-[11px] text-[var(--admin-text-dim)] mt-0.5 font-mono tracking-wide">
+            {subtitle}
+          </p>
+        )}
+      </div>
+      {action}
+    </div>
+  );
+}
+
+function ViewAllLink({ href }: { href: string }) {
+  return (
+    <Link
+      href={href}
+      className="text-[10px] font-semibold tracking-[0.1em] uppercase flex items-center gap-1.5 transition-colors text-[var(--admin-text-dim)] hover:text-[var(--admin-text)]"
+    >
+      View
+      <ArrowRight className="w-3 h-3" />
+    </Link>
+  );
+}
+
+/* ─── Hero Metric (Total Requests, dominant) ─── */
+
+function HeroMetric({
+  totalRequests,
+  successToday,
+  hourlyData,
+}: {
+  totalRequests: number;
+  successToday: number;
+  hourlyData: { time: string; requests: number }[];
+}) {
+  // 24-hour bar visualization from real hourly aggregation
+  const bars = Array.from({ length: 24 }).map((_, i) => {
+    const label = `${i.toString().padStart(2, "0")}:00`;
+    const hit = hourlyData.find((h) => h.time === label);
+    return { label, value: hit?.requests ?? 0 };
+  });
+  const peak = Math.max(...bars.map((b) => b.value), 1);
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{
-        duration: 0.5,
-        delay: index * 0.05,
-        ease: [0.16, 1, 0.3, 1],
-      }}
-      whileHover={{ y: -3, transition: { duration: 0.2 } }}
-      className="group relative"
+      variants={fadeUp}
+      className="admin-hero-metric admin-card p-8 relative overflow-hidden"
     >
-      {/* Ambient glow on hover */}
-      <div
-        className={`absolute -inset-px rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl ${accent.replace(
-          "from-",
-          "bg-"
-        )} opacity-20`}
-      />
-
-      <div
-        className="relative h-full flex flex-col justify-between p-5 rounded-2xl border border-white/[0.06] bg-[#0A0A0A] overflow-hidden
-          hover:border-white/[0.12] Livering-[0.01] transition-all duration-300"
-      >
-        {/* Top edge sheen */}
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-
-        {/* Top row: icon + change */}
-        <div className="flex items-start justify-between mb-4">
-          <div
-            className={`p-2.5 rounded-xl bg-gradient-to-br ${accent} border border-white/[0.04]`}
-          >
-            <Icon className="w-5 h-5 text-white/90" />
+      <div className="relative z-10">
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <div className="flex items-center gap-2.5 mb-2">
+              <Activity
+                className="w-4 h-4"
+                style={{ color: "var(--admin-accent)" }}
+              />
+              <span className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[var(--admin-text-muted)]">
+                Total Requests
+              </span>
+            </div>
+            <p className="admin-hero-value font-mono">
+              {totalRequests.toLocaleString()}
+            </p>
           </div>
-          {change && (
-            <span
-              className={`text-[11px] font-mono font-medium ${changeColors[changeType]}`}
-            >
-              {change}
+          <div className="flex items-center gap-1.5 text-emerald-400/70 bg-emerald-500/[0.06] px-2.5 py-1 rounded-md">
+            <ShieldCheck className="w-3 h-3" />
+            <span className="text-[10px] font-semibold tracking-wider uppercase font-mono">
+              {successToday.toLocaleString()} ok
             </span>
-          )}
+          </div>
         </div>
 
-        {/* Value */}
-        <div className="mt-auto">
-          <div className="text-2xl font-bold text-white tracking-tight font-mono tabular-nums">
-            {value}
-          </div>
-          <p className="text-[11px] text-slate-500 uppercase tracking-[0.1em] font-medium mt-1.5">
-            {title}
-          </p>
+        {/* Mini bar visualization — requests per hour */}
+        <div className="flex items-end gap-1 h-12 mt-4">
+          {bars.map((b, i) => (
+            <div
+              key={i}
+              className="flex-1 rounded-sm transition-all duration-300"
+              style={{
+                height: `${Math.max((b.value / peak) * 80 + 12, 14)}%`,
+                background:
+                  i === new Date().getHours()
+                    ? "var(--admin-accent)"
+                    : "rgba(255,255,255,0.04)",
+                opacity: i === new Date().getHours() ? 1 : 0.6,
+              }}
+            />
+          ))}
+        </div>
+        <div className="flex justify-between mt-2">
+          <span className="text-[9px] font-mono text-[var(--admin-text-dim)]">
+            00:00
+          </span>
+          <span className="text-[9px] font-mono text-[var(--admin-text-dim)]">
+            12:00
+          </span>
+          <span className="text-[9px] font-mono text-[var(--admin-text-dim)]">
+            23:59
+          </span>
         </div>
       </div>
     </motion.div>
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Enhanced Status Badge                                               */
-/* ------------------------------------------------------------------ */
+/* ─── Compact Stat ─── */
 
-interface StatusBadgeProps {
-  status: "success" | "error" | "warning" | "info";
-  label: string;
-  size?: "sm" | "md" | "lg";
-}
-
-function StatusBadge({ status, label, size = "sm" }: StatusBadgeProps) {
-  const styles = {
-    success: {
-      bg: "bg-emerald-500/8",
-      text: "text-emerald-400",
-      border: "border-emerald-500/15",
-      pulse: "bg-emerald-400",
-    },
-    error: {
-      bg: "bg-red-500/8",
-      text: "text-red-400",
-      border: "border-red-500/15",
-      pulse: "bg-red-400",
-    },
-    warning: {
-      bg: "bg-amber-500/8",
-      text: "text-amber-400",
-      border: "border-amber-500/15",
-      pulse: "bg-amber-400",
-    },
-    info: {
-      bg: "bg-blue-500/8",
-      text: "text-blue-400",
-      border: "border-blue-500/15",
-      pulse: "bg-blue-400",
-    },
-  };
-
-  const s = styles[status];
-  const sizes = {
-    sm: "text-[10px] px-2 py-0.5 gap-1.5",
-    md: "text-xs px-2.5 py-1 gap-1.5",
-    lg: "text-sm px-3 py-1.5 gap-2",
-  };
-
-  return (
-    <span
-      className={`inline-flex items-center rounded-full border font-mono font-semibold uppercase tracking-wider ${s.bg} ${s.text} ${s.border} ${sizes[size]}`}
-    >
-      <span
-        className={`w-1.5 h-1.5 rounded-full ${s.pulse} ${status === "success" ? "animate-pulse" : ""}`}
-      />
-      {label}
-    </span>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Custom Chart Tooltip                                                */
-/* ------------------------------------------------------------------ */
-
-interface CustomTooltipProps {
-  active?: boolean;
-  payload?: any[];
-  label?: string;
-  unit?: string;
-}
-
-function CustomTooltip({
-  active,
-  payload,
+function CompactStat({
+  icon: Icon,
   label,
-  unit,
-}: CustomTooltipProps) {
-  if (!active || !payload || !payload.length) return null;
+  value,
+  sub,
+  accentColor = "var(--admin-accent)",
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  sub?: string;
+  accentColor?: string;
+}) {
   return (
-    <div className="bg-[#0c0c0e]/95 backdrop-blur-xl border border-white/[0.08] rounded-xl p-3 shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
-      <p className="text-[11px] text-slate-400 font-mono mb-2 uppercase tracking-wider">
-        {label}
-      </p>
-      {payload.map((entry, i) => (
-        <div key={i} className="flex items-center gap-2">
+    <motion.div
+      variants={fadeUp}
+      className="admin-card admin-compact-stat p-5 group relative overflow-hidden"
+    >
+      <div className="relative z-10">
+        <div className="flex items-center gap-2 mb-3">
           <div
             className="w-2 h-2 rounded-full"
-            style={{ backgroundColor: entry.color }}
+            style={{ backgroundColor: accentColor, opacity: 0.6 }}
           />
-          <span className="text-sm font-mono text-white">
-            {entry.value}
-            {unit}
+          <span className="text-[10px] font-semibold tracking-[0.12em] uppercase text-[var(--admin-text-muted)]">
+            {label}
           </span>
         </div>
-      ))}
-    </div>
+        <p className="text-[22px] font-bold text-[var(--admin-text)] font-mono tracking-[-0.02em] leading-none">
+          {value}
+        </p>
+        {sub && (
+          <p className="text-[11px] text-[var(--admin-text-dim)] mt-2 font-mono">
+            {sub}
+          </p>
+        )}
+      </div>
+    </motion.div>
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Main Dashboard                                                      */
-/* ------------------------------------------------------------------ */
+/* ─── System Status Strip (gateway health) ─── */
+
+function SystemStatusStrip({
+  totalRequests,
+  successRequests,
+  errorRequests,
+  avgLatency,
+}: {
+  totalRequests: number;
+  successRequests: number;
+  errorRequests: number;
+  avgLatency: number;
+}) {
+  const successPct =
+    totalRequests > 0 ? Math.round((successRequests / totalRequests) * 100) : 0;
+
+  const healthStatus =
+    totalRequests === 0
+      ? "idle"
+      : errorRequests > successRequests
+        ? "critical"
+        : successPct < 95 && totalRequests > 0
+          ? "degraded"
+          : "healthy";
+
+  const statusColors = {
+    healthy: { bg: "rgba(52,211,153,0.06)", text: "#34d399", dot: "#34d399" },
+    degraded: { bg: "rgba(251,191,36,0.06)", text: "#fbbf24", dot: "#fbbf24" },
+    critical: { bg: "rgba(248,113,113,0.06)", text: "#f87171", dot: "#f87171" },
+    idle: { bg: "rgba(156,163,175,0.06)", text: "#9ca3af", dot: "#9ca3af" },
+  } as const;
+
+  const sc = statusColors[healthStatus];
+  const label =
+    healthStatus === "healthy"
+      ? "All Systems Operational"
+      : healthStatus === "degraded"
+        ? "Degraded Performance"
+        : healthStatus === "critical"
+          ? "Errors Detected"
+          : "Awaiting Traffic";
+
+  return (
+    <motion.div
+      variants={fadeUp}
+      className="admin-card admin-status-strip p-4 flex items-center gap-6 overflow-x-auto"
+    >
+      <div className="flex items-center gap-3 flex-shrink-0">
+        <div
+          className={`w-2 h-2 rounded-full ${healthStatus === "idle" ? "" : "animate-pulse"}`}
+          style={{ backgroundColor: sc.dot }}
+        />
+        <span
+          className="text-[11px] font-semibold tracking-[0.08em] uppercase font-mono"
+          style={{ color: sc.text }}
+        >
+          {label}
+        </span>
+      </div>
+
+      <div className="w-px h-5 bg-white/[0.04] flex-shrink-0" />
+
+      <div className="flex items-center gap-5 flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <Activity className="w-3.5 h-3.5 text-[var(--admin-text-dim)]" />
+          <span className="text-[12px] font-mono text-[var(--admin-text-muted)]">
+            {totalRequests.toLocaleString()} requests
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400/50" />
+          <span className="text-[12px] font-mono text-[var(--admin-text-muted)]">
+            {successRequests.toLocaleString()} ok
+          </span>
+        </div>
+        {errorRequests > 0 && (
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-3.5 h-3.5 text-red-400/50" />
+            <span className="text-[12px] font-mono text-red-400/60">
+              {errorRequests.toLocaleString()} errors
+            </span>
+          </div>
+        )}
+      </div>
+
+      <div className="w-px h-5 bg-white/[0.04] flex-shrink-0" />
+
+      <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="w-24 h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-700"
+            style={{
+              width: `${successPct}%`,
+              backgroundColor: sc.dot,
+            }}
+          />
+        </div>
+        <span className="text-[11px] font-mono text-[var(--admin-text-dim)]">
+          {successPct}% ok
+        </span>
+        <span className="text-[11px] font-mono text-[var(--admin-text-dim)] ml-2">
+          · {avgLatency}ms avg
+        </span>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ─── Platform Pulse (spend + traffic by day) ─── */
+
+function PlatformPulse({
+  dailyUsage,
+  totalCost,
+}: {
+  dailyUsage: { date: string; requests: number; cost: number; tokens: number }[];
+  totalCost: number;
+}) {
+  const monthRequests = dailyUsage.reduce((s, d) => s + (d.requests ?? 0), 0);
+  const monthTokens = dailyUsage.reduce((s, d) => s + (d.tokens ?? 0), 0);
+  const costsToday =
+    dailyUsage.length > 0 ? dailyUsage[0].cost : 0;
+  const todayPct =
+    monthRequests > 0
+      ? Math.min(
+          (dailyUsage[0]?.requests || 0) / Math.max(monthRequests, 1) * 100,
+          100,
+        )
+      : 0;
+
+  return (
+    <motion.div variants={fadeUp} className="admin-card p-6">
+      <SectionHeading title="Platform Pulse" subtitle="Usage & spend" />
+
+      <div className="space-y-5">
+        {/* Total Spend */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-semibold tracking-[0.1em] uppercase text-[var(--admin-text-muted)]">
+              Total Spent
+            </span>
+            <span className="text-[18px] font-bold font-mono text-[var(--admin-text)] tracking-[-0.02em]">
+              ${(totalCost / 100000).toFixed(2)}
+            </span>
+          </div>
+          <div className="w-full h-1 rounded-full bg-white/[0.03]">
+            <div
+              className="h-full rounded-full"
+              style={{
+                width: `${Math.max(todayPct, 4)}%`,
+                background: "var(--admin-accent)",
+                opacity: 0.6,
+              }}
+            />
+          </div>
+          <div className="flex justify-between mt-1.5">
+            <span className="text-[9px] font-mono text-[var(--admin-text-dim)]">
+              ${(costsToday / 100000).toFixed(2)} today
+            </span>
+            <span className="text-[9px] font-mono text-[var(--admin-text-dim)]">
+              {monthRequests.toLocaleString()} this period
+            </span>
+          </div>
+        </div>
+
+        {/* Tokens */}
+        <div className="pt-4 border-t border-white/[0.03]">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-semibold tracking-[0.1em] uppercase text-[var(--admin-text-muted)]">
+              Tokens Processed
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-[9px] font-mono text-[var(--admin-text-dim)] mb-1 uppercase tracking-wider">
+                Total
+              </p>
+              <p className="text-[16px] font-bold font-mono text-[var(--admin-text)] tracking-[-0.02em]">
+                {monthTokens > 1000000
+                  ? `${(monthTokens / 1000000).toFixed(1)}M`
+                  : monthTokens > 1000
+                    ? `${(monthTokens / 1000).toFixed(1)}K`
+                    : monthTokens}
+              </p>
+            </div>
+            <div>
+              <p className="text-[9px] font-mono text-[var(--admin-text-dim)] mb-1 uppercase tracking-wider">
+                Days
+              </p>
+              <p className="text-[16px] font-bold font-mono text-[var(--admin-text)] tracking-[-0.02em]">
+                {dailyUsage.length}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ─── Activity Feed (recent logs) ─── */
+
+function ActivityFeed({
+  recentLogs,
+  isLoading,
+}: {
+  recentLogs: { id: string; model: string; provider: string; cost: number; status: string; createdAt: string }[];
+  isLoading: boolean;
+}) {
+  const activities = recentLogs.slice(0, 6);
+
+  return (
+    <motion.div variants={fadeUp} className="admin-card p-6">
+      <SectionHeading
+        title="Activity"
+        subtitle="Recent requests"
+        action={<ViewAllLink href="/dashboard/logs" />}
+      />
+
+      <div className="space-y-0">
+        {isLoading &&
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 py-3">
+              <div className="w-8 h-8 rounded-lg admin-skeleton" />
+              <div className="flex-1 space-y-1.5">
+                <div className="admin-skeleton h-3 w-24" />
+                <div className="admin-skeleton h-2.5 w-32" />
+              </div>
+            </div>
+          ))}
+
+        {!isLoading &&
+          activities.map((log, i) => {
+            const ok = log.status === "success";
+            return (
+              <motion.div
+                key={log.id}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0, transition: { delay: i * 0.03 } }}
+                className="flex items-center gap-3 py-3 border-b border-white/[0.02] last:border-0 group"
+              >
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/[0.02] border border-white/[0.04] flex-shrink-0">
+                  <Zap
+                    className="w-3.5 h-3.5"
+                    style={{ color: ok ? "#34d399" : "#f87171", opacity: 0.6 }}
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-[12px] text-[var(--admin-text)] truncate font-medium">
+                      {log.model}
+                    </p>
+                    <span className="text-[8px] font-semibold tracking-[0.1em] uppercase px-1.5 py-0.5 rounded bg-white/[0.03] text-[var(--admin-text-dim)] border border-white/[0.04]">
+                      {log.provider}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-[var(--admin-text-dim)] truncate font-mono">
+                    ${(log.cost / 100000).toFixed(4)} · {log.status}
+                  </p>
+                </div>
+                <span className="text-[9px] font-mono text-[var(--admin-text-dim)] flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {new Date(log.createdAt).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </span>
+              </motion.div>
+            );
+          })}
+
+        {!isLoading && activities.length === 0 && (
+          <div className="text-center py-10">
+            <Radio className="w-5 h-5 text-[var(--admin-text-dim)] mx-auto mb-2 opacity-40" />
+            <p className="text-[12px] text-[var(--admin-text-dim)]">
+              No recent activity
+            </p>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+/* ─── Quick Commands ─── */
+
+function QuickCommands() {
+  const commands = [
+    { href: "/dashboard/keys", label: "API Keys", icon: Key },
+    { href: "/dashboard/logs", label: "Logs", icon: Eye },
+    { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
+    { href: "/dashboard/billing", label: "Billing", icon: DollarSign },
+    { href: "/dashboard/keys", label: "New Key", icon: Zap },
+    { href: "/dashboard/provider-health", label: "Providers", icon: Server },
+  ];
+
+  return (
+    <motion.div variants={fadeUp} className="admin-card p-6">
+      <SectionHeading title="Commands" subtitle="Quick navigation" />
+
+      <div className="grid grid-cols-2 gap-2">
+        {commands.map((cmd) => {
+          const Icon = cmd.icon;
+          return (
+            <Link
+              key={cmd.label}
+              href={cmd.href}
+              className="group flex items-center gap-3 px-3.5 py-3 rounded-xl bg-white/[0.01] border border-white/[0.03] hover:border-white/[0.06] hover:bg-white/[0.02] transition-all duration-200"
+            >
+              <Icon
+                className="w-3.5 h-3.5 flex-shrink-0 transition-colors"
+                style={{ color: "var(--admin-accent)", opacity: 0.4 }}
+              />
+              <span className="text-[12px] font-medium text-[var(--admin-text-muted)] group-hover:text-[var(--admin-text)] transition-colors flex-1">
+                {cmd.label}
+              </span>
+              <ArrowRight className="w-3 h-3 text-[var(--admin-text-dim)] opacity-0 group-hover:opacity-100 transition-opacity" />
+            </Link>
+          );
+        })}
+      </div>
+    </motion.div>
+  );
+}
+
+/* ─── Main Page ─── */
 
 export default function DashboardOverviewClient() {
+  // Direct SDK call (mirrors admin's getAdminSDK().getDashboard()) — also
+  // satisfies the wiring invariant that dashboard components import the SDK.
   const {
     data: analytics,
-    isLoading: analyticsLoading,
-    error: analyticsError,
-  } = useAnalytics();
-  const { data: credits, isLoading: creditsLoading } = useCredits();
-  const { data: keys, isLoading: keysLoading } = useKeys();
-
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
-  const loading = analyticsLoading || creditsLoading || keysLoading;
-  const error = analyticsError ? (analyticsError as Error).message : null;
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["dashboard", "overview"],
+    queryFn: () => getSDK().getAnalytics(),
+    refetchInterval: 30000,
+  });
+  const { data: credits } = useCredits();
+  const { data: keys } = useKeys();
 
   const summary = analytics?.summary ?? {
     totalRequests: 0,
@@ -246,642 +560,286 @@ export default function DashboardOverviewClient() {
     errorRequests: 0,
   };
   const recentLogs = analytics?.recentLogs ?? [];
-  const modelBreakdown = analytics?.modelBreakdown ?? [];
   const dailyUsage = analytics?.dailyUsage ?? [];
 
-  // Derive metrics
-  const totalCost = recentLogs.reduce((sum, log) => sum + log.cost, 0);
+  // Derived metrics
+  const totalCost = recentLogs.reduce((s, l) => s + l.cost, 0);
   const avgLatency =
     recentLogs.length > 0
-      ? Math.round(
-          recentLogs.reduce((sum, log) => sum + log.latency, 0) /
-            recentLogs.length,
-        )
+      ? Math.round(recentLogs.reduce((s, l) => s + l.latency, 0) / recentLogs.length)
       : 0;
-  const successRate =
-    summary.totalRequests > 0
-      ? ((summary.successRequests / summary.totalRequests) * 100).toFixed(1)
-      : "0.0";
   const creditsRemaining = credits?.balance ?? 0;
 
-  // Hourly aggregation for the requests chart
-  const hourlyMap = new Map<
-    string,
-    { requests: number; latency: number; count: number }
-  >();
+  // Hourly aggregation
+  const hourlyMap = new Map<string, number>();
   recentLogs.forEach((log) => {
     const hour = new Date(log.createdAt).getHours();
     const time = `${hour.toString().padStart(2, "0")}:00`;
-    const existing = hourlyMap.get(time) ?? {
-      requests: 0,
-      latency: 0,
-      count: 0,
-    };
-    hourlyMap.set(time, {
-      requests: existing.requests + 1,
-      latency: existing.latency + log.latency,
-      count: existing.count + 1,
-    });
+    hourlyMap.set(time, (hourlyMap.get(time) ?? 0) + 1);
   });
   const hourlyData = Array.from(hourlyMap.entries())
-    .map(([time, data]) => ({
-      time,
-      requests: data.requests,
-      latency: Math.round(data.latency / data.count),
-    }))
+    .map(([time, requests]) => ({ time, requests }))
     .sort((a, b) => a.time.localeCompare(b.time));
 
-  // Top models
+  if (error) {
+    return (
+      <div data-admin className="max-w-[1400px] mx-auto p-8">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="admin-card p-8 text-center max-w-md">
+            <AlertTriangle className="w-8 h-8 text-red-400/40 mx-auto mb-4" />
+            <p className="text-[14px] font-medium text-[var(--admin-text)] mb-1">
+              Failed to load dashboard
+            </p>
+            <p className="text-[12px] text-[var(--admin-text-dim)]">
+              Check your connection and try again
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Top models ranking
+  const modelBreakdown = analytics?.modelBreakdown ?? [];
   const totalModelRequests = modelBreakdown.reduce(
-    (sum, m) => sum + (m.count ?? 0),
+    (s, m) => s + (m.count ?? 0),
     0,
   );
   const topModels = modelBreakdown
     .map((m) => ({
       model: m.model,
       requests: m.count ?? 0,
-      percentage:
+      pct:
         totalModelRequests > 0
           ? Math.round(((m.count ?? 0) / totalModelRequests) * 100)
           : 0,
     }))
     .sort((a, b) => b.requests - a.requests)
-    .slice(0, 3);
+    .slice(0, 4);
 
   return (
-    <div className="min-h-screen bg-[#050505] relative isolate">
-      {/* ── Ambient background layers ── */}
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        {/* Large soft orbs */}
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-indigo-500/[0.03] rounded-full blur-[120px] animate-mesh-shift" />
-        <div className="absolute -top-40 right-1/4 w-[500px] h-[500px] bg-violet-500/[0.025] rounded-full blur-[100px] animate-mesh-shift" style={{ animationDelay: "-5s" }} />
-        {/* Noise texture overlay */}
-        <div className="absolute inset-0 opacity-[0.015] "
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
-          }}
-        />
-      </div>
-
-      <div className="relative px-4 sm:px-6 lg:px-8 pt-10 pb-20 max-w-[88rem] mx-auto">
-        {/* ── Header ── */}
-        <motion.header
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12"
-        >
+    <div
+      data-admin
+      className="max-w-[1400px] mx-auto"
+      style={{ color: "var(--admin-text)" }}
+    >
+      <motion.div
+        variants={stagger}
+        initial="hidden"
+        animate="visible"
+        className="space-y-5"
+      >
+        {/* ── Row 1: Header ── */}
+        <motion.div variants={fadeUp} className="flex items-end justify-between">
           <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold text-white tracking-tight">
+            <div className="flex items-center gap-3 mb-1">
+              <h1 className="text-[22px] font-semibold tracking-[-0.025em]">
                 Overview
               </h1>
-              <span className="hidden sm:inline-block h-4 w-px bg-white/10" />
-              <span className="text-[11px] text-slate-500 font-mono tracking-wider uppercase">
-                {mounted
-                  ? new Date().toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })
-                  : "—"}
+              <span className="admin-live-badge flex items-center gap-1.5">
+                <span className="admin-live-dot" />
+                Live
               </span>
             </div>
-            <p className="text-sm text-slate-500 max-w-md">
-              Real-time API performance and usage at a glance.
+            <p className="text-[12px] font-mono tracking-wide" style={{ color: "var(--admin-text-dim)" }}>
+              {new Date().toLocaleDateString("en-US", {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              })}
             </p>
           </div>
-
-          <Link
-            href="/dashboard/keys"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-sm font-medium text-white
-              hover:bg-white/[0.06] hover:border-white/[0.15] transition-all duration-200 group shrink-0"
-          >
-            <Key className="w-3.5 h-3.5 text-slate-400 group-hover:text-white transition-colors" />
-            New API Key
-            <ArrowRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
-          </Link>
-        </motion.header>
-
-        {/* ── Loading / Error States ── */}
-        <AnimatePresence mode="wait">
-          {loading ? (
-            <motion.div
-              key="loading"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex items-center justify-center py-40"
+          <div className="flex items-center gap-4">
+            <Link
+              href="/dashboard/keys"
+              className="admin-btn admin-btn-primary group"
             >
-              <div className="flex flex-col items-center gap-4">
-                <div className="relative w-10 h-10">
-                  <div className="absolute inset-0 border-2 border-white/5 rounded-full" />
-                  <div className="absolute inset-0 border-2 border-transparent border-t-indigo-500 rounded-full animate-spin" />
-                </div>
-                <p className="text-xs text-slate-500 font-mono uppercase tracking-widest animate-pulse">
-                  Synchronizing
-                </p>
+              <Key className="w-3.5 h-3.5" />
+              New API Key
+              <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+            <div className="flex items-center gap-2">
+              <Clock className="w-3.5 h-3.5" style={{ color: "var(--admin-text-dim)" }} />
+              <span className="text-[11px] font-mono" style={{ color: "var(--admin-text-dim)" }}>
+                Auto-refresh 30s
+              </span>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* ── Row 2: System Status Strip ── */}
+        <SystemStatusStrip
+          totalRequests={summary.totalRequests}
+          successRequests={summary.successRequests}
+          errorRequests={summary.errorRequests}
+          avgLatency={avgLatency}
+        />
+
+        {/* ── Row 3: Hero Metric + Compact Stats + Platform Pulse ── */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            <div className="lg:col-span-5">
+              <div className="admin-card p-8">
+                <div className="admin-skeleton h-[200px] w-full" />
+              </div>
+            </div>
+            <div className="lg:col-span-3 flex flex-col gap-4">
+              <div className="admin-card p-5"><div className="admin-skeleton h-20" /></div>
+              <div className="admin-card p-5"><div className="admin-skeleton h-20" /></div>
+              <div className="admin-card p-5"><div className="admin-skeleton h-20" /></div>
+            </div>
+            <div className="lg:col-span-4">
+              <div className="admin-card p-6 h-full"><div className="admin-skeleton h-full min-h-[200px]" /></div>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            <div className="lg:col-span-5">
+              <HeroMetric
+                totalRequests={summary.totalRequests}
+                successToday={summary.successRequests}
+                hourlyData={hourlyData}
+              />
+            </div>
+
+            <div className="lg:col-span-3 flex flex-col gap-4">
+              <CompactStat
+                icon={DollarSign}
+                label="Total Spent"
+                value={`$${(totalCost / 100000).toFixed(2)}`}
+                sub="lifetime"
+                accentColor="#3b82f6"
+              />
+              <CompactStat
+                icon={Cpu}
+                label="Avg Latency"
+                value={`${avgLatency}ms`}
+                sub="recent requests"
+                accentColor="#fbbf24"
+              />
+              <CompactStat
+                icon={Key}
+                label="Active Keys"
+                value={(keys?.length ?? 0).toString()}
+                sub="in rotation"
+                accentColor="#34d399"
+              />
+            </div>
+
+            <div className="lg:col-span-4">
+              <PlatformPulse dailyUsage={dailyUsage} totalCost={totalCost} />
+            </div>
+          </div>
+        )}
+
+        {/* ── Row 4: Credits + Activity + Commands ── */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="admin-card p-6"><div className="admin-skeleton h-40" /></div>
+            <div className="lg:col-span-2 admin-card p-6"><div className="admin-skeleton h-40" /></div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Credits hero — small */}
+            <motion.div variants={fadeUp} className="admin-card p-6 flex flex-col">
+              <SectionHeading title="Credits" subtitle="Balance" />
+              <p className="text-[34px] font-bold font-mono tracking-[-0.03em] leading-none" style={{ color: "var(--admin-text)" }}>
+                ${(creditsRemaining / 100000).toFixed(2)}
+              </p>
+              <div className="mt-auto pt-6">
+                <Link
+                  href="/dashboard/billing"
+                  className="admin-btn admin-btn-ghost w-full justify-center"
+                >
+                  <DollarSign className="w-3.5 h-3.5" />
+                  Add credits
+                </Link>
               </div>
             </motion.div>
-          ) : error ? (
-            <motion.div
-              key="error"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="mb-10 p-5 rounded-2xl bg-red-500/5 border border-red-500/10 flex items-start gap-4"
-            >
-              <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center shrink-0">
-                <AlertCircle className="w-5 h-5 text-red-400" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-red-300 mb-1">
-                  Failed to load dashboard data
-                </p>
-                <p className="text-xs text-red-400/60 font-mono truncate">
-                  {error}
-                </p>
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="content"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5 }}
-              className="space-y-10"
-            >
-              {/* ── Metric Cards ── */}
-              <section>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-                  {[
-                    {
-                      title: "Total Requests",
-                      value: summary.totalRequests.toLocaleString(),
-                      change: "+12.5%",
-                      changeType: "positive" as const,
-                      icon: Activity,
-                      accent: "from-blue-500/30 to-blue-600/10",
-                    },
-                    {
-                      title: "Total Spent",
-                      value: `$${(totalCost / 100000).toFixed(2)}`,
-                      change: "+8.3%",
-                      changeType: "positive" as const,
-                      icon: DollarSign,
-                      accent:
-                        "from-emerald-500/30 to-emerald-600/10",
-                    },
-                    {
-                      title: "Credits Left",
-                      value: `$${(creditsRemaining / 100000).toFixed(2)}`,
-                      icon: DollarSign,
-                      accent:
-                        "from-violet-500/30 to-violet-600/10",
-                    },
-                    {
-                      title: "Avg Latency",
-                      value: `${avgLatency}ms`,
-                      change: "-5.2%",
-                      changeType: "positive" as const,
-                      icon: Zap,
-                      accent:
-                        "from-amber-500/30 to-amber-600/10",
-                    },
-                    {
-                      title: "Success Rate",
-                      value: `${successRate}%`,
-                      change: "+0.3%",
-                      changeType: "positive" as const,
-                      icon: Gauge,
-                      accent:
-                        "from-cyan-500/30 to-cyan-600/10",
-                    },
-                    {
-                      title: "Active Keys",
-                      value: (keys?.length ?? 0).toString(),
-                      icon: Key,
-                      accent:
-                        "from-fuchsia-500/30 to-fuchsia-600/10",
-                    },
-                  ].map((m, i) => (
-                    <MetricCard key={m.title} {...m} index={i} />
-                  ))}
-                </div>
-              </section>
 
-              {/* ── Charts Row ── */}
-              <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="relative group rounded-2xl border border-white/[0.06] bg-[#0A0A0A] p-5 sm:p-6 overflow-hidden"
-                >
-                  <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/10">
-                      <Activity className="w-5 h-5 text-blue-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-semibold text-white tracking-tight">
-                        Requests per Hour
-                      </h3>
-                      <p className="text-[11px] text-slate-500 font-mono mt-0.5">
-                        Last 24 hours
-                      </p>
-                    </div>
-                  </div>
-                  {hourlyData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={240}>
-                      <AreaChart data={hourlyData}>
-                        <defs>
-                          <linearGradient
-                            id="reqFill2"
-                            x1="0"
-                            y1="0"
-                            x2="0"
-                            y2="1"
-                          >
-                            <stop
-                              offset="0%"
-                              stopColor="#3b82f6"
-                              stopOpacity={0.3}
-                            />
-                            <stop
-                              offset="100%"
-                              stopColor="#3b82f6"
-                              stopOpacity={0}
-                            />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid
-                          strokeDasharray="3 3"
-                          stroke="#ffffff08"
-                          vertical={false}
-                        />
-                        <XAxis
-                          dataKey="time"
-                          stroke="#475569"
-                          tick={{ fontSize: 11, fill: "#64748b" }}
-                          axisLine={false}
-                          tickLine={false}
-                          interval={Math.floor(hourlyData.length / 6)}
-                        />
-                        <YAxis
-                          stroke="#475569"
-                          tick={{ fontSize: 11, fill: "#64748b" }}
-                          axisLine={false}
-                          tickLine={false}
-                        />
-                        <Tooltip
-                          content={
-                            <CustomTooltip unit=" reqs" />
-                          }
-                          cursor={{
-                            stroke: "#3b82f6",
-                            strokeWidth: 1,
-                            strokeDasharray: "4 4",
-                            strokeOpacity: 0.2,
-                          }}
-                        />
-                        <Area
-                          type="monotone"
-                          dataKey="requests"
-                          stroke="#3b82f6"
-                          strokeWidth={2}
-                          fill="url(#reqFill2)"
-                          animationDuration={1500}
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-[240px] text-slate-600 gap-2">
-                      <Activity className="w-6 h-6 opacity-40" />
-                      <span className="text-sm">No request data yet</span>
-                    </div>
-                  )}
-                </motion.div>
+            <div className="lg:col-span-2">
+              <ActivityFeed recentLogs={recentLogs} isLoading={false} />
+            </div>
+          </div>
+        )}
 
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="relative group rounded-2xl border border-white/[0.06] bg-[#0A0A0A] p-5 sm:p-6 overflow-hidden"
-                >
-                  <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/10">
-                      <Clock className="w-5 h-5 text-amber-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-semibold text-white tracking-tight">
-                        Latency Trend
-                      </h3>
-                      <p className="text-[11px] text-slate-500 font-mono mt-0.5">
-                        Daily average
-                      </p>
-                    </div>
-                  </div>
-                  {dailyUsage.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={240}>
-                      <AreaChart data={dailyUsage.slice().reverse()}>
-                        <defs>
-                          <linearGradient
-                            id="latFill2"
-                            x1="0"
-                            y1="0"
-                            x2="0"
-                            y2="1"
-                          >
-                            <stop
-                              offset="0%"
-                              stopColor="#f59e0b"
-                              stopOpacity={0.3}
-                            />
-                            <stop
-                              offset="100%"
-                              stopColor="#f59e0b"
-                              stopOpacity={0}
-                            />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid
-                          strokeDasharray="3 3"
-                          stroke="#ffffff08"
-                          vertical={false}
-                        />
-                        <XAxis
-                          dataKey="date"
-                          stroke="#475569"
-                          tick={{ fontSize: 11, fill: "#64748b" }}
-                          axisLine={false}
-                          tickLine={false}
-                          tickFormatter={(v) => {
-                            const d = new Date(v);
-                            return `${d.getMonth() + 1}/${d.getDate()}`;
-                          }}
-                          interval={Math.floor(dailyUsage.length / 6)}
-                        />
-                        <YAxis
-                          stroke="#475569"
-                          tick={{ fontSize: 11, fill: "#64748b" }}
-                          axisLine={false}
-                          tickLine={false}
-                        />
-                        <Tooltip
-                          content={
-                            <CustomTooltip unit="ms" />
-                          }
-                          cursor={{
-                            stroke: "#f59e0b",
-                            strokeWidth: 1,
-                            strokeDasharray: "4 4",
-                            strokeOpacity: 0.2,
-                          }}
-                        />
-                        <Area
-                          type="monotone"
-                          dataKey="latency"
-                          stroke="#f59e0b"
-                          strokeWidth={2}
-                          fill="url(#latFill2)"
-                          animationDuration={1500}
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-[240px] text-slate-600 gap-2">
-                      <Clock className="w-6 h-6 opacity-40" />
-                      <span className="text-sm">No latency data yet</span>
-                    </div>
-                  )}
-                </motion.div>
-              </section>
-
-              {/* ── Activity + Models ── */}
-              <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                {/* Recent Activity */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.35 }}
-                  className="relative rounded-2xl border border-white/[0.06] bg-[#0A0A0A] overflow-hidden"
-                >
-                  <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
-                  <div className="flex items-center justify-between p-5 sm:p-6 pb-0">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/10">
-                        <Braces className="w-5 h-5 text-indigo-400" />
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-semibold text-white tracking-tight">
-                          Recent Activity
-                        </h3>
-                        <p className="text-[11px] text-slate-500 font-mono mt-0.5">
-                          Latest requests
-                        </p>
-                      </div>
-                    </div>
-                    <Link
-                      href="/dashboard/logs"
-                      className="text-xs text-slate-500 hover:text-white transition-colors flex items-center gap-1 group/link"
-                    >
-                      View all
-                      <ArrowRight className="w-3 h-3 group-hover/link:translate-x-0.5 transition-transform" />
-                    </Link>
-                  </div>
-
-                  <div className="p-3 sm:p-4">
-                    {recentLogs.slice(0, 5).map((log, i) => (
-                      <motion.div
-                        key={log.id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.4 + i * 0.05 }}
-                        className="group flex items-center justify-between py-3 px-3 -mx-3 rounded-xl hover:bg-white/[0.03] transition-colors"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm font-medium text-white truncate">
-                              {log.model}
-                            </span>
-                            <span className="text-[10px] text-slate-600 font-mono shrink-0 bg-white/[0.03] px-1.5 py-0.5 rounded">
-                              {log.provider}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="w-1 h-1 rounded-full bg-slate-600" />
-                            <span className="text-xs text-slate-500 font-mono">
-                              {new Date(log.createdAt).toLocaleTimeString()}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 shrink-0 ml-3">
-                          <span className="text-xs font-mono text-emerald-400/80">
-                            <CostDisplay cost={log.cost} />
-                          </span>
-                          <StatusBadge
-                            status={
-                              log.status === "success" ? "success" : "error"
-                            }
-                            label={log.status}
-                            size="sm"
-                          />
-                        </div>
-                      </motion.div>
-                    ))}
-                    {recentLogs.length === 0 && (
-                      <div className="text-center py-12 text-slate-600 text-sm">
-                        No recent activity
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-
-                {/* Top Models */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="relative rounded-2xl border border-white/[0.06] bg-[#0A0A0A] overflow-hidden"
-                >
-                  <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
-                  <div className="flex items-center justify-between p-5 sm:p-6 pb-0">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/10">
-                        <BarChart3 className="w-5 h-5 text-fuchsia-400" />
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-semibold text-white tracking-tight">
-                          Top Models
-                        </h3>
-                        <p className="text-[11px] text-slate-500 font-mono mt-0.5">
-                          Usage distribution
-                        </p>
-                      </div>
-                    </div>
-                    <Link
-                      href="/dashboard/analytics"
-                      className="text-xs text-slate-500 hover:text-white transition-colors flex items-center gap-1 group/link"
-                    >
-                      View all
-                      <ArrowRight className="w-3 h-3 group-hover/link:translate-x-0.5 transition-transform" />
-                    </Link>
-                  </div>
-
-                  <div className="p-5 sm:p-6">
-                    {topModels.length > 0 ? (
-                      <div className="space-y-6">
-                        {topModels.map((model, index) => (
-                          <div key={model.model}>
-                            <div className="flex items-center justify-between mb-2.5">
-                              <div className="flex items-center gap-3">
-                                <span className="text-[11px] font-mono font-bold text-slate-700 w-5">
-                                  {String(index + 1).padStart(2, "0")}
-                                </span>
-                                <span className="text-sm font-medium text-white">
-                                  {model.model}
-                                </span>
-                              </div>
-                              <span className="text-xs font-mono text-slate-400">
-                                {model.percentage}%
-                              </span>
-                            </div>
-                            <div className="relative h-2 bg-white/[0.04] rounded-full overflow-hidden">
-                              <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${model.percentage}%` }}
-                                transition={{
-                                  delay: 0.6 + index * 0.15,
-                                  duration: 0.8,
-                                  ease: [0.16, 1, 0.3, 1],
-                                }}
-                                className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-blue-500 via-violet-500 to-fuchsia-500"
-                              />
-                            </div>
-                            <p className="text-[11px] text-slate-600 mt-1.5 font-mono">
-                              {model.requests.toLocaleString()} requests
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-12 text-slate-600 text-sm">
-                        No model usage yet
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              </section>
-
-              {/* ── Quick Actions ── */}
-              <motion.section
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.45 }}
-              >
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                  {[
-                    {
-                      href: "/dashboard/keys",
-                      label: "Manage API Keys",
-                      desc: "Create and rotate your credentials",
-                      icon: Key,
-                      accent: "from-violet-500/20 to-violet-500/5",
-                      border: "border-violet-500/15",
-                      text: "text-violet-400",
-                    },
-                    {
-                      href: "/dashboard/logs",
-                      label: "View Logs",
-                      desc: "Inspect every request in detail",
-                      icon: Braces,
-                      accent: "from-blue-500/20 to-blue-500/5",
-                      border: "border-blue-500/15",
-                      text: "text-blue-400",
-                    },
-                    {
-                      href: "/dashboard/analytics",
-                      label: "Analytics",
-                      desc: "Track usage patterns and costs",
-                      icon: TrendingUp,
-                      accent: "from-emerald-500/20 to-emerald-500/5",
-                      border: "border-emerald-500/15",
-                      text: "text-emerald-400",
-                    },
-                  ].map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className="group relative rounded-2xl border border-white/[0.06] bg-[#0A0A0A] overflow-hidden hover:border-white/[0.12] transition-all duration-300"
-                    >
-                      <div
-                        className={`absolute inset-0 bg-gradient-to-br ${item.accent} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
-                      />
-                      <div className="relative p-5 flex items-center gap-4">
-                        <div
-                          className={`w-10 h-10 rounded-xl bg-gradient-to-br ${item.accent} border ${item.border} flex items-center justify-center ${item.text}`}
-                        >
-                          <item.icon className="w-5 h-5" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-semibold text-white">
-                            {item.label}
-                          </h3>
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            {item.desc}
-                          </p>
-                        </div>
-                        <ArrowRight className="w-4 h-4 text-slate-600 group-hover:text-white group-hover:translate-x-0.5 transition-all shrink-0" />
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </motion.section>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+        {/* ── Row 5: Quick Commands + Top Models ── */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="admin-card p-6"><div className="admin-skeleton h-48" /></div>
+            <div className="lg:col-span-2 admin-card p-6"><div className="admin-skeleton h-48" /></div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <QuickCommands />
+            <div className="lg:col-span-2">
+              <TopModels models={topModels} />
+            </div>
+          </div>
+        )}
+      </motion.div>
     </div>
+  );
+}
+
+/* ─── Top Models (ranked, admin palette) ─── */
+
+function TopModels({
+  models,
+}: {
+  models: { model: string; requests: number; pct: number }[];
+}) {
+  const top = models;
+
+  return (
+    <motion.div variants={fadeUpCss} className="admin-card p-6">
+      <SectionHeading
+        title="Top Models"
+        subtitle="Usage distribution"
+        action={<ViewAllLink href="/dashboard/analytics" />}
+      />
+      {top.length > 0 ? (
+        <div className="space-y-5">
+          {top.map((m, i) => (
+            <div key={m.model}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] font-mono font-bold text-[var(--admin-text-dim)] w-5">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <span className="text-[12px] font-medium text-[var(--admin-text)]">
+                    {m.model}
+                  </span>
+                </div>
+                <span className="text-[11px] font-mono text-[var(--admin-text-muted)]">
+                  {m.pct}%
+                </span>
+              </div>
+              <div className="w-full h-1 rounded-full bg-white/[0.03]">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${m.pct}%` }}
+                  transition={{ delay: 0.3 + i * 0.08, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                  className="h-full rounded-full"
+                  style={{
+                    background: "linear-gradient(to right, #3b82f6, #7c3aed)",
+                    opacity: 0.7,
+                  }}
+                />
+              </div>
+              <p className="text-[9px] font-mono text-[var(--admin-text-dim)] mt-1.5">
+                {m.requests.toLocaleString()} requests
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-10">
+          <BarChart3 className="w-5 h-5 text-[var(--admin-text-dim)] mx-auto mb-2 opacity-40" />
+          <p className="text-[12px] text-[var(--admin-text-dim)]">No model usage yet</p>
+        </div>
+      )}
+    </motion.div>
   );
 }

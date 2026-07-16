@@ -41,7 +41,7 @@ func TestSemanticCache_SetGet(t *testing.T) {
 		t.Fatalf("Set error: %v", err)
 	}
 
-	got, err := c.Get(ctx, string(key))
+	got, err := c.Get(ctx, string(key), "gpt-4")
 	if err != nil {
 		t.Fatalf("Get error: %v", err)
 	}
@@ -63,7 +63,7 @@ func TestSemanticCache_Miss(t *testing.T) {
 	otherEmbedding := []float64{0.9, 0.8, 0.7}
 	otherKey, _ := json.Marshal(otherEmbedding)
 
-	_, err := c.Get(ctx, string(otherKey))
+	_, err := c.Get(ctx, string(otherKey), "gpt-4")
 	if err != ErrCacheMiss {
 		t.Errorf("expected cache miss, got err=%v", err)
 	}
@@ -73,7 +73,7 @@ func TestSemanticCache_InvalidKey(t *testing.T) {
 	c := NewSemanticCache(100, 0.9)
 	ctx := context.Background()
 
-	_, err := c.Get(ctx, "not-json")
+	_, err := c.Get(ctx, "not-json", "gpt-4")
 	if err != ErrCacheMiss {
 		t.Errorf("expected cache miss for invalid key, got err=%v", err)
 	}
@@ -122,7 +122,7 @@ func TestSemanticCache_ExpiredEntry(t *testing.T) {
 	c.Set(ctx, string(key), &llm.ChatResponse{Model: "gpt-4", Choices: []llm.Choice{}}, 1*time.Millisecond)
 
 	time.Sleep(10 * time.Millisecond)
-	_, err := c.Get(ctx, string(key))
+	_, err := c.Get(ctx, string(key), "gpt-4")
 	if err != ErrCacheMiss {
 		t.Errorf("expected cache miss for expired entry, got err=%v", err)
 	}

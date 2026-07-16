@@ -324,8 +324,15 @@ func (v *Vault) getActiveCredentials(providerType string) ([]*Credential, error)
 	cached, ok := v.cache[providerType]
 	cachedAt, _ := v.cacheTime[providerType]
 	if ok && time.Since(cachedAt) < v.cacheTTL {
+		// Return a shallow copy of the slice so callers cannot race with
+		// RecordSuccess/RecordFailure mutating the cached structs.
+		copy := make([]*Credential, len(cached))
+		for i, c := range cached {
+			cc := *c
+			copy[i] = &cc
+		}
 		v.mu.RUnlock()
-		return cached, nil
+		return copy, nil
 	}
 	v.mu.RUnlock()
 
@@ -339,7 +346,13 @@ func (v *Vault) getActiveCredentials(providerType string) ([]*Credential, error)
 	v.cacheTime[providerType] = time.Now()
 	v.mu.Unlock()
 
-	return creds, nil
+	// Return copies to avoid data races with concurrent health updates.
+	copy := make([]*Credential, len(creds))
+	for i, c := range creds {
+		cc := *c
+		copy[i] = &cc
+	}
+	return copy, nil
 }
 
 func (v *Vault) selectBest(creds []*Credential) *Credential {

@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"dra-platform/backend/internal/domain"
+	"dra-platform/backend/internal/middleware"
 	"dra-platform/backend/internal/pkg/response"
 
 	"github.com/go-chi/chi/v5"
@@ -51,6 +52,13 @@ func (h *Handler) AdminUpdateUserStatus(w http.ResponseWriter, r *http.Request) 
 		response.Error(w, 400, "Invalid body")
 		return
 	}
+	switch req.Status {
+	case "active", "suspended", "banned", "pending":
+		// allowed
+	default:
+		response.Error(w, 400, "invalid status; must be one of: active, suspended, banned, pending")
+		return
+	}
 	if err := h.adminSvc.UpdateUserStatus(r.Context(), id, req.Status, req.Reason); err != nil {
 		adminError(w, r, err, "admin_update_user_status_failed")
 		return
@@ -66,6 +74,22 @@ func (h *Handler) AdminUpdateUserRole(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.Error(w, 400, "Invalid body")
 		return
+	}
+	// Validate role against the allowlist of assignable roles.
+	switch req.Role {
+	case "user", "admin", "superadmin":
+		// ok
+	default:
+		response.Error(w, 400, "invalid role; must be one of: user, admin, superadmin")
+		return
+	}
+	// Only a superadmin may grant the superadmin role.
+	if req.Role == "superadmin" {
+		u := middleware.GetUser(r)
+		if u == nil || u.Role != "superadmin" {
+			response.Error(w, 403, "Only a superadmin can grant the superadmin role")
+			return
+		}
 	}
 	if err := h.adminSvc.UpdateUserRole(r.Context(), id, req.Role); err != nil {
 		adminError(w, r, err, "admin_update_user_role_failed")
@@ -136,6 +160,11 @@ func (h *Handler) AdminCreateAdminUser(w http.ResponseWriter, r *http.Request) {
 	if req.Role == "" {
 		req.Role = "admin"
 	}
+	u := middleware.GetUser(r)
+	if req.Role == "superadmin" && (u == nil || u.Role != "superadmin") {
+		response.Error(w, 403, "Only a superadmin can create a superadmin")
+		return
+	}
 	if err := h.adminSvc.CreateAdminUser(r.Context(), req.UserID, req.Role); err != nil {
 		adminError(w, r, err, "admin_create_admin_user_failed")
 		return
@@ -145,6 +174,38 @@ func (h *Handler) AdminCreateAdminUser(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) AdminRemoveAdmin(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
+	if id == "" {
+		response.Error(w, 400, "id required")
+		return
+	}
+	u := middleware.GetUser(r)
+	if u == nil || u.Role != "superadmin" {
+		response.Error(w, 403, "Superadmin access required")
+		return
+	}
+	if u.ID == id {
+		response.Error(w, 400, "You cannot remove your own admin access")
+		return
+	}
+	admins, err := h.adminSvc.ListAdminUsers(r.Context())
+	if err != nil {
+		adminError(w, r, err, "admin_remove_admin_failed")
+		return
+	}
+	targetRole := ""
+	activeSuperadmins := 0
+	for _, a := range admins {
+		if a.UserID == id {
+			targetRole = string(a.Role)
+		}
+		if a.Role == "superadmin" && a.IsActive {
+			activeSuperadmins++
+		}
+	}
+	if targetRole == "superadmin" && activeSuperadmins <= 1 {
+		response.Error(w, 400, "Cannot remove the last active superadmin")
+		return
+	}
 	if err := h.adminSvc.RemoveAdmin(r.Context(), id); err != nil {
 		adminError(w, r, err, "admin_remove_admin_failed")
 		return

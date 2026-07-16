@@ -598,7 +598,12 @@ class DraSDK {
 
   public async paginatedRequest<T>(
     path: string,
-    query: { page?: number; limit?: number } = {},
+    query: {
+      page?: number;
+      limit?: number;
+      query?: string;
+      status?: string;
+    } = {},
   ): Promise<PaginatedResult<T>> {
     let url = `${this.baseUrl}${path}`;
     const params = new URLSearchParams();
@@ -784,6 +789,11 @@ class DraSDK {
     return this.request<ModelInfo[]>("GET", "/api/models");
   }
 
+  /** Public catalog (no auth) for /models and playground. */
+  listModelCatalog() {
+    return this.request<ModelInfo[]>("GET", "/api/models/catalog");
+  }
+
   // Chat (non-streaming)
   chat(data: { model: string; messages: ChatMessage[] }) {
     return this.request<ChatCompletionChunk>("POST", "/api/chat", data);
@@ -863,10 +873,17 @@ class DraSDK {
   }
 
   // Admin
-  adminListUsers(page?: number, limit?: number) {
+  adminListUsers(
+    page?: number,
+    limit?: number,
+    query?: string,
+    status?: string,
+  ) {
     return this.paginatedRequest<User>("/api/admin/users", {
       page,
       limit,
+      query,
+      status,
     });
   }
 
@@ -1533,6 +1550,13 @@ class DraSDK {
     );
   }
 
+  deleteExportJob(id: string) {
+    return this.request<{ deleted: boolean }>(
+      "DELETE",
+      `/api/exports/${encodeURIComponent(id)}`,
+    );
+  }
+
   // Promo Codes
 
   redeemPromoCode(code: string) {
@@ -1602,10 +1626,10 @@ class DraSDK {
     );
   }
 
-  adminListUserUsage(userId: string) {
-    return this.request<AnalyticsData>(
-      "GET",
+  adminListUserUsage(userId: string, page?: number, limit?: number) {
+    return this.paginatedRequest<UsageRecord>(
       `/api/admin/users/${encodeURIComponent(userId)}/usage`,
+      { page, limit },
     );
   }
 

@@ -19,7 +19,6 @@ Universal LLM Gateway (Yapapa / DRA Platform) — an OpenRouter-style proxy for 
 | `osa.md`        | Comprehensive security/bug audit (Round 2, 2026-05-26).           |
 | `FIXES_APPLIED.md` | Recent security/bug fix record (OLLA audit, 2026-05-25).       |
 | `UPDATE.md`     | Mandatory per-change log — append an entry for EVERY edit.        |
-| `olla.md`       | Exhaustive reference: architecture, full DB schema, all endpoints.|
 
 ## Environment variables
 

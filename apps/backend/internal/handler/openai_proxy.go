@@ -39,13 +39,6 @@ func (h *Handler) OpenAIChatCompletions(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	isSandbox := false
-	if r.Header.Get("X-Sandbox") == "true" {
-		u := middleware.GetUser(r)
-		isSandbox = u != nil && u.IsAdmin()
-	}
-	span.SetTag("sandbox", fmt.Sprintf("%v", isSandbox))
-
 	var userID string
 	var apiKeyID *string
 	u := middleware.GetUser(r)
@@ -57,6 +50,18 @@ func (h *Handler) OpenAIChatCompletions(w http.ResponseWriter, r *http.Request) 
 			apiKeyID = &key.ID
 		}
 	}
+
+	// Sandbox mode bypasses billing ONLY when the caller is an admin.
+	// Non-admins with X-Sandbox must be rejected to prevent free usage.
+	isSandbox := false
+	if r.Header.Get("X-Sandbox") == "true" {
+		if u == nil || !u.IsAdmin() {
+			writeOpenAIError(w, http.StatusForbidden, "permission_error", "Sandbox mode requires admin access")
+			return
+		}
+		isSandbox = true
+	}
+	span.SetTag("sandbox", fmt.Sprintf("%v", isSandbox))
 
 	if userID == "" {
 		writeOpenAIError(w, http.StatusUnauthorized, "authentication_error", "Authentication required")
@@ -78,8 +83,10 @@ func (h *Handler) OpenAIChatCompletions(w http.ResponseWriter, r *http.Request) 
 		span.SetTag("ab_test", "active")
 		p, variantName, _ := h.abRouter.Route(r.Context())
 		if p != nil {
-			// Strip existing provider prefix to avoid double-prefixing (e.g. "openai/openai/gpt-4o")
-			if idx := strings.LastIndex(internalReq.Model, "/"); idx >= 0 {
+			// Strip only the top-level provider prefix to avoid double-prefixing
+			// (e.g. "openai/openai/gpt-4o") while preserving any middle group
+			// (e.g. "huggingface/meta-llama/Llama-2").
+			if idx := strings.Index(internalReq.Model, "/"); idx >= 0 {
 				internalReq.Model = p.Name() + "/" + internalReq.Model[idx+1:]
 			} else {
 				internalReq.Model = p.Name() + "/" + internalReq.Model
@@ -89,7 +96,15 @@ func (h *Handler) OpenAIChatCompletions(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if !isSandbox {
-		estInput, estOutput := h.providerSvc.EstimateTokens(req.Model, nil)
+		domainMessages := make([]domain.ChatMessage, len(req.Messages))
+		for i, m := range req.Messages {
+			content, _ := m.Content.(string)
+			domainMessages[i] = domain.ChatMessage{
+				Role:    string(m.Role),
+				Content: content,
+			}
+		}
+		estInput, estOutput := h.providerSvc.EstimateTokens(req.Model, domainMessages)
 		estimatedCost := h.calculateCost(internalReq.Model, estInput, estOutput)
 
 		var balanceErr *domain.AppError
@@ -132,6 +147,12 @@ func (h *Handler) handleOpenAINonStream(w http.ResponseWriter, r *http.Request, 
 
 	domainReq := domain.ChatRequest{
 		Model: req.Model,
+		Metadata: map[string]string{
+			"user_id": userID,
+		},
+	}
+	if apiKeyID != nil {
+		domainReq.Metadata["api_key_id"] = *apiKeyID
 	}
 	for _, m := range req.Messages {
 		domainReq.Messages = append(domainReq.Messages, domain.ChatMessage{
@@ -162,6 +183,12 @@ func (h *Handler) handleOpenAIStream(w http.ResponseWriter, r *http.Request, req
 
 	domainReq := domain.ChatRequest{
 		Model: req.Model,
+		Metadata: map[string]string{
+			"user_id": userID,
+		},
+	}
+	if apiKeyID != nil {
+		domainReq.Metadata["api_key_id"] = *apiKeyID
 	}
 	for _, m := range req.Messages {
 		domainReq.Messages = append(domainReq.Messages, domain.ChatMessage{
@@ -182,7 +209,8 @@ func (h *Handler) handleOpenAIStream(w http.ResponseWriter, r *http.Request, req
 	w.WriteHeader(http.StatusOK)
 
 	flusher, ok := w.(http.Flusher)
-	var outputTokens int
+	var outputBuffer strings.Builder
+	completedNormally := false
 
 	done := r.Context().Done()
 	for {
@@ -192,7 +220,7 @@ func (h *Handler) handleOpenAIStream(w http.ResponseWriter, r *http.Request, req
 				goto FINISH
 			}
 			if chunk.Delta.Content != "" {
-				outputTokens += llm.EstimateTokens(chunk.Delta.Content)
+				outputBuffer.WriteString(chunk.Delta.Content)
 			}
 			// Forward ALL chunks (role deltas, tool calls, content, finish_reason)
 			c := chunk
@@ -203,6 +231,7 @@ func (h *Handler) handleOpenAIStream(w http.ResponseWriter, r *http.Request, req
 				flusher.Flush()
 			}
 			if chunk.FinishReason != nil {
+				completedNormally = true
 				fmt.Fprintf(w, "data: [DONE]\n\n")
 				if ok {
 					flusher.Flush()
@@ -215,6 +244,12 @@ func (h *Handler) handleOpenAIStream(w http.ResponseWriter, r *http.Request, req
 	}
 
 FINISH:
+	// Only bill when the stream finished normally. If the client disconnected
+	// mid-stream we must not charge for a partial/aborted response.
+	if !completedNormally {
+		return
+	}
+
 	// Estimate input tokens from the request messages, not the output buffer
 	inputTokens := 0
 	for _, m := range req.Messages {
@@ -223,6 +258,7 @@ FINISH:
 	if inputTokens == 0 {
 		inputTokens = len(req.Messages) * 50
 	}
+	outputTokens := llm.EstimateTokens(outputBuffer.String())
 	if outputTokens == 0 {
 		outputTokens = inputTokens / 2
 	}
@@ -268,6 +304,17 @@ func (h *Handler) OpenAIEmbeddings(w http.ResponseWriter, r *http.Request) {
 	if userID == "" {
 		writeOpenAIError(w, http.StatusUnauthorized, "authentication_error", "Authentication required")
 		return
+	}
+
+	// Sandbox mode bypasses billing ONLY when the caller is an admin.
+	// Non-admins with X-Sandbox must be rejected to prevent free usage.
+	isSandbox := false
+	if r.Header.Get("X-Sandbox") == "true" {
+		if u == nil || !u.IsAdmin() {
+			writeOpenAIError(w, http.StatusForbidden, "permission_error", "Sandbox mode requires admin access")
+			return
+		}
+		isSandbox = true
 	}
 
 	var req openai.EmbeddingRequest
@@ -347,8 +394,8 @@ func (h *Handler) OpenAIEmbeddings(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	// Async billing (skip in sandbox mode)
-	if r.Header.Get("X-Sandbox") != "true" {
+	// Async billing (skip in sandbox mode — only when caller is an admin)
+	if !isSandbox {
 		h.asyncLogAndDeduct(r.Context(), userID, apiKeyID, req.Model, resp.TotalTokens, 0)
 	}
 
