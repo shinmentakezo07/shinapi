@@ -132,13 +132,61 @@ func New(strategy Strategy) *Router {
 	}
 }
 
-// Register adds a provider to the router.
+// Register adds a provider to the router, or replaces it if a provider with
+// the same name is already registered. Replacing (rather than appending)
+// keeps hot re-registration idempotent: when the admin re-registers a
+// provider after a key/status change, the router ends up with one entry
+// pointing at the fresh provider instead of accumulating stale duplicates.
+// Latency/reliability history for the name is preserved.
 func (r *Router) Register(p llm.Provider) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	for i, existing := range r.providers {
+		if existing.Name() == p.Name() {
+			r.providers[i] = p
+			r.invalidateProviderLocked(p.Name())
+			return
+		}
+	}
 	r.providers = append(r.providers, p)
-	r.latencies[p.Name()] = newLatencyTracker()
-	r.errors[p.Name()] = &errorTracker{}
+	if _, ok := r.latencies[p.Name()]; !ok {
+		r.latencies[p.Name()] = newLatencyTracker()
+	}
+	if _, ok := r.errors[p.Name()]; !ok {
+		r.errors[p.Name()] = &errorTracker{}
+	}
+}
+
+// Unregister removes a provider from the router by name. Used when a
+// provider is deleted or deactivated at runtime so the router stops
+// considering it for routing.
+func (r *Router) Unregister(name string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for i, existing := range r.providers {
+		if existing.Name() == name {
+			r.providers = append(r.providers[:i], r.providers[i+1:]...)
+			break
+		}
+	}
+	delete(r.latencies, name)
+	delete(r.errors, name)
+	r.invalidateProviderLocked(name)
+}
+
+// InvalidateProvider clears the cached ListModels result for a provider so
+// the next routing decision reflects its current model catalog. Call after a
+// provider's models change (e.g. new provider registered, models refreshed).
+func (r *Router) InvalidateProvider(name string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.invalidateProviderLocked(name)
+}
+
+// invalidateProviderLocked clears the per-provider model cache entry. Caller
+// must hold r.mu.
+func (r *Router) invalidateProviderLocked(name string) {
+	delete(r.modelCache, name)
 }
 
 // SetStrategy changes the routing strategy.

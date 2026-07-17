@@ -206,6 +206,15 @@ func initServices(ctx context.Context, cfg *config.Config, database *db.DB, redi
 	}
 	logger.Info("load_balancer_initialized", "strategy", cfg.RouterStrategy)
 
+	// Wire the runtime sync targets (router + load balancer + health checker)
+	// into the admin service so providers added/removed at runtime are pushed
+	// into every subsystem that otherwise snapshots providers once at startup.
+	// SyncRuntimeFromRegistry reconciles those subsystems with the LLM Registry
+	// (already populated with DB-loaded providers in initAdminServices) so
+	// newly-added providers go live without a server restart.
+	adminSvc.SetRuntimeSync(modelRouter, loadBalancer, providerSvc.HealthChecker())
+	adminSvc.SyncRuntimeFromRegistry()
+
 	// OpenTelemetry
 	otelProvider := otel.NewProvider(&otel.LoggingExporter{}, cfg.EnableMetrics)
 	logger.Info("otel_provider_initialized")

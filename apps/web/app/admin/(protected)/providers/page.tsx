@@ -258,6 +258,7 @@ function ProviderKeysPanel({ providerId }: { providerId: string }) {
                       </button>
                       <button
                         onClick={() => {
+                          if (!key.id) return;
                           if (confirm("Delete this key?"))
                             deleteKey.mutate(key.id);
                         }}

@@ -7122,3 +7122,140 @@ func (s *AdminService) CreateAlias(ctx context.Context, a *domain.ModelAlias) er
 - The frontend `providers/page.tsx` form was already sending `strategy` and `weight`; the service defaults are a safety net for callers that omit them.
 - `IsActive` defaulting to `true` matches the `CreateProviderFull` embedded-key path which sets `IsActive: true`.
 - Quality gates: `go vet ./internal/handler/... ./internal/service/...` clean, `go build ./...` clean.
+
+## [67]. Hot-reload providers into router/load-balancer/health-checker at runtime
+
+**Session**: provider-hot-reload
+**Date**: 2026-07-17 19:55
+
+### Why
+
+When an admin added a provider (or a key, or toggled status) the change was
+persisted to the DB and the provider was re-registered in the LLM `Registry`,
+but three sibling subsystems — the model `Router`, the `loadbalancer.Balancer`,
+and the `HealthChecker` — each snapshot `Registry.Providers()` exactly once at
+startup (services.go:193-207, initModelRouter, initHealthChecker). None of them
+were notified by `Registry.Register`. So a newly-added provider was live for
+direct model-scoped routing (`chatSingle` → `registry.Get(provName)`) but was
+invisible to cost/latency/reliability routing, load-balancer endpoints, and
+health checks until the server was restarted. The user had to restart the server
+every time they added a provider.
+
+Secondary issue from the dev logs: `DELETE /api/admin/providers/{id}/keys`
+returned 405 because the backend only registers `DELETE` on
+`/api/admin/providers/{id}/keys/{keyId}` — a request without the trailing
+`{keyId}` segment (an empty `key.id` in the frontend) fell through to chi's
+method-not-allowed. Guarding `deleteKey.mutate(key.id)` stops that misfire.
+
+### Files Changed
+
+| File                                                | Lines     | Change Type |
+| --------------------------------------------------- | --------- | ----------- |
+| apps/backend/pkg/llm/router/router.go               | L136-194  | modified    |
+| apps/backend/internal/service/admin.go             | L3-26,28-155,L565-622 | modified |
+| apps/backend/cmd/api/services.go                    | L207-217  | modified    |
+| apps/web/app/admin/(protected)/providers/page.tsx  | L259-268  | modified    |
+
+### Before
+
+```go
+// router.go — Register appended a provider unconditionally
+func (r *Router) Register(p llm.Provider) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.providers = append(r.providers, p)
+	r.latencies[p.Name()] = newLatencyTracker()
+	r.errors[p.Name()] = &errorTracker{}
+}
+// (no Unregister, no InvalidateProvider)
+```
+
+```go
+// admin.go — registerProviderRuntime only touched the LLM Registry
+	prov := llmprovider.NewGenericProvider(p.Name, p.BaseURL, opts...)
+	s.llmRegistry.Register(prov)
+	s.llmRegistry.InvalidateCache()
+	logger.Info("admin_provider_registered_runtime", ...)
+// and unregister call sites used bare: s.llmRegistry.Unregister(p.Name)
+```
+
+```tsx
+// providers/page.tsx — delete key with no id guard
+                        onClick={() => {
+                          if (confirm("Delete this key?"))
+                            deleteKey.mutate(key.id);
+                        }}
+```
+
+### After
+
+```go
+// router.go — Register now upserts by name; new Unregister + InvalidateProvider
+func (r *Router) Register(p llm.Provider) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for i, existing := range r.providers {
+		if existing.Name() == p.Name() {
+			r.providers[i] = p
+			r.invalidateProviderLocked(p.Name())
+			return
+		}
+	}
+	r.providers = append(r.providers, p)
+	if _, ok := r.latencies[p.Name()]; !ok {
+		r.latencies[p.Name()] = newLatencyTracker()
+	}
+	if _, ok := r.errors[p.Name()]; !ok {
+		r.errors[p.Name()] = &errorTracker{}
+	}
+}
+func (r *Router) Unregister(name string) { /* removes provider + trackers, invalidates cache */ }
+func (r *Router) InvalidateProvider(name string) { /* clears cached ListModels */ }
+```
+
+```go
+// admin.go — new runtimeSync fans register/unregister out to router+balancer+hc
+func (s *AdminService) syncRuntimeAdd(p llm.Provider) {
+	if s.runtimeSync == nil || p == nil { return }
+	rs := s.runtimeSync
+	if rs.modelRouter != nil { rs.modelRouter.Register(p); rs.modelRouter.InvalidateProvider(p.Name()) }
+	if rs.loadBalancer != nil { rs.loadBalancer.AddEndpoint(&loadbalancer.Endpoint{ID: p.Name(), Provider: p.Name(), ...}) }
+	if rs.healthChecker != nil { rs.healthChecker.Register(p.Name(), llmprovider.HTTPHealthCheck(...)) }
+}
+func (s *AdminService) unregisterProviderRuntime(name string) {
+	if s.llmRegistry != nil { s.llmRegistry.Unregister(name) }
+	// + modelRouter.Unregister, loadBalancer.RemoveEndpoint, healthChecker.Unregister
+}
+func (s *AdminService) SyncRuntimeFromRegistry() { /* reconcile all subsystems with Registry at startup */ }
+// registerProviderRuntime now calls s.syncRuntimeAdd(prov); all unregister sites call s.unregisterProviderRuntime(name)
+```
+
+```go
+// services.go — wire targets once they exist, then reconcile with DB-loaded providers
+	adminSvc.SetRuntimeSync(modelRouter, loadBalancer, providerSvc.HealthChecker())
+	adminSvc.SyncRuntimeFromRegistry()
+```
+
+```tsx
+// providers/page.tsx — guard empty key.id (prevents 405 on DELETE .../keys)
+                        onClick={() => {
+                          if (!key.id) return;
+                          if (confirm("Delete this key?"))
+                            deleteKey.mutate(key.id);
+                        }}
+```
+
+### Notes
+
+- `syncRuntimeAdd` is idempotent: router `Register` upserts by name, balancer
+  `AddEndpoint` overwrites by ID, health-checker `Register` overwrites by name —
+  so re-registering a provider after a key/status change does not duplicate.
+- `SyncRuntimeFromRegistry` runs at startup so DB-loaded providers (registered
+  in `initAdminServices` before the sync targets are wired) still enter the
+  router/balancer/health-checker without a restart.
+- BudgetRouter already holds a live `*Registry` pointer and reads
+  `AllModels(ctx)` per call, so it needs no wiring — it sees new providers
+  automatically once the Registry's model cache is invalidated.
+- Quality gates: `go vet ./internal/service/... ./pkg/llm/router/... ./cmd/api/...` clean,
+  `go build ./...` clean, `go test ./pkg/llm/router/... ./pkg/llm/provider/... ./internal/service/... ./internal/handler/...` green,
+  `bash scripts/smoke-test.sh` PASSED (25/25).

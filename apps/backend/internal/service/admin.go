@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"net/http"
 	"sync"
 	"time"
 
@@ -18,7 +19,9 @@ import (
 	"dra-platform/backend/internal/repository"
 	"dra-platform/backend/pkg/llm"
 	"dra-platform/backend/pkg/llm/cache"
+	"dra-platform/backend/pkg/llm/loadbalancer"
 	llmprovider "dra-platform/backend/pkg/llm/provider"
+	llmrouter "dra-platform/backend/pkg/llm/router"
 	"dra-platform/backend/pkg/llm/watcher"
 )
 
@@ -44,6 +47,111 @@ type AdminService struct {
 	// hot-registered without re-decrypting every request.
 	// Keyed by provider-key ID. Seeded from encrypted_key on startup.
 	rawKeyStore sync.Map
+
+	// runtimeSync fans provider hot-register/unregister events out to the
+	// subsystems that snapshot providers at startup: the model router, the
+	// load balancer, and the health checker. Without this, a provider added
+	// at runtime is registered in the LLM Registry (so direct model-scoped
+	// routing sees it) but invisible to router/balancer/health routes until a
+	// restart. Set via SetRuntimeSync (wired in cmd/api/services.go after
+	// those components exist). May be nil in tests/standalone use.
+	runtimeSync *runtimeSync
+}
+
+// runtimeSync holds the LLM subsystems that snapshot providers at startup.
+// The admin service pushes add/remove events into them so newly-added
+// providers become live without a server restart.
+type runtimeSync struct {
+	modelRouter   *llmrouter.Router
+	loadBalancer  *loadbalancer.Balancer
+	healthChecker *llmprovider.HealthChecker
+}
+
+// SetRuntimeSync wires the router/balancer/health-checker that should be
+// notified when providers are hot-registered or unregistered at runtime.
+func (s *AdminService) SetRuntimeSync(mr *llmrouter.Router, lb *loadbalancer.Balancer, hc *llmprovider.HealthChecker) {
+	s.runtimeSync = &runtimeSync{
+		modelRouter:   mr,
+		loadBalancer:  lb,
+		healthChecker: hc,
+	}
+}
+
+// syncRuntimeAdd mirrors a freshly-registered provider into the router,
+// load balancer, and health checker. Idempotent: re-registering an existing
+// provider name replaces (router) / upserts (balancer) / re-registers (hc)
+// rather than duplicating. Safe to call when runtimeSync is nil (no-op).
+func (s *AdminService) syncRuntimeAdd(p llm.Provider) {
+	if s.runtimeSync == nil || p == nil {
+		return
+	}
+	rs := s.runtimeSync
+	if rs.modelRouter != nil {
+		rs.modelRouter.Register(p)
+		rs.modelRouter.InvalidateProvider(p.Name())
+	}
+	if rs.loadBalancer != nil {
+		var baseURL string
+		if bu, ok := p.(interface{ BaseURL() string }); ok {
+			baseURL = bu.BaseURL()
+		}
+		rs.loadBalancer.AddEndpoint(&loadbalancer.Endpoint{
+			ID:        p.Name(),
+			Provider:  p.Name(),
+			Model:     "*",
+			BaseURL:   baseURL,
+			IsActive:  true,
+			IsHealthy: true,
+			Priority:  1,
+		})
+	}
+	if rs.healthChecker != nil {
+		var url string
+		if bu, ok := p.(interface{ BaseURL() string }); ok {
+			url = bu.BaseURL()
+		}
+		if url != "" {
+			rs.healthChecker.Register(p.Name(), llmprovider.HTTPHealthCheck(&http.Client{Timeout: 10 * time.Second}, url))
+		}
+	}
+}
+
+// unregisterProviderRuntime drops a provider from the LLM Registry and every
+// runtime subsystem (router, balancer, health checker) so deleted/deactivated
+// providers stop receiving traffic immediately.
+func (s *AdminService) unregisterProviderRuntime(name string) {
+	if s.llmRegistry != nil {
+		s.llmRegistry.Unregister(name)
+	}
+	if s.runtimeSync == nil {
+		return
+	}
+	rs := s.runtimeSync
+	if rs.modelRouter != nil {
+		rs.modelRouter.Unregister(name)
+	}
+	if rs.loadBalancer != nil {
+		rs.loadBalancer.RemoveEndpoint(name)
+	}
+	if rs.healthChecker != nil {
+		rs.healthChecker.Unregister(name)
+	}
+}
+
+// SyncRuntimeFromRegistry reconciles the router/balancer/health-checker with
+// the current contents of the LLM Registry. Called once at startup after
+// SetRuntimeSync (and after LoadProvidersFromDB) so DB-loaded providers —
+// which register before the sync targets are wired — still enter the runtime
+// subsystems without needing a restart.
+func (s *AdminService) SyncRuntimeFromRegistry() {
+	if s.llmRegistry == nil || s.runtimeSync == nil {
+		return
+	}
+	for _, name := range s.llmRegistry.Providers() {
+		if p, ok := s.llmRegistry.Get(name); ok {
+			s.syncRuntimeAdd(p)
+		}
+	}
 }
 
 func NewAdminService(
@@ -470,7 +578,7 @@ func (s *AdminService) UpdateProvider(ctx context.Context, p *domain.Provider) e
 					s.registerProviderRuntime(refreshed)
 				}
 			} else {
-				s.llmRegistry.Unregister(refreshed.Name)
+				s.unregisterProviderRuntime(refreshed.Name)
 			}
 		}
 	}
@@ -493,7 +601,7 @@ func (s *AdminService) ToggleProviderStatus(ctx context.Context, id string, stat
 					s.registerProviderRuntime(p)
 				}
 			} else {
-				s.llmRegistry.Unregister(p.Name)
+				s.unregisterProviderRuntime(p.Name)
 			}
 		}
 	}
@@ -509,9 +617,7 @@ func (s *AdminService) DeleteProvider(ctx context.Context, id string) error {
 	if p == nil {
 		return fmt.Errorf("provider not found: %s", id)
 	}
-	if s.llmRegistry != nil {
-		s.llmRegistry.Unregister(p.Name)
-	}
+	s.unregisterProviderRuntime(p.Name)
 	keys, err := s.providerRepo.ListKeys(ctx, id)
 	if err != nil {
 		logger.Warn("delete_provider_list_keys_failed", "provider_id", id, "error", err.Error())
@@ -574,6 +680,9 @@ func (s *AdminService) registerProviderRuntime(p *domain.Provider, apiKey ...str
 	prov := llmprovider.NewGenericProvider(p.Name, p.BaseURL, opts...)
 	s.llmRegistry.Register(prov)
 	s.llmRegistry.InvalidateCache()
+	// Fan out to router/load-balancer/health-checker so the new provider is
+	// live immediately — no server restart required.
+	s.syncRuntimeAdd(prov)
 	logger.Info("admin_provider_registered_runtime", "provider", p.Name, "base_url", p.BaseURL, "has_key", len(apiKey) > 0 && apiKey[0] != "")
 }
 
