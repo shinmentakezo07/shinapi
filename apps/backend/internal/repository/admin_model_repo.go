@@ -9,7 +9,6 @@ import (
 	"dra-platform/backend/internal/domain"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type AdminModelRepo struct {
@@ -146,7 +145,7 @@ func (r *AdminModelRepo) CreateModel(ctx context.Context, m *domain.ModelRegistr
 		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
 		m.ID, m.ModelID, m.ProviderID, m.DisplayName, m.Description,
 		m.ContextWindow, m.MaxOutput, m.InputPricePer1k, m.OutputPricePer1k,
-		pgtype.FlatArray[string](m.Capabilities), m.SupportsVision, m.SupportsTools, m.SupportsThinking, m.Status,
+		r.db.EncodeStringSlice(m.Capabilities), m.SupportsVision, m.SupportsTools, m.SupportsThinking, m.Status,
 		m.ModelGroup, m.FallbackModels, m.CredentialName, m.RoutingWeight, m.IsWildcard)
 	if err != nil {
 		return fmt.Errorf("create model: %w", err)
@@ -165,7 +164,7 @@ func (r *AdminModelRepo) UpdateModel(ctx context.Context, m *domain.ModelRegistr
 			model_group=$12, fallback_models=$13, credential_name=$14,
 			routing_weight=$15, is_wildcard=$16
 		WHERE id=$1`, m.ID, m.DisplayName, m.Description, m.ContextWindow, m.MaxOutput,
-		m.InputPricePer1k, m.OutputPricePer1k, pgtype.FlatArray[string](m.Capabilities),
+		m.InputPricePer1k, m.OutputPricePer1k, r.db.EncodeStringSlice(m.Capabilities),
 		m.SupportsVision, m.SupportsTools, m.SupportsThinking,
 		m.ModelGroup, m.FallbackModels, m.CredentialName, m.RoutingWeight, m.IsWildcard)
 	if err != nil {

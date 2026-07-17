@@ -1,3 +1,35 @@
+## [62]. Fix /models page — overhaul frame, real provider logos, clean hero
+
+**Session**: `models-ui-enhance-2026-07-17`
+**Date**: 2026-07-17 12:10
+
+### Why
+The `/models` page hero text was removed (leaving bare 30dvh atmosphere), provider tabs used generic Lucide icons, and the Mistral/xAI/DeepSeek/Alibaba SVG logos were broken (404 HTML pages or missing files). The page frame was fragmented: empty hero → broken divider → explorer felt like a sub-section.
+
+### What changed
+1. **Frame**: Removed `ModelsHero` from `page.tsx` — explorer owns full page with `pt-20` top padding and `h1` page header
+2. **Provider tabs**: Replaced `providerIcons` (generic Lucide) with `providerLogoUrls` using real logo images from `public/logos/`
+3. **Sticky rail**: Compact 95% opaque glass, clear-search ✕ button, native select chevron, animated `layoutId` provider pills
+4. **Logos fixed**: `mistral.svg` (was HTML), `xai.svg` (missing), `alibaba.svg` (missing), `deepseek.svg` (was PNG, now proper SVG)
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/models/page.tsx | L1-32 | modified (removed ModelsHero, removed divider) |
+| apps/web/components/models/ModelsHero.tsx | L1-48 | modified (removed content, collapsed to 30dvh atmosphere) |
+| apps/web/components/models/ModelsExplorer.tsx | L205-215 | modified (providerIcons → providerLogoUrls, DeepSeek .png→.svg) |
+| apps/web/public/logos/mistral.svg | L1-12 | created (replaced HTML 404 page with actual Mistral "M" SVG) |
+| apps/web/public/logos/xai.svg | L1-4 | created (replaced missing file) |
+| apps/web/public/logos/deepseek.svg | L1-6 | created (new SVG mark, replaced PNG) |
+| apps/web/public/logos/alibaba.svg | L1-8 | created (replaced missing path reference) |
+
+### Verification
+- `npm run build` ✅
+- `npm run format` ✅
+- Page loads at `:3000/models` without console errors ✅
+- All 8 provider logo images resolve in tab buttons ✅
+
 ## [56]. Enhance docs sidebar UI — layered ambient glow, gradient nav items, refined footer
 
 **Session**: `docs-sidebar-ui-2026-07-16`
@@ -6534,3 +6566,86 @@ m.InputPricePer1k, m.OutputPricePer1k, pgtype.FlatArray[string](m.Capabilities),
 - `pgtype.FlatArray[string]` is a `[]string` alias that pgx/v5 already registers a `text[]` encoder for — no codec customization required.
 - Read paths (`Scan(..., &m.Capabilities, ...)`) are unchanged because pgx already scans `TEXT[]` into `[]string` natively.
 - `make vet` + `gofmt` clean. No other repos in this PR scope, but `TEXT[]` columns elsewhere (`tags`, `allowed_user_ids`, `permissions`, `targeted_user_ids`, `target_ids`, `allowed_models`, `allowed_ips`, `allowed_domains`, `channels`, `recipients`, `sections`, `events`) likely have the same write bug and should be swept in a follow-up session.
+
+## [62]. Cross-backend `[]string` arg encoder — fixes SQLite create-provider crash
+
+**Session**: `fix-admin-provider-capabilities-2026-07-17`
+**Date**: 2026-07-17 12:24
+
+### Why
+Entry **[61]** wrapped `Capabilities` with `pgtype.FlatArray[string]` and called it done, but the running backend picked up through the logs is **SQLite** (`type: sqlite, url: file:.../yapapa.db`), not Postgres. pgx never reaches this code path — the error string `sql: converting argument $N type: unsupported type X` is `database/sql.ConvertValue`, only emitted by the stdlib adapter through `modernc.org/sqlite`. So `pgtype.FlatArray[string]` was rejected too (`unsupported type pgtype.FlatArray[string], a slice of string`).
+
+The schemas differ per backend:
+- **Postgres** (`migrations/007_admin_schema.sql:132`): `capabilities TEXT[]` — pgx writes need `pgtype.FlatArray[string]`.
+- **SQLite lite** (`internal/db/lite_schema.go:332`): `capabilities TEXT DEFAULT '[]'` — stored as a JSON-encoded array; `sqlite_querier.assign` already parses JSON text into `*[]string` on read, so writes must JSON-encode.
+
+The repo can't be cross-platform unless it asks the active querier which shape to use. Lifted the encoding to a single helper on `*db.DB` that returns the correct Go value for the runtime backend. Reads already work for both backends (no changes there), so this is purely a write-path fix.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/backend/internal/db/db.go | L3-19 | modified (added `encoding/json` and `pgtype` imports) |
+| apps/backend/internal/db/db.go | L240-273 | created (`EncodeStringSlice` cross-backend helper) |
+| apps/backend/internal/repository/admin_model_repo.go | L9-15 | modified (dropped direct `pgtype` import; `pgx` still used elsewhere) |
+| apps/backend/internal/repository/admin_model_repo.go | L148 | modified (CreateModel INSERT arg) |
+| apps/backend/internal/repository/admin_model_repo.go | L167 | modified (UpdateModel UPDATE arg) |
+
+### Before
+```go
+// apps/backend/internal/db/db.go — no helper existed
+// apps/backend/internal/repository/admin_model_repo.go
+import (
+    "github.com/jackc/pgx/v5"
+    "github.com/jackc/pgx/v5/pgtype"
+)
+
+// CreateModel INSERT
+m.ID, m.ModelID, m.ProviderID, m.DisplayName, m.Description,
+m.ContextWindow, m.MaxOutput, m.InputPricePer1k, m.OutputPricePer1k,
+pgtype.FlatArray[string](m.Capabilities), m.SupportsVision, m.SupportsTools, m.SupportsThinking, m.Status,
+m.ModelGroup, m.FallbackModels, m.CredentialName, m.RoutingWeight, m.IsWildcard)
+// UpdateModel UPDATE
+m.InputPricePer1k, m.OutputPricePer1k, pgtype.FlatArray[string](m.Capabilities),
+```
+
+### After
+```go
+// apps/backend/internal/db/db.go (new helper)
+func (db *DB) EncodeStringSlice(s []string) any {
+    switch db.Type {
+    case DBTypeSQLite:
+        if len(s) == 0 {
+            return "[]"
+        }
+        b, err := json.Marshal(s)
+        if err != nil {
+            return "[]"
+        }
+        return string(b)
+    default:
+        return pgtype.FlatArray[string](s)
+    }
+}
+
+// apps/backend/internal/repository/admin_model_repo.go
+import (
+    "github.com/jackc/pgx/v5"
+)
+// pgtype import removed — no longer referenced directly.
+
+// CreateModel INSERT
+m.ID, m.ModelID, m.ProviderID, m.DisplayName, m.Description,
+m.ContextWindow, m.MaxOutput, m.InputPricePer1k, m.OutputPricePer1k,
+r.db.EncodeStringSlice(m.Capabilities), m.SupportsVision, m.SupportsTools, m.SupportsThinking, m.Status,
+m.ModelGroup, m.FallbackModels, m.CredentialName, m.RoutingWeight, m.IsWildcard)
+// UpdateModel UPDATE
+m.InputPricePer1k, m.OutputPricePer1k, r.db.EncodeStringSlice(m.Capabilities),
+```
+
+### Notes
+- This entry supersedes the partial fix described in **[61]**. Entry [61]'s Postgres-only wrap is now in master history but is no longer the active code; treat [62] as canonical.
+- `r.db.EncodeStringSlice` is the seam to migrate other `[]string` writes. Tagged candidates: `tags`, `allowed_user_ids`, `permissions`, `targeted_user_ids`, `target_ids`, `allowed_models`, `allowed_ips`, `allowed_domains`, `channels`, `recipients`, `sections`, `events`. Each repo call site becomes `r.db.EncodeStringSlice(<slice>)` — Postgres path stays byte-identical to [61]'s fix, SQLite path gets JSON encoding with no schema change required (`{}`/`[]` empty-string stripping in `sqlite_querier.normalizeSQLiteSQL` is irrelevant for parameter-bound JSON).
+- Read paths unchanged. `Scan(..., &m.Capabilities, ...)` works on Postgres (pgx native TEXT[] → []string) and on SQLite (JSON parser in `sqlite_querier.assign` *[]string case).
+- MongoDB mode is not exercised by admin/providers today; helper silently returns `pgtype.FlatArray[string]` for it, which would behave like the [61] wrap if reached. Out of scope.
+- Quality gates: `go vet ./...` clean, `gofmt -l` clean, `go build ./...` clean.

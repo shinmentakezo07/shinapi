@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 
@@ -233,3 +235,39 @@ func (db *DB) Begin(ctx context.Context) (Tx, error) {
 
 // (No exported SQLiteQuerier accessor; migrate/seed reach *sql.DB through
 // db.SqlDB when they need it, and tests use testutil.OpenSQLite directly.)
+
+// ---------------------------------------------------------------------------
+// Cross-backend value helpers
+// ---------------------------------------------------------------------------
+
+// EncodeStringSlice returns the right Go value to pass as an Exec/Query
+// argument when the underlying column stores a list of strings.
+//
+// column shapes per backend:
+//   - Postgres / Neon (pgx): TEXT[] (e.g. model_registry.capabilities).
+//     pgx/v5 has no default codec for a bare Go []string → text[] bind;
+//     wraps with pgtype.FlatArray[string] which has a registered encoder.
+//   - SQLite (modernc.org/sqlite via database/sql): TEXT holding a JSON
+//     array (e.g. capabilities, allowed_user_ids, permissions). The lite
+//     runtime stores arrays as JSON and sqliteQuerier.assign parses JSON
+//     back into []string, so emits a JSON string and a bare []string —
+//     database/sql.ConvertValue rejects slice types through the stdlib.
+//
+// Passing nil/empty produces the canonical "[]" string. Marshalling a
+// []string should never fail; on the off chance it does, falls back to
+// "[]" rather than panic, keeping the SQL write deterministic.
+func (db *DB) EncodeStringSlice(s []string) any {
+	switch db.Type {
+	case DBTypeSQLite:
+		if len(s) == 0 {
+			return "[]"
+		}
+		b, err := json.Marshal(s)
+		if err != nil {
+			return "[]"
+		}
+		return string(b)
+	default:
+		return pgtype.FlatArray[string](s)
+	}
+}
