@@ -1,3 +1,93 @@
+## [63]. Arena-style playground remake — remove decorative motion, solid dark canvas, CSS-driven feedback
+
+**Session**: `playground-arena-remake-2026-07-17`
+**Date**: 2026-07-17 18:20
+
+### Why
+The `/playground` page was heavy and laggy: three permanent framer-motion orb loops (25s/20s/18s), a mouse-tracking spotlight, an SVG noise texture, an animated grid, `backdrop-blur-2xl` on every panel, and `layout` animations on `ModelResponseCard`/`EmptyRail` that re-triggered layout on every stream chunk. The visual language was generic (cyan glows, blur halos) rather than the clean, response-focused Arena AI / LMArena aesthetic the user asked for. Remade the shell, comparison grid, composer, and model selector to use solid `#0a0a0b` / `#0d0d0f` backgrounds, CSS `animate-bounce`/`animate-pulse` instead of infinite framer-motion loops, removed `layout`/`layoutId` animations from streaming cards, and kept the provider color accent + HUMAN_ACCENT alignment rail metaphors.
+
+### Files Changed
+
+| File                                                   | Lines   | Change Type |
+| ------------------------------------------------------ | ------- | ----------- |
+| apps/web/app/playground/page.tsx                       | L1-627  | rewritten   |
+| apps/web/components/playground/ChatInterface.tsx       | L1-512  | rewritten   |
+| apps/web/components/playground/ModelSelector.tsx       | L1-620  | rewritten   |
+
+### Before
+
+```tsx
+// page.tsx — MotionConfig + 3 permanent orb loops + mouse spotlight + SVG noise + animated grid
+<motion.div className="fixed inset-0 -z-10 overflow-hidden">
+  <MotionConfig reducedMotion="never">
+    <motion.div animate={{ x: [...], y: [...] }} transition={{ duration: 25, repeat: Infinity }} />
+    <motion.div animate={{ x: [...], y: [...] }} transition={{ duration: 20, repeat: Infinity }} />
+    <motion.div animate={{ x: [...], y: [...] }} transition={{ duration: 18, repeat: Infinity }} />
+  </MotionConfig>
+  <div className="absolute inset-0 opacity-[0.025]" style={{ background: "url(data:image/svg+xml,...)" }} />
+  <motion.div className="absolute inset-0" style={{ background: useMotionTemplate`radial-gradient(...${mouseX}...)` }} />
+</motion.div>
+// ...backdrop-blur-2xl everywhere, localStorage keys were un-namespaced
+```
+
+```tsx
+// ChatInterface.tsx — EmptyState orbital system + layout animations + backdrop-blur
+<motion.div className="absolute inset-0 backdrop-blur-xl">
+  <motion.div animate={{ rotate: 360 }} transition={{ duration: 18, repeat: Infinity }}>
+    <motion.div className="absolute inset-0 rounded-full border" style={{ borderColor: color }} />
+  </motion.div>
+  // ...3 rotating rings + pulsing glow
+</motion.div>
+<ModelResponseCard layout initial={...} animate={...} />  // layout reflow on every stream chunk
+```
+
+```tsx
+// ModelSelector.tsx — 978 lines, layout/layoutId animations + backdrop-blur + aurora gradients
+<motion.div className="... backdrop-blur-sm" />
+<ModelCard layout initial={{ opacity: 0, y: 12 }} animate exit transition={{ type: "spring", ... delay }} />
+<motion.div layout key={model.id} ... />  // layoutId-style reorder animation
+// ...aurora gradient overlays on every provider button, backdrop-blur-xl header/footer
+```
+
+### After
+
+```tsx
+// page.tsx — solid backgrounds, no decorative motion, CSS transitions, white CTA
+<div className="h-screen bg-[#0a0a0b] text-white relative overflow-hidden flex">
+  <motion.aside initial={{ width: 0 }} animate={{ width: 288 }} exit={{ width: 0 }} className="bg-[#0d0d0f] ...">
+  // ...sidebar with plain divs, no backdrop-blur, no orbs, no noise, no grid
+  <button className="... bg-white text-black hover:bg-white/90">Add Models</button>
+// localStorage keys: yapapa.playground.history.v1 / yapapa.playground.active.v1
+```
+
+```tsx
+// ChatInterface.tsx — CSS animate-bounce/pulse, no layout prop, solid cards
+<div className="w-1 h-1 rounded-full bg-gray-600 animate-bounce" style={{ animationDelay: `${delay}s` }} />
+<span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: providerColor }} />
+<ModelResponseCard ... />  // no layout prop — no reflow on stream chunks
+<div className="... bg-[#0d0d0f] border border-white/[0.06]">  // solid card, no backdrop-blur
+// HUMAN_ACCENT (#F5B14A) alignment rail retained, provider color left rails retained
+```
+
+```tsx
+// ModelSelector.tsx — 620 lines, CSS transitions only, no layout/layoutId, no backdrop-blur
+<button className="... hover:bg-white/[0.03] transition-colors" style={isActive ? { backgroundColor: `${color}14` } : undefined} />
+<ModelCard ... />  // plain button, no motion wrapper, no layout prop
+<div className="... bg-black/70" />  // overlay — no backdrop-blur
+<motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="... bg-[#0a0a0b] ...">
+// MAX_MODELS=4 retained, provider sidebar retained, search + category filters retained
+```
+
+### Notes
+
+- All three files pass `tsc --noEmit` with zero new diagnostics (pre-existing errors in unrelated files only)
+- `tests/lib/playground-storage.test.ts` (13 tests) and `tests/components/playground/CodeSnippets.test.tsx` (10 tests) pass
+- Prettier formatted all three files
+- `getProviderColor`, `getProviderColorClass`, `getAllProviders` from `ProviderColors.ts` unchanged
+- `types.ts` (Message, ChatSession, HistoryChat, EnrichedModel) unchanged
+- `mapCatalogToEnriched` + `useModelCatalog` data flow unchanged
+- localStorage keys changed to `yapapa.playground.history.v1` / `yapapa.playground.active.v1` (old keys ignored; users see a fresh empty state once)
+
 ## [62]. Fix /models page — overhaul frame, real provider logos, clean hero
 
 **Session**: `models-ui-enhance-2026-07-17`
@@ -6842,3 +6932,79 @@ r.Put   ("/api/admin/providers/{id}/keys/reorder", ...)
 - `service.SetKeyStatus` calls `refreshProviderModels` so the LLM gateway drops / re-adds the key in its load-balancer in the same request — without it, an enable-from-UI could land in the DB but the gateway would still be using the stale in-memory active list until the next health check.
 - `repo.UpdateKey` is left as-is — it covers full replacements (label/strategy/weight/etc) but is awkwardly wired to demand every column for a single-boolean change, which is why we needed the targeted SetKeyStatus instead.
 - Quality gates: `go vet ./...` clean, `gofmt -l` clean, `go build ./...` clean, `tsc --noEmit` clean, prettier clean on edited files.
+
+## [65]. Fix admin dashboard hydration mismatch on date label
+
+**Session**: `admin-dashboard-hydration-fix-2026-07-17`
+**Date**: 2026-07-17 19:05
+
+### Why
+The `/admin/dashboard` page rendered `new Date().toLocaleDateString(...)` inline during render of `AdminDashboardPage`. Because the server and client can resolve the date differently (timezone skew between the SSR host and the browser, or a midnight rollover in the gap between server render and client hydration), React threw a hydration mismatch — the server emitted "Friday, July 17, 2026" while the client computed "Saturday, July 18, 2026", so the whole tree got regenerated on the client. Root cause is rendering time-derived text during SSR/hydration instead of deferring it to an effect.
+
+### Files Changed
+
+| File                                       | Lines    | Change Type |
+| ------------------------------------------ | -------- | ----------- |
+| apps/web/app/admin/(protected)/dashboard/page.tsx | L593-612 | modified    |
+| apps/web/app/admin/(protected)/dashboard/page.tsx | L633-635 | modified    |
+
+### Before
+
+```tsx
+// app/admin/(protected)/dashboard/page.tsx — inside AdminDashboardPage, render-time date
+const { data: usersData, isLoading: usersLoading } = useQuery({
+  queryKey: ["admin", "users", "recent"],
+  queryFn: () => getAdminSDK().listUsers({ limit: 6 }),
+});
+
+if (error) {
+  ...
+}
+
+// ...in JSX:
+<p className="text-[12px] text-[var(--admin-text-dim)] font-mono tracking-wide">
+  {new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  })}
+</p>
+```
+
+### After
+
+```tsx
+// app/admin/(protected)/dashboard/page.tsx — date computed in an effect, empty on first paint
+const { data: usersData, isLoading: usersLoading } = useQuery({
+  queryKey: ["admin", "users", "recent"],
+  queryFn: () => getAdminSDK().listUsers({ limit: 6 }),
+});
+
+// Format the date only on the client after mount. Computing `new Date()`
+// during render causes a hydration mismatch when the server and client
+// disagree on the date (different timezone or a midnight rollover between
+// SSR and hydration). Empty string on first render matches the server.
+const [todayLabel, setTodayLabel] = useState("");
+useEffect(() => {
+  setTodayLabel(
+    new Date().toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    }),
+  );
+}, []);
+
+// ...in JSX:
+<p className="text-[12px] text-[var(--admin-text-dim)] font-mono tracking-wide">
+  {todayLabel}
+</p>
+```
+
+### Notes
+- `useState`/`useEffect` were already imported at the top of the file, so no import changes were needed.
+- The first client paint renders an empty string, which matches the server's empty string, so React is satisfied; the date then populates immediately after mount.
+- Left the `HeroMetric` mini-bar chart (`Math.random()` heights, `i === new Date().getHours()` highlight) alone — that whole subtree is gated behind `if (isLoading || !stats)`, so it only renders after the React Query result resolves (i.e. strictly client-side after mount), so it cannot cause an SSR/hydration mismatch.
+- Quality gates: `tsc --noEmit` clean, prettier clean on edited file.

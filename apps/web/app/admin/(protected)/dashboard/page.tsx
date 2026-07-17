@@ -595,6 +595,22 @@ export default function AdminDashboardPage() {
     queryFn: () => getAdminSDK().listUsers({ limit: 6 }),
   });
 
+  // Format the date only on the client after mount. Computing `new Date()`
+  // during render causes a hydration mismatch when the server and client
+  // disagree on the date (different timezone or a midnight rollover between
+  // SSR and hydration). Empty string on first render matches the server.
+  const [todayLabel, setTodayLabel] = useState("");
+  useEffect(() => {
+    setTodayLabel(
+      new Date().toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      }),
+    );
+  }, []);
+
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -631,12 +647,7 @@ export default function AdminDashboardPage() {
             </span>
           </div>
           <p className="text-[12px] text-[var(--admin-text-dim)] font-mono tracking-wide">
-            {new Date().toLocaleDateString("en-US", {
-              weekday: "long",
-              month: "long",
-              day: "numeric",
-              year: "numeric",
-            })}
+            {todayLabel}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -709,10 +720,7 @@ export default function AdminDashboardPage() {
       {/* ── Row 4: Activity + Commands ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
-          <ActivityFeed
-            usersData={usersData?.data}
-            isLoading={usersLoading}
-          />
+          <ActivityFeed usersData={usersData?.data} isLoading={usersLoading} />
         </div>
         <div>
           <QuickCommands />
