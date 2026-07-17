@@ -339,8 +339,12 @@ func (s *AdminService) EnsureBuiltinProviders(ctx context.Context) {
 			continue
 		}
 		displayName := name
-		if len(displayName) > 0 {
-			displayName = string(displayName[0]-32) + displayName[1:]
+		if c := displayName[0]; c >= 'a' && c <= 'z' {
+			// ASCII-lowercase first letter: capitalize it. Only subtract 32
+			// in the lowercase range — the old `displayName[0]-32` cast
+			// produced garbage runes for names already uppercase, numeric, or
+			// multi-byte (e.g. "1provider", "OpenAI").
+			displayName = string(c-32) + displayName[1:]
 		}
 		p := &domain.Provider{
 			ID:           domain.NewID(),
@@ -467,18 +471,16 @@ func (s *AdminService) CreateProviderFull(ctx context.Context, p *domain.Provide
 		p.ProviderType = "openai"
 	}
 
-	if err := s.providerRepo.Create(ctx, p); err != nil {
-		return err
-	}
-
-	// Store API key if provided (hash for display + encrypted ciphertext for restart).
+	// Pre-derive the key material before opening the transaction so a cipher
+	// failure doesn't leave a half-open DB transaction.
+	var key *domain.ProviderKey
 	if apiKey != "" {
 		prefix, lastFour, hash := deriveKeyParts(apiKey)
 		enc, err := s.encryptProviderKey(apiKey)
 		if err != nil {
 			return fmt.Errorf("encrypt api key: %w", err)
 		}
-		k := &domain.ProviderKey{
+		key = &domain.ProviderKey{
 			ID:           domain.NewID(),
 			ProviderID:   p.ID,
 			Label:        "primary",
@@ -489,13 +491,9 @@ func (s *AdminService) CreateProviderFull(ctx context.Context, p *domain.Provide
 			IsActive:     true,
 			Strategy:     domain.KeyStrategyRoundRobin,
 		}
-		if err := s.providerRepo.CreateKey(ctx, k); err != nil {
-			return fmt.Errorf("store api key: %w", err)
-		}
-		s.storeRawKey(k.ID, apiKey)
 	}
 
-	// Store models if provided
+	// Assign IDs + defaults to models up front so the transaction only does writes.
 	for i := range models {
 		if models[i].ID == "" {
 			models[i].ID = domain.NewID()
@@ -504,10 +502,40 @@ func (s *AdminService) CreateProviderFull(ctx context.Context, p *domain.Provide
 		if models[i].Status == "" {
 			models[i].Status = domain.ModelStatusActive
 		}
-		if err := s.modelRepo.CreateModel(ctx, &models[i]); err != nil {
+	}
+
+	// Atomic write: provider + key + models commit together. If any step fails
+	// the whole thing rolls back instead of orphaning a provider row with no key
+	// (the previous non-transactional path left partial state on failure).
+	tx, err := s.providerRepo.DB().Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback(ctx) // safe no-op after Commit
+
+	if err := s.providerRepo.CreateTx(ctx, tx, p); err != nil {
+		return err
+	}
+	if key != nil {
+		if err := s.providerRepo.CreateKeyTx(ctx, tx, key); err != nil {
+			return err
+		}
+	}
+	for i := range models {
+		if err := s.modelRepo.CreateModelTx(ctx, tx, &models[i]); err != nil {
 			return fmt.Errorf("store model %s: %w", models[i].ModelID, err)
 		}
 	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit provider: %w", err)
+	}
+
+	// Post-commit side effects: caches + in-memory key store + runtime.
+	// These are not rolled back with the DB tx, so only run after success.
+	if key != nil {
+		s.storeRawKey(key.ID, apiKey)
+	}
+	s.providerRepo.InvalidateProviderCaches(ctx, p.ID)
 
 	// Register with LLM runtime
 	if s.llmRegistry != nil && p.BaseURL != "" {

@@ -7259,3 +7259,122 @@ func (s *AdminService) SyncRuntimeFromRegistry() { /* reconcile all subsystems w
 - Quality gates: `go vet ./internal/service/... ./pkg/llm/router/... ./cmd/api/...` clean,
   `go build ./...` clean, `go test ./pkg/llm/router/... ./pkg/llm/provider/... ./internal/service/... ./internal/handler/...` green,
   `bash scripts/smoke-test.sh` PASSED (25/25).
+
+## [68]. Fix provider-add atomicity, missing PUT messages route, SQLite seed gaps, capitalize bug
+
+**Session**: provider-audit-fixes
+**Date**: 2026-07-17 21:10
+
+### Why
+
+The audit pass found four classes of broken/missing logic in the admin provider + DB layer:
+
+1. `CreateProviderFull` wrote provider → key → models as **separate non-transactional
+   inserts**. If a later step (e.g. a model INSERT hitting `model_id` UNIQUE) failed,
+   the provider row was left orphaned in the DB with no key and no models — and the
+   runtime had already been told nothing, so the admin saw a half-created provider.
+2. The frontend SDK calls `PUT /api/admin/messages/{id}` (admin-sdk `updateMessage`),
+   but the backend registered no PUT route on `/api/admin/messages/{id}` and had no
+   `AdminUpdateMessage` handler — so editing an admin message 404/405'd.
+3. SQLite (`DB_TYPE=sqlite`) `autoMigrateSQLite` never reads `migrations/*.sql`, so the
+   migration-file seed data — `rate_limit_tiers` (009), RBAC `permissions` +
+   `role_permissions` (008), `system_settings` (019) — was silently absent in SQLite.
+   `RequirePermission("providers.write")` couldn't resolve for the seeded admin, and
+   `/api/admin/rate-limits/tiers` returned an empty list.
+4. `EnsureBuiltinProviders` capitalized a provider display name with
+   `string(displayName[0]-32)` — correct only for ASCII lowercase first letters; it
+   produced garbage runes for names that were already uppercase, numeric, or
+   multi-byte (e.g. `1provider` → control char, `OpenAI` → `\x8fpenAI`).
+
+### Files Changed
+
+| File                                                | Lines       | Change Type |
+| --------------------------------------------------- | ----------- | ----------- |
+| apps/backend/internal/service/admin.go              | L325-360, L461-545 | modified |
+| apps/backend/internal/repository/admin_provider_repo.go | L20-46 | modified |
+| apps/backend/internal/repository/admin_model_repo.go | L136-176 | modified |
+| apps/backend/internal/handler/admin_messages.go     | L178-245 | modified |
+| apps/backend/cmd/api/routes.go                      | L382 | modified |
+| apps/backend/internal/db/lite_schema.go             | L1157-1230 | modified |
+
+### Before
+
+```go
+// admin.go — CreateProviderFull (no transaction; orphans on partial failure)
+if err := s.providerRepo.Create(ctx, p); err != nil { return err }
+if apiKey != "" {
+	...
+	if err := s.providerRepo.CreateKey(ctx, k); err != nil { return ... }
+	s.storeRawKey(k.ID, apiKey)
+}
+for i := range models {
+	...
+	if err := s.modelRepo.CreateModel(ctx, &models[i]); err != nil { return ... }
+}
+```
+
+```go
+// admin.go — EnsureBuiltinProviders (unsafe capitalize)
+displayName = string(displayName[0]-32) + displayName[1:]
+```
+
+```go
+// routes.go — no PUT on messages/{id}
+r.Post("/api/admin/messages", appmiddleware.RequireAdmin(h.AdminCreateMessage))
+r.Delete("/api/admin/messages/{id}", appmiddleware.RequireAdmin(h.AdminDeleteMessage))
+// (PUT /api/admin/messages/{id} unregistered → 404/405)
+```
+
+```go
+// lite_schema.go — LiteSeedDefaults stopped after credit_transactions;
+// rate_limit_tiers / permissions / role_permissions / system_settings never seeded
+```
+
+### After
+
+```go
+// admin.go — CreateProviderFull is now transactional (provider + key + models)
+tx, err := s.providerRepo.DB().Begin(ctx)
+if err != nil { return fmt.Errorf("begin tx: %w", err) }
+defer tx.Rollback(ctx)
+if err := s.providerRepo.CreateTx(ctx, tx, p); err != nil { return err }
+if key != nil { if err := s.providerRepo.CreateKeyTx(ctx, tx, key); err != nil { return err } }
+for i := range models {
+	if err := s.modelRepo.CreateModelTx(ctx, tx, &models[i]); err != nil { return fmt.Errorf("store model %s: %w", ...) }
+}
+if err := tx.Commit(ctx); err != nil { return fmt.Errorf("commit provider: %w", err) }
+// post-commit: storeRawKey, InvalidateProviderCaches, registerProviderRuntime, SyncModelRegistryOverlay
+```
+
+```go
+// admin.go — EnsureBuiltinProviders (only lowercase ASCII first letters shift)
+if c := displayName[0]; c >= 'a' && c <= 'z' {
+	displayName = string(c-32) + displayName[1:]
+}
+```
+
+```go
+// routes.go — PUT messages route + AdminUpdateMessage handler
+r.Put("/api/admin/messages/{id}", appmiddleware.RequireAdmin(h.AdminUpdateMessage))
+```
+
+```go
+// lite_schema.go — LiteSeedDefaults now seeds (SQLite parity with migrations 008/009/019):
+//   rate_limit_tiers (free/starter/pro/enterprise),
+//   permissions + role_permissions (superadmin gets all),
+//   admin_role_permissions (superadmin = ["*"]),
+//   system_settings (docs_base_url=/docs)
+```
+
+### Notes
+
+- New repo helpers `CreateTx`/`CreateKeyTx` (provider repo) and `CreateModelTx`
+  (model repo) + `AdminProviderRepo.DB()`/`InvalidateProviderCaches` let the service
+  open one tx that spans all three tables. The non-tx `Create`/`CreateKey`/`CreateModel`
+  are unchanged for other callers (AddProviderKeyRaw, CreateModel, etc.).
+- Cache invalidation moved to post-commit so a rolled-back tx never poisons the cache.
+- RBAC seed uses the existing `permissions(role, permission_name)` /
+  `admin_role_permissions(role, permissions)` lite tables (no `roles` table exists in
+  lite — the old draft referenced one that doesn't exist; corrected to match lite schema).
+- Quality gates: `go vet` clean, `go build ./...` clean, `go test` on
+  service/handler/repository/db/router green, `smoke-test.sh` 25/25.

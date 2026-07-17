@@ -21,6 +21,20 @@ func NewAdminProviderRepo(d *db.DB) *AdminProviderRepo {
 	return &AdminProviderRepo{db: d}
 }
 
+// DB exposes the underlying *db.DB so the service layer can open a transaction
+// that spans provider + key + model writes (see CreateProviderFull).
+func (r *AdminProviderRepo) DB() *db.DB { return r.db }
+
+// InvalidateProviderCaches clears the single-provider and list caches. Called
+// by the service after a transactional multi-row write commits.
+func (r *AdminProviderRepo) InvalidateProviderCaches(ctx context.Context, id string) {
+	if r.cache == nil {
+		return
+	}
+	_ = r.cache.Delete(ctx, providerCacheKey(id))
+	_ = r.cache.Delete(ctx, providerListCacheKey())
+}
+
 func (r *AdminProviderRepo) SetCache(c RepoCache, ttl time.Duration) {
 	r.cache = c
 	r.ttl = ttl
@@ -39,6 +53,39 @@ func (r *AdminProviderRepo) Create(ctx context.Context, p *domain.Provider) erro
 		p.RateLimitRPM, p.RateLimitTPM, p.Metadata)
 	if err != nil {
 		return fmt.Errorf("create provider: %w", err)
+	}
+	return nil
+}
+
+// CreateTx inserts a provider within an existing transaction so callers can
+// keep multi-row writes (provider + key + models) atomic. Cache invalidation
+// is the caller's responsibility — the whole transaction either commits or
+// rolls back together.
+func (r *AdminProviderRepo) CreateTx(ctx context.Context, tx db.Tx, p *domain.Provider) error {
+	if _, err := tx.Exec(ctx, `
+		INSERT INTO providers (id, name, display_name, provider_type, base_url, status, priority,
+			timeout_ms, circuit_breaker_enabled, circuit_breaker_threshold,
+			circuit_breaker_recovery_ms, circuit_breaker_half_open_max, max_retries,
+			rate_limit_rpm, rate_limit_tpm, metadata)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
+		p.ID, p.Name, p.DisplayName, p.ProviderType, p.BaseURL, p.Status, p.Priority,
+		p.TimeoutMS, p.CircuitBreakerEnabled, p.CircuitBreakerThreshold,
+		p.CircuitBreakerRecoveryMS, p.CircuitBreakerHalfOpenMax, p.MaxRetries,
+		p.RateLimitRPM, p.RateLimitTPM, p.Metadata); err != nil {
+		return fmt.Errorf("create provider: %w", err)
+	}
+	return nil
+}
+
+// CreateKeyTx inserts a provider key within an existing transaction.
+func (r *AdminProviderRepo) CreateKeyTx(ctx context.Context, tx db.Tx, k *domain.ProviderKey) error {
+	if _, err := tx.Exec(ctx, `
+		INSERT INTO provider_keys (id, provider_id, label, key_prefix, key_hash, key_last_four,
+			encrypted_key, strategy, weight, sort_order, rpm_limit, tpm_limit, monthly_quota, is_active)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+		k.ID, k.ProviderID, k.Label, k.KeyPrefix, k.KeyHash, k.KeyLastFour, k.EncryptedKey,
+		k.Strategy, k.Weight, k.SortOrder, k.RPMLimit, k.TPMLimit, k.MonthlyQuota, k.IsActive); err != nil {
+		return fmt.Errorf("create provider key: %w", err)
 	}
 	return nil
 }

@@ -185,6 +185,66 @@ func (h *Handler) AdminDeleteMessage(w http.ResponseWriter, r *http.Request) {
 	response.OK(w, map[string]bool{"deleted": true})
 }
 
+// AdminUpdateMessage updates an existing admin message's editable fields
+// (title, body, priority, target_type, target_ids, expires_at). Sent-by and
+// sent_at are preserved. The frontend SDK calls PUT /api/admin/messages/{id}
+// which previously had no backend route (404/405).
+func (h *Handler) AdminUpdateMessage(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	if id == "" {
+		response.Error(w, 400, "message id is required")
+		return
+	}
+
+	var req AdminMessageRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.Error(w, 400, "invalid JSON body")
+		return
+	}
+	if req.Title == "" {
+		response.Error(w, 400, "title is required")
+		return
+	}
+	if req.Body == "" {
+		response.Error(w, 400, "body is required")
+		return
+	}
+	if req.TargetType == "" {
+		req.TargetType = "all"
+	}
+	if req.Priority == "" {
+		req.Priority = "normal"
+	}
+	if req.TargetIds == nil {
+		req.TargetIds = []string{}
+	}
+
+	var expiresAt *time.Time
+	if req.ExpiresAt != nil && *req.ExpiresAt != "" {
+		t, err := time.Parse(time.RFC3339, *req.ExpiresAt)
+		if err != nil {
+			response.Error(w, 400, "invalid expiresAt format, use RFC3339")
+			return
+		}
+		expiresAt = &t
+	}
+
+	tag, err := h.db.Exec(r.Context(), `
+		UPDATE admin_messages
+		SET title = $2, body = $3, priority = $4, target_type = $5, target_ids = $6, expires_at = $7
+		WHERE id = $1`,
+		id, req.Title, req.Body, req.Priority, req.TargetType, req.TargetIds, expiresAt)
+	if err != nil {
+		response.Error(w, 500, "failed to update message")
+		return
+	}
+	if tag.RowsAffected() == 0 {
+		response.Error(w, 404, "message not found")
+		return
+	}
+	response.OK(w, map[string]bool{"updated": true})
+}
+
 func (h *Handler) AdminGetMessageStats(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 

@@ -1175,6 +1175,68 @@ func LiteSeedDefaults(ctx context.Context, sdb *sql.DB) error {
 		}
 	}
 
+	// Rate-limit tiers (mirrors migrations/009_rate_limits.sql seed). Skipped
+	// previously in SQLite because autoMigrateSQLite never reads migrations/*.sql.
+	tiers := []struct {
+		id, name                           string
+		rpm, tpm, rpd, concurrent, monthly int64
+	}{
+		{uuid.NewString(), "free", 20, 10000, 1000, 1, 0},
+		{uuid.NewString(), "starter", 60, 100000, 10000, 5, 0},
+		{uuid.NewString(), "pro", 200, 500000, 100000, 20, 0},
+		{uuid.NewString(), "enterprise", 1000, 5000000, 1000000, 100, 0},
+	}
+	for _, t := range tiers {
+		if _, err := sdb.ExecContext(ctx,
+			`INSERT INTO rate_limit_tiers (id, name, rpm, tpm, rpd, concurrent, monthly_budget)
+			 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			t.id, t.name, t.rpm, t.tpm, t.rpd, t.concurrent, t.monthly,
+		); err != nil {
+			return fmt.Errorf("insert rate_limit_tier %s: %w", t.name, err)
+		}
+	}
+
+	// RBAC permissions + the superadmin role mapping (mirrors
+	// migrations/008_rbac.sql). Without these, RequirePermission("providers.write")
+	// etc. can't resolve for the seeded admin in SQLite mode.
+	permissions := []string{
+		"users.read", "users.write",
+		"providers.read", "providers.write",
+		"models.read", "models.write",
+		"billing.read", "billing.write",
+		"settings.read", "settings.write",
+		"audit.read",
+		"superadmin",
+	}
+	for _, p := range permissions {
+		if _, err := sdb.ExecContext(ctx,
+			`INSERT OR IGNORE INTO permissions (name, resource, action) VALUES (?, '', '')`, p,
+		); err != nil {
+			return fmt.Errorf("insert permission %s: %w", p, err)
+		}
+	}
+	// Grant every permission to the superadmin role via role_permissions.
+	for _, p := range permissions {
+		if _, err := sdb.ExecContext(ctx,
+			`INSERT OR IGNORE INTO role_permissions (role, permission_name) VALUES ('superadmin', ?)`, p,
+		); err != nil {
+			return fmt.Errorf("insert role_permission %s: %w", p, err)
+		}
+	}
+	// admin_role_permissions stores the wildcard permission set for the role.
+	if _, err := sdb.ExecContext(ctx,
+		`INSERT OR IGNORE INTO admin_role_permissions (role, permissions) VALUES ('superadmin', '["*"]')`,
+	); err != nil {
+		return fmt.Errorf("insert admin_role_permission: %w", err)
+	}
+
+	// System settings base (mirrors migrations/019_docs_base_url.sql).
+	if _, err := sdb.ExecContext(ctx,
+		`INSERT OR IGNORE INTO system_settings (key, value) VALUES ('docs_base_url', '/docs')`,
+	); err != nil {
+		return fmt.Errorf("insert system_settings: %w", err)
+	}
+
 	logger.Info("lite_seed_complete")
 	return nil
 }

@@ -156,6 +156,28 @@ func (r *AdminModelRepo) CreateModel(ctx context.Context, m *domain.ModelRegistr
 	return nil
 }
 
+// CreateModelTx inserts a model within an existing transaction. Used by
+// CreateProviderFull so the provider + key + all models commit atomically.
+// Cache invalidation is deferred to the caller after commit.
+func (r *AdminModelRepo) CreateModelTx(ctx context.Context, tx db.Tx, m *domain.ModelRegistry) error {
+	if m.RoutingWeight == 0 {
+		m.RoutingWeight = 1
+	}
+	if _, err := tx.Exec(ctx, `
+		INSERT INTO model_registry (id, model_id, provider_id, display_name, description,
+			context_window, max_output, input_price_per_1k, output_price_per_1k,
+			capabilities, supports_vision, supports_tools, supports_thinking, status,
+			model_group, fallback_models, credential_name, routing_weight, is_wildcard)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
+		m.ID, m.ModelID, m.ProviderID, m.DisplayName, m.Description,
+		m.ContextWindow, m.MaxOutput, m.InputPricePer1k, m.OutputPricePer1k,
+		r.db.EncodeStringSlice(m.Capabilities), m.SupportsVision, m.SupportsTools, m.SupportsThinking, m.Status,
+		m.ModelGroup, m.FallbackModels, m.CredentialName, m.RoutingWeight, m.IsWildcard); err != nil {
+		return fmt.Errorf("create model: %w", err)
+	}
+	return nil
+}
+
 func (r *AdminModelRepo) UpdateModel(ctx context.Context, m *domain.ModelRegistry) error {
 	_, err := r.db.Exec(ctx, `
 		UPDATE model_registry SET display_name=$2, description=$3, context_window=$4, max_output=$5,

@@ -378,6 +378,7 @@ func registerRoutes(
 		r.Get("/api/admin/messages", appmiddleware.RequireAdmin(h.AdminListMessages))
 		r.Get("/api/admin/messages/{id}", appmiddleware.RequireAdmin(h.AdminGetMessage))
 		r.Post("/api/admin/messages", appmiddleware.RequireAdmin(h.AdminCreateMessage))
+		r.Put("/api/admin/messages/{id}", appmiddleware.RequireAdmin(h.AdminUpdateMessage))
 		r.Delete("/api/admin/messages/{id}", appmiddleware.RequireAdmin(h.AdminDeleteMessage))
 		r.Get("/api/admin/messages/{id}/stats", appmiddleware.RequireAdmin(h.AdminGetMessageStats))
 
