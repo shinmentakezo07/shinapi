@@ -6649,3 +6649,66 @@ m.InputPricePer1k, m.OutputPricePer1k, r.db.EncodeStringSlice(m.Capabilities),
 - Read paths unchanged. `Scan(..., &m.Capabilities, ...)` works on Postgres (pgx native TEXT[] → []string) and on SQLite (JSON parser in `sqlite_querier.assign` *[]string case).
 - MongoDB mode is not exercised by admin/providers today; helper silently returns `pgtype.FlatArray[string]` for it, which would behave like the [61] wrap if reached. Out of scope.
 - Quality gates: `go vet ./...` clean, `gofmt -l` clean, `go build ./...` clean.
+
+## [63]. Standalone AdminCreateModel: assign PK + status when missing
+
+**Session**: `fix-admin-create-model-pk-2026-07-17`
+**Date**: 2026-07-17 12:36
+
+### Why
+After restarting `make dev` to pick up [62], the first `POST /api/admin/models` succeeded; the second crashed with:
+
+```
+admin_create_model_failed: create model: constraint failed:
+  UNIQUE constraint failed: model_registry.id (1555)
+```
+
+The handler in `internal/handler/admin_models.go:21` decodes the request body straight into `domain.ModelRegistry` and calls `service.CreateModel`. The frontend `ModelForm` never sends `id`, so the PK came through as `""`. SQLite (and Postgres) accept the first empty-string insert, then fail on the next one with the UNIQUE-violation.
+
+The provider-bulk path in `internal/service/admin.go:391-398` already defends against this — `models[i].ID = domain.NewID()` runs if `id == ""` — but the standalone `CreateModel` service (line 630-637) was missing the same guard. Same goes for a missing `Status`, which would surface later as a NOT NULL or default-mismatch on a different backend.
+
+Applied the equivalent guard in service `CreateModel`. Domain field `ID` and `Status` get sensible defaults before the INSERT, so the frontend may keep omitting them.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/backend/internal/service/admin.go | L630-647 | modified (assigns fallback `ID` and `Status` before INSERT) |
+
+### Before
+```go
+func (s *AdminService) CreateModel(ctx context.Context, m *domain.ModelRegistry) error {
+    if err := s.modelRepo.CreateModel(ctx, m); err != nil {
+        return err
+    }
+    s.SyncModelRegistryOverlay(ctx)
+    s.refreshProviderModels(ctx, m.ProviderID)
+    return nil
+}
+```
+
+### After
+```go
+func (s *AdminService) CreateModel(ctx context.Context, m *domain.ModelRegistry) error {
+    // Mirrors the provider-bulk path (admin.go:391) — clients always submit
+    // without an `id`; assigning the primary key here keeps the PK UNIQUE
+    // invariant on the second-create UNIQUE-constraint failure that
+    // SQLite exhibits on `""` (and Postgres on the same repeated key).
+    if m.ID == "" {
+        m.ID = domain.NewID()
+    }
+    if m.Status == "" {
+        m.Status = domain.ModelStatusActive
+    }
+    if err := s.modelRepo.CreateModel(ctx, m); err != nil {
+        return err
+    }
+    s.SyncModelRegistryOverlay(ctx)
+    s.refreshProviderModels(ctx, m.ProviderID)
+    return nil
+}
+```
+
+### Notes
+- Independent diagnosis from the same session: `llm_provider_error: 403 Authorization failed` on provider `shin` model `openai/gpt-oss-120b` is upstream — NVIDIA NIM refused the request, not a code bug. Either the key lacks entitlement for that model, or the model ID needs the NVIDIA-specific translation (e.g. `meta/llama-3.1-70b-instruct` → the canonical NVIDIA ID). No backend change recommended for that log line.
+- Quality gates: `go vet ./...` clean, `gofmt -l` clean, `go build ./...` clean.

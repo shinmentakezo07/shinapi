@@ -628,6 +628,16 @@ func (s *AdminService) GetModel(ctx context.Context, id string) (*domain.ModelRe
 }
 
 func (s *AdminService) CreateModel(ctx context.Context, m *domain.ModelRegistry) error {
+	// Mirrors the provider-bulk path (admin.go:391) — clients always submit
+	// without an `id`; assigning the primary key here keeps the PK UNIQUE
+	// invariant on the second-create UNIQUE-constraint failure that
+	// SQLite exhibits on `""` (and Postgres on the same repeated key).
+	if m.ID == "" {
+		m.ID = domain.NewID()
+	}
+	if m.Status == "" {
+		m.Status = domain.ModelStatusActive
+	}
 	if err := s.modelRepo.CreateModel(ctx, m); err != nil {
 		return err
 	}
