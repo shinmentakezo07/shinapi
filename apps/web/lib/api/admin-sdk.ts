@@ -155,6 +155,14 @@ export class AdminSDK {
     await this.api.adminDeleteProviderKey(providerId, keyId);
   }
 
+  async setProviderKeyStatus(
+    providerId: string,
+    keyId: string,
+    isActive: boolean,
+  ): Promise<void> {
+    await this.api.adminSetProviderKeyStatus(providerId, keyId, isActive);
+  }
+
   async reorderProviderKeys(
     providerId: string,
     keyIds: string[],
@@ -393,7 +401,11 @@ export class AdminSDK {
     page?: number,
     limit?: number,
   ): Promise<PaginatedResult<UsageRecord>> {
-    return this.api.adminListUserUsage(userId, page, limit) as unknown as PaginatedResult<UsageRecord>;
+    return this.api.adminListUserUsage(
+      userId,
+      page,
+      limit,
+    ) as unknown as PaginatedResult<UsageRecord>;
   }
 
   async listIPAccessLogs(params?: {

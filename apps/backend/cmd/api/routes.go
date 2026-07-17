@@ -337,6 +337,7 @@ func registerRoutes(
 		r.Get("/api/admin/providers/{id}/keys", appmiddleware.RequireAdmin(h.AdminListProviderKeys))
 		r.Post("/api/admin/providers/{id}/keys", appmiddleware.RequirePermission("providers.write")(h.AdminAddProviderKey))
 		r.Delete("/api/admin/providers/{id}/keys/{keyId}", appmiddleware.RequirePermission("providers.write")(h.AdminDeleteProviderKey))
+		r.Patch("/api/admin/providers/{id}/keys/{keyId}", appmiddleware.RequirePermission("providers.write")(h.AdminSetKeyStatus))
 		r.Put("/api/admin/providers/{id}/keys/reorder", appmiddleware.RequirePermission("providers.write")(h.AdminReorderProviderKeys))
 		r.Delete("/api/admin/providers/{id}", appmiddleware.RequirePermission("providers.write")(h.AdminDeleteProvider))
 

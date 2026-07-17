@@ -6712,3 +6712,133 @@ func (s *AdminService) CreateModel(ctx context.Context, m *domain.ModelRegistry)
 ### Notes
 - Independent diagnosis from the same session: `llm_provider_error: 403 Authorization failed` on provider `shin` model `openai/gpt-oss-120b` is upstream — NVIDIA NIM refused the request, not a code bug. Either the key lacks entitlement for that model, or the model ID needs the NVIDIA-specific translation (e.g. `meta/llama-3.1-70b-instruct` → the canonical NVIDIA ID). No backend change recommended for that log line.
 - Quality gates: `go vet ./...` clean, `gofmt -l` clean, `go build ./...` clean.
+
+## [64]. Add model ID search to admin providers fetch-models flows
+
+**Session**: `admin-provider-model-search-2026-07-17`
+**Date**: 2026-07-17 13:00
+
+### Why
+After fetching models from a provider's `/v1/models` endpoint (both in the Add Provider form and the per-provider "Models" panel), the model ID table had no way to filter/search. Providers like OpenRouter return hundreds of models, making it tedious to locate specific model IDs by eye. A real-time search box lets the admin narrow the list, with Select All scoped to the filtered set.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/app/admin/(protected)/providers/page.tsx | L278-282 | added `modelSearch` state + `filteredModels` in `FetchModelsPanel` |
+| apps/web/app/admin/(protected)/providers/page.tsx | L339-350 | rewrote `toggleAll` to operate on filtered models |
+| apps/web/app/admin/(protected)/providers/page.tsx | L418-486 | added search input + empty-state row + filtered model rows in `FetchModelsPanel` table |
+| apps/web/app/admin/(protected)/providers/page.tsx | L813-817 | added `modelSearch` state + `filteredFetchedModels` in Add Provider form |
+| apps/web/app/admin/(protected)/providers/page.tsx | L859-871 | rewrote `toggleAllModels` to operate on filtered models |
+| apps/web/app/admin/(protected)/providers/page.tsx | L923 | clear `modelSearch` in `resetForm` |
+| apps/web/app/admin/(protected)/providers/page.tsx | L1094-1162 | added search input + empty-state row + filtered model rows in Add Provider form table |
+
+### Before
+```tsx
+// FetchModelsPanel — no search state, toggleAll selected everything
+const toggleAll = () => {
+  if (selectedIds.size === models.length) {
+    setSelectedIds(new Set());
+  } else {
+    setSelectedIds(new Set(models.map((m) => m.id)));
+  }
+};
+// ... table rendered models.map((m) => ...) with no filter input
+```
+
+### After
+```tsx
+// FetchModelsPanel — search state + filtered list
+const [modelSearch, setModelSearch] = useState("");
+const filteredModels = models.filter((m) =>
+  m.id.toLowerCase().includes(modelSearch.toLowerCase()),
+);
+
+const toggleAll = () => {
+  if (
+    filteredModels.length > 0 &&
+    filteredModels.every((m) => selectedIds.has(m.id))
+  ) {
+    const next = new Set(selectedIds);
+    for (const m of filteredModels) next.delete(m.id);
+    setSelectedIds(next);
+  } else {
+    const next = new Set(selectedIds);
+    for (const m of filteredModels) next.add(m.id);
+    setSelectedIds(next);
+  }
+};
+// ... search input added above the table, table renders filteredModels.map((m) => ...)
+```
+
+### Notes
+- Identical treatment applied to the Add Provider form's fetched-models table (`filteredFetchedModels`) so both entry points have consistent search UX.
+- Select All now scopes to the visible/filtered set rather than the full list, so searching + Select All only selects matching models.
+- No backend changes: filtering is client-side only on the already-fetched model list.
+- Quality gates: `tsc --noEmit` clean for `providers/page.tsx` (pre-existing errors in unrelated files only); `Search` icon already imported from `lucide-react`.
+
+
+## [64]. Per-key enable/disable in admin/providers
+
+**Session**: `fix-admin-provider-key-toggle-2026-07-17`
+**Date**: 2026-07-17 12:44
+
+### Why
+The keys table in `/admin/providers` showed a `Status` column but the `Actions` cell only had Delete. The DB column `provider_keys.is_active` was never reachable from the UI — the existing endpoints (`AdminListProviderKeys`, `AdminAddProviderKey`, `AdminDeleteProviderKey`, `AdminReorderProviderKeys`) don't expose a status toggle, and `repo.UpdateKey` requires every field, so toggling would force the client to round-trip encrypted secrets to write a single boolean.
+
+Added the missing toggle end-to-end so a fresh key (auto-set to `is_active=true` on add) can be flipped from the UI without touching the key material itself.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/backend/internal/repository/admin_provider_repo.go | L218-243 | created (`SetKeyStatus`: targeted UPDATE for `is_active` keyed by `provider_id+key_id` so admins can't toggle keys in another provider's namespace) |
+| apps/backend/internal/service/admin.go | L616-633 | created (`AdminService.SetKeyStatus`: wraps repo + calls `refreshProviderModels` so LLM load-balancer pickups up the new active set in the same request) |
+| apps/backend/internal/handler/admin_providers.go | L244-259 | created (`AdminSetKeyStatus` handler, decodes `{isActive}` body) |
+| apps/backend/cmd/api/routes.go | L340 | modified (registered `PATCH /api/admin/providers/{id}/keys/{keyId}` under `providers.write`) |
+| apps/web/lib/api/sdk.ts | L1718-1730 | created (`adminSetProviderKeyStatus` PATCH wrapper) |
+| apps/web/lib/api/admin-sdk.ts | L158-168 | created (`setProviderKeyStatus` admin-sdk wrapper) |
+| apps/web/app/admin/(protected)/providers/page.tsx | L92-100, L239-265, L36 | modified (added `toggleKey` mutation + Power-icon button with disabled/enabled colour + `Power` lucide import) |
+
+### Before
+```tsx
+// apps/web/app/admin/(protected)/providers/page.tsx actions cell
+<button onClick={() => { if (confirm("Delete this key?")) deleteKey.mutate(key.id); }}>
+  <Trash2 className="h-3 w-3" />
+</button>
+
+// backend routes.go (no status PATCH)
+r.Delete("/api/admin/providers/{id}/keys/{keyId}", ...)
+r.Put   ("/api/admin/providers/{id}/keys/reorder", ...)
+```
+
+### After
+```tsx
+// actions cell
+<div className="inline-flex items-center gap-2 justify-end">
+  <button onClick={() => toggleKey.mutate(key)}
+          className={cn(
+            "transition-colors disabled:opacity-30",
+            key.isActive ? "text-emerald-400/60 hover:text-amber-400"
+                         : "text-[var(--admin-text-dim)] hover:text-emerald-400",
+          )}
+          aria-label={key.isActive ? "Disable key" : "Enable key"}>
+    <Power className="h-3 w-3" />
+  </button>
+  <button onClick={() => { if (confirm("Delete this key?")) deleteKey.mutate(key.id); }}>
+    <Trash2 className="h-3 w-3" />
+  </button>
+</div>
+
+// backend routes.go
+r.Delete("/api/admin/providers/{id}/keys/{keyId}", ...)
+r.Patch ("/api/admin/providers/{id}/keys/{keyId}",
+         appmiddleware.RequirePermission("providers.write")(h.AdminSetKeyStatus))
+r.Put   ("/api/admin/providers/{id}/keys/reorder", ...)
+```
+
+### Notes
+- The repo's SetKeyStatus includes `provider_id` in its WHERE clause so an admin request that targets a key from a *different* provider surfaces `key not found: <keyId>` instead of silently mutating the wrong row.
+- `service.SetKeyStatus` calls `refreshProviderModels` so the LLM gateway drops / re-adds the key in its load-balancer in the same request — without it, an enable-from-UI could land in the DB but the gateway would still be using the stale in-memory active list until the next health check.
+- `repo.UpdateKey` is left as-is — it covers full replacements (label/strategy/weight/etc) but is awkwardly wired to demand every column for a single-boolean change, which is why we needed the targeted SetKeyStatus instead.
+- Quality gates: `go vet ./...` clean, `gofmt -l` clean, `go build ./...` clean, `tsc --noEmit` clean, prettier clean on edited files.

@@ -31,6 +31,7 @@ import {
   Key,
   CheckSquare,
   Square,
+  Power,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -79,6 +80,15 @@ function ProviderKeysPanel({ providerId }: { providerId: string }) {
   const deleteKey = useMutation({
     mutationFn: (keyId: string) =>
       getAdminSDK().deleteProviderKey(providerId, keyId),
+    onSuccess: () => {
+      loadKeys();
+      queryClient.invalidateQueries({ queryKey: ["admin", "providers"] });
+    },
+  });
+
+  const toggleKey = useMutation({
+    mutationFn: (key: { id: string; isActive: boolean }) =>
+      getAdminSDK().setProviderKeyStatus(providerId, key.id, !key.isActive),
     onSuccess: () => {
       loadKeys();
       queryClient.invalidateQueries({ queryKey: ["admin", "providers"] });
@@ -231,16 +241,32 @@ function ProviderKeysPanel({ providerId }: { providerId: string }) {
                     </span>
                   </td>
                   <td className="py-1.5 text-right">
-                    <button
-                      onClick={() => {
-                        if (confirm("Delete this key?"))
-                          deleteKey.mutate(key.id);
-                      }}
-                      className="text-red-400/50 hover:text-red-400 transition-colors"
-                      aria-label="Delete key"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
+                    <div className="inline-flex items-center gap-2 justify-end">
+                      <button
+                        onClick={() => toggleKey.mutate(key)}
+                        disabled={toggleKey.isPending}
+                        className={cn(
+                          "transition-colors disabled:opacity-30",
+                          key.isActive
+                            ? "text-emerald-400/60 hover:text-amber-400"
+                            : "text-[var(--admin-text-dim)] hover:text-emerald-400",
+                        )}
+                        aria-label={key.isActive ? "Disable key" : "Enable key"}
+                        title={key.isActive ? "Disable key" : "Enable key"}
+                      >
+                        <Power className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm("Delete this key?"))
+                            deleteKey.mutate(key.id);
+                        }}
+                        className="text-red-400/50 hover:text-red-400 transition-colors"
+                        aria-label="Delete key"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

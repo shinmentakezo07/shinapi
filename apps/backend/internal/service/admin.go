@@ -613,6 +613,19 @@ func (s *AdminService) ReorderProviderKeys(ctx context.Context, providerID strin
 	return s.providerRepo.ReorderKeys(ctx, providerID, keyIDs)
 }
 
+// SetKeyStatus toggles whether a single provider key is included in the
+// runtime key rotation. Flipping is_active triggers a runtime re-register
+// via refreshProviderModels so the LLM gateway's load-balancer picks up
+// the new active set immediately — without it, an enable could land in
+// the DB but the gateway would still be using the in-memory pre-flip set.
+func (s *AdminService) SetKeyStatus(ctx context.Context, providerID, keyID string, isActive bool) error {
+	if err := s.providerRepo.SetKeyStatus(ctx, providerID, keyID, isActive); err != nil {
+		return err
+	}
+	s.refreshProviderModels(ctx, providerID)
+	return nil
+}
+
 func (s *AdminService) GetProviderHealth(ctx context.Context, providerID string, since time.Time) ([]domain.ProviderHealthCheck, error) {
 	return s.providerRepo.GetHealthChecks(ctx, providerID, since)
 }

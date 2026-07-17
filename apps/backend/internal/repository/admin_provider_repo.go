@@ -216,6 +216,27 @@ func (r *AdminProviderRepo) UpdateKey(ctx context.Context, k *domain.ProviderKey
 	return nil
 }
 
+// SetKeyStatus flips is_active on a single provider key. The provider_id
+// is part of the WHERE clause so a request that targets a key from a
+// different provider surfaces as "not found" rather than silently
+// toggling the wrong row.
+func (r *AdminProviderRepo) SetKeyStatus(ctx context.Context, providerID, keyID string, isActive bool) error {
+	tag, err := r.db.Exec(ctx, `
+		UPDATE provider_keys SET is_active=$3
+		WHERE id=$1 AND provider_id=$2`,
+		keyID, providerID, isActive)
+	if err != nil {
+		return fmt.Errorf("set key status: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("key not found: %s", keyID)
+	}
+	if r.cache != nil {
+		_ = r.cache.DeletePrefix(ctx, providerCacheKey(""))
+	}
+	return nil
+}
+
 func (r *AdminProviderRepo) DeleteKey(ctx context.Context, id string) error {
 	tag, err := r.db.Exec(ctx, `DELETE FROM provider_keys WHERE id=$1`, id)
 	if err != nil {

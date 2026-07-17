@@ -241,6 +241,27 @@ func (h *Handler) AdminReorderProviderKeys(w http.ResponseWriter, r *http.Reques
 	response.OK(w, map[string]string{"status": "reordered"})
 }
 
+// AdminSetKeyStatus toggles `is_active` on a single provider key. Body is
+// `{"isActive": true|false}`; the service then re-registers the provider
+// with the LLM gateway runtime so the load-balancer drops or re-adds the
+// key immediately rather than waiting for the next health check.
+func (h *Handler) AdminSetKeyStatus(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		IsActive bool `json:"isActive"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.Error(w, 400, "Invalid body")
+		return
+	}
+	providerID := chi.URLParam(r, "id")
+	keyID := chi.URLParam(r, "keyId")
+	if err := h.adminSvc.SetKeyStatus(r.Context(), providerID, keyID, req.IsActive); err != nil {
+		adminError(w, r, err, "admin_set_key_status_failed")
+		return
+	}
+	response.OK(w, map[string]bool{"isActive": req.IsActive})
+}
+
 // upstreamModel mirrors the OpenAI /v1/models response shape.
 type upstreamModel struct {
 	ID      string `json:"id"`

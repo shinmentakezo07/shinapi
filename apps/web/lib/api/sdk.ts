@@ -1224,7 +1224,9 @@ class DraSDK {
     this.extractResponseHeaders(res);
     let json: ApiResponse<FileInfo | { files?: FileInfo[] }>;
     try {
-      json = (await res.json()) as ApiResponse<FileInfo | { files?: FileInfo[] }>;
+      json = (await res.json()) as ApiResponse<
+        FileInfo | { files?: FileInfo[] }
+      >;
     } catch {
       throw this.mapError(res.status, "Invalid JSON response");
     }
@@ -1262,11 +1264,9 @@ class DraSDK {
 
   // Notifications
 
-  async *notificationsStream(signal?: AbortSignal): AsyncGenerator<
-    NotificationEvent,
-    void,
-    unknown
-  > {
+  async *notificationsStream(
+    signal?: AbortSignal,
+  ): AsyncGenerator<NotificationEvent, void, unknown> {
     const url = `${this.baseUrl}/api/notifications/stream`;
     const res = await this.fetchWithTimeout(
       url,
@@ -1712,6 +1712,18 @@ class DraSDK {
     return this.request<{ status: string }>(
       "DELETE",
       `/api/admin/providers/${encodeURIComponent(providerId)}/keys/${encodeURIComponent(keyId)}`,
+    );
+  }
+
+  adminSetProviderKeyStatus(
+    providerId: string,
+    keyId: string,
+    isActive: boolean,
+  ) {
+    return this.request<{ isActive: boolean }>(
+      "PATCH",
+      `/api/admin/providers/${encodeURIComponent(providerId)}/keys/${encodeURIComponent(keyId)}`,
+      { isActive },
     );
   }
 
