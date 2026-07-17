@@ -19,7 +19,12 @@ const navItems = [
   { label: "Playground", href: "/playground", kana: "遊び場" },
   { label: "Docs", href: "/docs", kana: "文書" },
   { label: "Pricing", href: "/pricing", kana: "価格" },
-  { label: "Dashboard", href: "/dashboard", kana: "制御盤", authRequired: true },
+  {
+    label: "Dashboard",
+    href: "/dashboard",
+    kana: "制御盤",
+    authRequired: true,
+  },
 ];
 
 const panelVariants = {
@@ -40,12 +45,20 @@ const panelVariants = {
 
 const itemVariants = {
   closed: { x: -16, opacity: 0 },
-  open: { x: 0, opacity: 1, transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] as const } },
+  open: {
+    x: 0,
+    opacity: 1,
+    transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] as const },
+  },
 };
 
 const fadeUp = {
   closed: { y: 8, opacity: 0 },
-  open: { y: 0, opacity: 1, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as const } },
+  open: {
+    y: 0,
+    opacity: 1,
+    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as const },
+  },
 };
 
 export function MobileSidebar({ open, onClose, user }: MobileSidebarProps) {
@@ -106,7 +119,11 @@ export function MobileSidebar({ open, onClose, user }: MobileSidebarProps) {
                         <motion.div
                           className="absolute inset-0.5 border border-[#3b82f6]/20 rounded-[7px] border-t-transparent border-l-transparent"
                           animate={{ rotate: 360 }}
-                          transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+                          transition={{
+                            duration: 6,
+                            repeat: Infinity,
+                            ease: "linear",
+                          }}
                         />
                         <Image
                           src="/nervous-cat.jpg"
@@ -164,7 +181,9 @@ export function MobileSidebar({ open, onClose, user }: MobileSidebarProps) {
                             onClick={onClose}
                             aria-current={active ? "page" : undefined}
                             className={`relative flex items-baseline gap-x-4 px-5 py-3.5 rounded-lg transition-colors duration-200 group outline-none focus-visible:ring-1 focus-visible:ring-[#3b82f6]/50 ${
-                              active ? "text-white" : "text-white/35 hover:text-white/80"
+                              active
+                                ? "text-white"
+                                : "text-white/35 hover:text-white/80"
                             }`}
                           >
                             {/* Active bar */}
@@ -172,14 +191,20 @@ export function MobileSidebar({ open, onClose, user }: MobileSidebarProps) {
                               <motion.div
                                 layoutId="sidebar-active-bar"
                                 className="absolute left-0 top-2 bottom-2 w-[2px] rounded-full bg-gradient-to-b from-[#3b82f6] to-[#7c3aed]"
-                                transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                                transition={{
+                                  type: "spring",
+                                  stiffness: 350,
+                                  damping: 30,
+                                }}
                               />
                             )}
 
                             {/* Label */}
                             <span
                               className={`text-[17px] leading-none tracking-[-0.02em] transition-all duration-200 ${
-                                active ? "font-semibold" : "font-medium group-hover:font-semibold"
+                                active
+                                  ? "font-semibold"
+                                  : "font-medium group-hover:font-semibold"
                               }`}
                             >
                               {item.label}
@@ -188,7 +213,9 @@ export function MobileSidebar({ open, onClose, user }: MobileSidebarProps) {
                             {/* Kana */}
                             <span
                               className={`text-[10px] font-mono tracking-[0.05em] transition-colors duration-200 ${
-                                active ? "text-white/25" : "text-white/10 group-hover:text-white/20"
+                                active
+                                  ? "text-white/25"
+                                  : "text-white/10 group-hover:text-white/20"
                               }`}
                             >
                               {item.kana}
@@ -254,7 +281,10 @@ export function MobileSidebar({ open, onClose, user }: MobileSidebarProps) {
                         Settings
                       </Link>
                       <button
-                        onClick={() => { onClose(); signOutAction(); }}
+                        onClick={() => {
+                          onClose();
+                          signOutAction();
+                        }}
                         className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-white/25 hover:text-red-400/80 rounded-md bg-white/[0.02] hover:bg-red-500/[0.06] transition-all duration-200"
                       >
                         <LogOut className="w-3 h-3" strokeWidth={1.5} />

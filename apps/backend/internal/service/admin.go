@@ -414,6 +414,18 @@ func (s *AdminService) CreateProviderFull(ctx context.Context, p *domain.Provide
 
 // AddProviderKeyRaw stores a provider key and registers it with the runtime.
 func (s *AdminService) AddProviderKeyRaw(ctx context.Context, k *domain.ProviderKey, rawKey string) error {
+	if k.ID == "" {
+		k.ID = domain.NewID()
+	}
+	if k.Strategy == "" {
+		k.Strategy = domain.KeyStrategyRoundRobin
+	}
+	if k.Weight == 0 {
+		k.Weight = 1
+	}
+	if !k.IsActive {
+		k.IsActive = true
+	}
 	prefix, lastFour, hash := deriveKeyParts(rawKey)
 	k.KeyPrefix = prefix
 	k.KeyHash = hash
@@ -719,6 +731,9 @@ func (s *AdminService) ListAliases(ctx context.Context) ([]domain.ModelAlias, er
 }
 
 func (s *AdminService) CreateAlias(ctx context.Context, a *domain.ModelAlias) error {
+	if a.ID == "" {
+		a.ID = domain.NewID()
+	}
 	return s.modelRepo.CreateAlias(ctx, a)
 }
 

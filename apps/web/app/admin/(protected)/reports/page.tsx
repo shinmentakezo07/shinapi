@@ -29,7 +29,9 @@ export default function AdminReportsPage() {
       <AdminEmptyState
         icon={Info}
         title="Failed to load reports"
-        description={error instanceof Error ? error.message : "An error occurred"}
+        description={
+          error instanceof Error ? error.message : "An error occurred"
+        }
       />
     );
   }

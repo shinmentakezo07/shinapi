@@ -178,7 +178,9 @@ function SystemSettingsTab() {
       <AdminEmptyState
         icon={Settings}
         title="Failed to load settings"
-        description={error instanceof Error ? error.message : "An error occurred"}
+        description={
+          error instanceof Error ? error.message : "An error occurred"
+        }
       />
     );
   }
@@ -270,7 +272,9 @@ function FeatureFlagsTab() {
       <AdminEmptyState
         icon={Flag}
         title="Failed to load feature flags"
-        description={error instanceof Error ? error.message : "An error occurred"}
+        description={
+          error instanceof Error ? error.message : "An error occurred"
+        }
       />
     );
   }

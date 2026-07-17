@@ -45,11 +45,7 @@ export default function WebhooksPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: {
-      url: string;
-      events: string[];
-      secret?: string;
-    }) =>
+    mutationFn: (data: { url: string; events: string[]; secret?: string }) =>
       getSDK().createWebhook({
         url: data.url,
         events: data.events,
@@ -170,11 +166,7 @@ function WebhookForm({
   isPending,
   initial,
 }: {
-  onSubmit: (data: {
-    url: string;
-    events: string[];
-    secret?: string;
-  }) => void;
+  onSubmit: (data: { url: string; events: string[]; secret?: string }) => void;
   onCancel: () => void;
   isPending: boolean;
   initial?: { url?: string; events?: string[]; secret?: string };
@@ -234,9 +226,7 @@ function WebhookForm({
 
       <div className="flex gap-2 pt-2">
         <button
-          onClick={() =>
-            onSubmit({ url, events, secret: secret || undefined })
-          }
+          onClick={() => onSubmit({ url, events, secret: secret || undefined })}
           disabled={!url || events.length === 0 || isPending}
           className="px-4 py-2 text-sm font-medium bg-primary/20 text-primary rounded-lg hover:bg-primary/30 transition-colors disabled:opacity-50"
         >

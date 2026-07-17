@@ -18,7 +18,7 @@ Define these tokens on the admin root container, e.g. `[data-admin]`.
 ```css
 [data-admin] {
   --admin-bg: #050505;
-  --admin-surface: #0A0A0A;
+  --admin-surface: #0a0a0a;
   --admin-surface-elevated: #0e0e0e;
   --admin-border: rgba(255, 255, 255, 0.04);
   --admin-border-hover: rgba(255, 255, 255, 0.08);
@@ -28,7 +28,7 @@ Define these tokens on the admin root container, e.g. `[data-admin]`.
   --admin-text-dim: #6b7280;
 
   --admin-accent: #3b82f6;
-  --admin-accent-soft: rgba(59, 130, 246, 0.10);
+  --admin-accent-soft: rgba(59, 130, 246, 0.1);
   --admin-accent-glow: rgba(59, 130, 246, 0.2);
   --admin-accent-gradient: linear-gradient(135deg, #3b82f6, #7c3aed);
   --admin-accent-purple: #a855f7;
@@ -46,21 +46,21 @@ Define these tokens on the admin root container, e.g. `[data-admin]`.
 
 ### Color usage rules
 
-| Role | Color | Usage |
-| --- | --- | --- |
-| Page background | `#050505` | Full admin shell background |
-| Sidebar/cards | `#0A0A0A` | Main surfaces |
-| Dropdowns/popovers | `#0e0e0e` | Elevated surfaces |
-| Hairline borders | `rgba(255,255,255,0.04)` | Default card/input/table borders |
-| Hover borders | `rgba(255,255,255,0.08)` | Interactive hover state |
-| Primary text | `#ffffff` | Titles and important values |
-| Muted text | `#9ca3af` | Labels and normal secondary text |
-| Dim text | `#6b7280` | Metadata, helper text, timestamps |
-| Primary accent | `#3b82f6` | Active nav, live dots, links, focus |
-| Violet accent | `#7c3aed` / `#a855f7` | Ambient glow, gradients, secondary metrics |
-| Success | `#34d399` | Healthy states |
-| Warning | `#fbbf24` | Degraded states |
-| Danger | `#f87171` | Error/destructive states |
+| Role               | Color                    | Usage                                      |
+| ------------------ | ------------------------ | ------------------------------------------ |
+| Page background    | `#050505`                | Full admin shell background                |
+| Sidebar/cards      | `#0A0A0A`                | Main surfaces                              |
+| Dropdowns/popovers | `#0e0e0e`                | Elevated surfaces                          |
+| Hairline borders   | `rgba(255,255,255,0.04)` | Default card/input/table borders           |
+| Hover borders      | `rgba(255,255,255,0.08)` | Interactive hover state                    |
+| Primary text       | `#ffffff`                | Titles and important values                |
+| Muted text         | `#9ca3af`                | Labels and normal secondary text           |
+| Dim text           | `#6b7280`                | Metadata, helper text, timestamps          |
+| Primary accent     | `#3b82f6`                | Active nav, live dots, links, focus        |
+| Violet accent      | `#7c3aed` / `#a855f7`    | Ambient glow, gradients, secondary metrics |
+| Success            | `#34d399`                | Healthy states                             |
+| Warning            | `#fbbf24`                | Degraded states                            |
+| Danger             | `#f87171`                | Error/destructive states                   |
 
 Keep colored fills extremely transparent: usually `0.04` to `0.10` alpha. The design should not have saturated blue panels.
 
@@ -86,8 +86,8 @@ Recommended atmosphere layers:
   pointer-events: none;
   opacity: 0.02;
   background-image:
-    linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px);
+    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
   background-size: 64px 64px;
 }
 
@@ -99,7 +99,11 @@ Recommended atmosphere layers:
   height: 600px;
   border-radius: 9999px;
   pointer-events: none;
-  background: radial-gradient(circle, rgba(59,130,246,0.04) 0%, transparent 60%);
+  background: radial-gradient(
+    circle,
+    rgba(59, 130, 246, 0.04) 0%,
+    transparent 60%
+  );
 }
 
 .admin-violet-orb {
@@ -110,7 +114,11 @@ Recommended atmosphere layers:
   height: 500px;
   border-radius: 9999px;
   pointer-events: none;
-  background: radial-gradient(circle, rgba(124,58,237,0.03) 0%, transparent 60%);
+  background: radial-gradient(
+    circle,
+    rgba(124, 58, 237, 0.03) 0%,
+    transparent 60%
+  );
 }
 
 .admin-purple-orb {
@@ -122,7 +130,11 @@ Recommended atmosphere layers:
   border-radius: 9999px;
   pointer-events: none;
   transform: translateY(-50%);
-  background: radial-gradient(circle, rgba(168,85,247,0.02) 0%, transparent 60%);
+  background: radial-gradient(
+    circle,
+    rgba(168, 85, 247, 0.02) 0%,
+    transparent 60%
+  );
 }
 ```
 
@@ -163,15 +175,15 @@ Use noise very lightly. It should be barely visible.
 
 ### Dimensions
 
-| Element | Size |
-| --- | --- |
-| Expanded sidebar | `260px` |
-| Collapsed sidebar | `72px` |
-| Topbar height | `64px` plus 1px gradient border |
-| Content top padding | `65px` to clear topbar |
-| Main content padding | `32px` |
-| Main max width | `1400px` |
-| Sidebar logo area | `72px` high |
+| Element              | Size                            |
+| -------------------- | ------------------------------- |
+| Expanded sidebar     | `260px`                         |
+| Collapsed sidebar    | `72px`                          |
+| Topbar height        | `64px` plus 1px gradient border |
+| Content top padding  | `65px` to clear topbar          |
+| Main content padding | `32px`                          |
+| Main max width       | `1400px`                        |
+| Sidebar logo area    | `72px` high                     |
 
 ## 5. Typography
 
@@ -183,23 +195,32 @@ The visual system uses a sans font for interface text and a mono font for operat
 
 ### Type scale
 
-| Use | Size | Weight | Tracking |
-| --- | --- | --- | --- |
-| Topbar page title | `17px` | `600` | `-0.02em` |
-| Page heading | `22px` to `24px` | `600` | `-0.025em` |
-| Section heading | `14px` | `600` | `-0.01em` |
-| Body / row text | `12px` to `13px` | `400–500` | normal to `-0.01em` |
-| Section labels | `9px` to `10px` | `600` | `0.12em–0.18em`, uppercase |
-| Metadata | `9px` to `11px` | `400–600` | mono, wide |
-| Hero metric | `42px` | `700` | `-0.035em`, tabular nums |
-| Compact stat | `22px` | `700` | `-0.02em`, mono |
+| Use               | Size             | Weight    | Tracking                   |
+| ----------------- | ---------------- | --------- | -------------------------- |
+| Topbar page title | `17px`           | `600`     | `-0.02em`                  |
+| Page heading      | `22px` to `24px` | `600`     | `-0.025em`                 |
+| Section heading   | `14px`           | `600`     | `-0.01em`                  |
+| Body / row text   | `12px` to `13px` | `400–500` | normal to `-0.01em`        |
+| Section labels    | `9px` to `10px`  | `600`     | `0.12em–0.18em`, uppercase |
+| Metadata          | `9px` to `11px`  | `400–600` | mono, wide                 |
+| Hero metric       | `42px`           | `700`     | `-0.035em`, tabular nums   |
+| Compact stat      | `22px`           | `700`     | `-0.02em`, mono            |
 
 ### Text color hierarchy
 
 ```css
-.admin-title { color: var(--admin-text); }
-.admin-label { color: var(--admin-text-muted); text-transform: uppercase; letter-spacing: 0.14em; }
-.admin-meta { color: var(--admin-text-dim); font-family: var(--font-mono); }
+.admin-title {
+  color: var(--admin-text);
+}
+.admin-label {
+  color: var(--admin-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+.admin-meta {
+  color: var(--admin-text-dim);
+  font-family: var(--font-mono);
+}
 ```
 
 ## 6. Cards and panels
@@ -213,7 +234,9 @@ Cards are nearly black surfaces with faint borders, not bright glass panels.
   border-radius: var(--admin-radius);
   position: relative;
   overflow: hidden;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
 .admin-card:hover {
@@ -230,7 +253,13 @@ Cards are nearly black surfaces with faint borders, not bright glass panels.
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(59,130,246,0.08), rgba(124,58,237,0.05), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(59, 130, 246, 0.08),
+    rgba(124, 58, 237, 0.05),
+    transparent
+  );
   opacity: 0;
   transition: opacity 0.4s ease;
   pointer-events: none;
@@ -243,13 +272,13 @@ Cards are nearly black surfaces with faint borders, not bright glass panels.
 
 ### Card padding
 
-| Card type | Padding |
-| --- | --- |
-| Hero metric | `32px` |
-| Standard card | `24px` |
-| Compact stat | `20px` |
-| Strip/status card | `16px` |
-| Table wrapper | no inner padding; rows own padding |
+| Card type         | Padding                            |
+| ----------------- | ---------------------------------- |
+| Hero metric       | `32px`                             |
+| Standard card     | `24px`                             |
+| Compact stat      | `20px`                             |
+| Strip/status card | `16px`                             |
+| Table wrapper     | no inner padding; rows own padding |
 
 ## 7. Sidebar style
 
@@ -279,12 +308,12 @@ The sidebar is a fixed black surface with no obvious right border. It relies on 
 
 .admin-nav-item:hover {
   color: var(--admin-text);
-  background: rgba(255,255,255,0.02);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .admin-nav-item-active {
   color: rgb(191, 219, 254);
-  background: rgba(59,130,246,0.06);
+  background: rgba(59, 130, 246, 0.06);
 }
 
 .admin-nav-active-bar {
@@ -306,7 +335,12 @@ The sidebar is a fixed black surface with no obvious right border. It relies on 
   width: 256px;
   height: 256px;
   border-radius: 9999px;
-  background: radial-gradient(circle, rgba(59,130,246,0.05) 0%, rgba(124,58,237,0.02) 50%, transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(59, 130, 246, 0.05) 0%,
+    rgba(124, 58, 237, 0.02) 50%,
+    transparent 70%
+  );
   pointer-events: none;
 }
 ```
@@ -380,7 +414,7 @@ Topbar content:
 .admin-btn-ghost:hover {
   color: var(--admin-text);
   border-color: var(--admin-border-hover);
-  background: rgba(255,255,255,0.02);
+  background: rgba(255, 255, 255, 0.02);
 }
 ```
 
@@ -388,14 +422,16 @@ Topbar content:
 
 ```css
 .admin-input {
-  background: rgba(255,255,255,0.03);
+  background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-sm);
   padding: 10px 14px;
   font-size: 13px;
   color: var(--admin-text);
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .admin-input::placeholder {
@@ -404,7 +440,7 @@ Topbar content:
 
 .admin-input:focus {
   border-color: var(--admin-accent-glow);
-  box-shadow: 0 0 0 3px rgba(99,102,241,0.08);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.08);
 }
 ```
 
@@ -422,8 +458,8 @@ Topbar content:
   font-family: var(--font-mono), monospace;
   font-weight: 600;
   color: var(--admin-text-dim);
-  background: rgba(255,255,255,0.02);
-  border: 1px solid rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: 4px;
 }
 ```
@@ -460,9 +496,13 @@ Topbar content:
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(59,130,246,0.7);
-  background: linear-gradient(135deg, rgba(59,130,246,0.06), rgba(124,58,237,0.04));
-  border: 1px solid rgba(59,130,246,0.08);
+  color: rgba(59, 130, 246, 0.7);
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.06),
+    rgba(124, 58, 237, 0.04)
+  );
+  border: 1px solid rgba(59, 130, 246, 0.08);
 }
 
 .admin-live-dot {
@@ -474,8 +514,15 @@ Topbar content:
 }
 
 @keyframes admin-pulse-dot {
-  0%, 100% { opacity: 0.4; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.3); }
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
 }
 ```
 
@@ -484,17 +531,17 @@ Topbar content:
 ```css
 .admin-status-healthy {
   color: #34d399;
-  background: rgba(52,211,153,0.06);
+  background: rgba(52, 211, 153, 0.06);
 }
 
 .admin-status-warning {
   color: #fbbf24;
-  background: rgba(251,191,36,0.06);
+  background: rgba(251, 191, 36, 0.06);
 }
 
 .admin-status-danger {
   color: #f87171;
-  background: rgba(248,113,113,0.06);
+  background: rgba(248, 113, 113, 0.06);
 }
 ```
 
@@ -518,7 +565,7 @@ Tables use a dark card wrapper, sticky header, very small uppercase labels, and 
 }
 
 .admin-table thead tr {
-  background: rgba(255,255,255,0.01);
+  background: rgba(255, 255, 255, 0.01);
   border-bottom: 1px solid var(--admin-border);
 }
 
@@ -537,12 +584,12 @@ Tables use a dark card wrapper, sticky header, very small uppercase labels, and 
   padding: 12px 20px;
   font-size: 13px;
   color: var(--admin-text);
-  border-bottom: 1px solid rgba(255,255,255,0.02);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
   white-space: nowrap;
 }
 
 .admin-table tbody tr:hover {
-  background: rgba(255,255,255,0.015);
+  background: rgba(255, 255, 255, 0.015);
 }
 ```
 
@@ -563,14 +610,24 @@ The admin dashboard is not a generic four-card grid. It uses hierarchy:
   <SystemStatusStrip />
 
   <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-    <div className="lg:col-span-5"><HeroMetric /></div>
-    <div className="lg:col-span-3 flex flex-col gap-4"><CompactStats /></div>
-    <div className="lg:col-span-4"><PlatformPulse /></div>
+    <div className="lg:col-span-5">
+      <HeroMetric />
+    </div>
+    <div className="lg:col-span-3 flex flex-col gap-4">
+      <CompactStats />
+    </div>
+    <div className="lg:col-span-4">
+      <PlatformPulse />
+    </div>
   </div>
 
   <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-    <div className="lg:col-span-2"><ActivityFeed /></div>
-    <div><QuickCommands /></div>
+    <div className="lg:col-span-2">
+      <ActivityFeed />
+    </div>
+    <div>
+      <QuickCommands />
+    </div>
   </div>
 </div>
 ```
@@ -579,8 +636,12 @@ The admin dashboard is not a generic four-card grid. It uses hierarchy:
 
 ```css
 .admin-hero-metric {
-  border-color: rgba(59,130,246,0.06);
-  background: linear-gradient(135deg, var(--admin-surface) 0%, rgba(59,130,246,0.015) 100%);
+  border-color: rgba(59, 130, 246, 0.06);
+  background: linear-gradient(
+    135deg,
+    var(--admin-surface) 0%,
+    rgba(59, 130, 246, 0.015) 100%
+  );
 }
 
 .admin-hero-value {
@@ -617,9 +678,9 @@ Dropdowns are elevated black panels with stronger shadow and blur.
 .admin-dropdown {
   backdrop-filter: blur(16px) saturate(1.3);
   background: var(--admin-surface-elevated);
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 16px;
-  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
   overflow: hidden;
 }
 ```
@@ -634,12 +695,14 @@ Menu items:
   padding: 10px 16px;
   font-size: 12px;
   color: var(--admin-text-muted);
-  transition: color 0.2s ease, background 0.2s ease;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease;
 }
 
 .admin-menu-item:hover {
   color: var(--admin-text);
-  background: rgba(255,255,255,0.02);
+  background: rgba(255, 255, 255, 0.02);
 }
 ```
 
@@ -650,13 +713,21 @@ Admin scrollbars are extremely thin and violet/indigo tinted.
 ```css
 .admin-scroll {
   scrollbar-width: thin;
-  scrollbar-color: rgba(99,102,241,0.25) transparent;
+  scrollbar-color: rgba(99, 102, 241, 0.25) transparent;
 }
 
-.admin-scroll::-webkit-scrollbar { width: 3px; }
-.admin-scroll::-webkit-scrollbar-track { background: transparent; }
+.admin-scroll::-webkit-scrollbar {
+  width: 3px;
+}
+.admin-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
 .admin-scroll::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(99,102,241,0.4), rgba(139,92,246,0.3));
+  background: linear-gradient(
+    180deg,
+    rgba(99, 102, 241, 0.4),
+    rgba(139, 92, 246, 0.3)
+  );
   border-radius: 10px;
 }
 ```
@@ -667,16 +738,20 @@ Skeletons use a low-contrast shimmer. Avoid bright gray placeholders.
 
 ```css
 @keyframes admin-skeleton {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .admin-skeleton {
   background: linear-gradient(
     90deg,
-    rgba(255,255,255,0.02) 25%,
-    rgba(255,255,255,0.05) 50%,
-    rgba(255,255,255,0.02) 75%
+    rgba(255, 255, 255, 0.02) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    rgba(255, 255, 255, 0.02) 75%
   );
   background-size: 200% 100%;
   animation: admin-skeleton 1.8s ease-in-out infinite;
@@ -751,15 +826,15 @@ Respect reduced motion:
 
 ## 18. Spacing system
 
-| Pattern | Spacing |
-| --- | --- |
-| Page vertical sections | `20px` (`space-y-5`) |
-| Grid gutters | `16px` (`gap-4`) |
-| Card internal gap | `20px–24px` |
-| Sidebar nav section gap | `24px` |
-| Sidebar nav item gap | `2px` vertical between items |
-| Inline icon/text gap | `6px–12px` |
-| Topbar action gap | `8px` |
+| Pattern                 | Spacing                      |
+| ----------------------- | ---------------------------- |
+| Page vertical sections  | `20px` (`space-y-5`)         |
+| Grid gutters            | `16px` (`gap-4`)             |
+| Card internal gap       | `20px–24px`                  |
+| Sidebar nav section gap | `24px`                       |
+| Sidebar nav item gap    | `2px` vertical between items |
+| Inline icon/text gap    | `6px–12px`                   |
+| Topbar action gap       | `8px`                        |
 
 ## 19. Implementation checklist
 

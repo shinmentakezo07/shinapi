@@ -1,7 +1,12 @@
 // /dashboard/admin — user-facing admin dashboard (different from /admin/(protected)/dashboard).
 // Layout: header + 3 stat tiles + 2 cards (provider health, circuit breakers)
 // + users table with pagination.
-import { Skeleton, SkeletonList, SkeletonStats, SkeletonTable } from "@/components/ui/skeleton";
+import {
+  Skeleton,
+  SkeletonList,
+  SkeletonStats,
+  SkeletonTable,
+} from "@/components/ui/skeleton";
 
 export default function Loading() {
   return (
@@ -28,7 +33,10 @@ export default function Loading() {
             <Skeleton className="h-5 w-5 rounded" />
             <Skeleton className="h-5 w-36" />
           </div>
-          <SkeletonList rows={3} className="!bg-transparent [&>*]:!bg-transparent [&>*]:!border-0 [&>*]:!p-0" />
+          <SkeletonList
+            rows={3}
+            className="!bg-transparent [&>*]:!bg-transparent [&>*]:!border-0 [&>*]:!p-0"
+          />
         </div>
         <div
           aria-hidden="true"
@@ -38,13 +46,19 @@ export default function Loading() {
             <Skeleton className="h-5 w-5 rounded" />
             <Skeleton className="h-5 w-36" />
           </div>
-          <SkeletonList rows={3} className="!bg-transparent [&>*]:!bg-transparent [&>*]:!border-0 [&>*]:!p-0" />
+          <SkeletonList
+            rows={3}
+            className="!bg-transparent [&>*]:!bg-transparent [&>*]:!border-0 [&>*]:!p-0"
+          />
         </div>
       </div>
 
       {/* Users table + pagination */}
       <SkeletonTable rows={6} cols={4} />
-      <div aria-hidden="true" className="flex items-center justify-between pt-2">
+      <div
+        aria-hidden="true"
+        className="flex items-center justify-between pt-2"
+      >
         <Skeleton className="h-8 w-24 rounded" />
         <div className="flex items-center gap-1">
           {Array.from({ length: 4 }).map((_, i) => (

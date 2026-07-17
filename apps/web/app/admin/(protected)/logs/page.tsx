@@ -48,7 +48,9 @@ export default function AdminLogsPage() {
       <AdminEmptyState
         icon={Info}
         title="Failed to load logs"
-        description={error instanceof Error ? error.message : "An error occurred"}
+        description={
+          error instanceof Error ? error.message : "An error occurred"
+        }
       />
     );
   }

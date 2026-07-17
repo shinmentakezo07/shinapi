@@ -10,15 +10,15 @@ export const metadata: Metadata = {
 
 function LoadingFallback() {
   return (
-    <div className="flex flex-col items-center w-full min-h-[60vh] justify-center bg-[#000000]">
-      <div className="w-8 h-8 rounded-full border-2 border-blue-500/30 border-t-blue-400 animate-spin" />
+    <div className="flex flex-col items-center w-full min-h-[60vh] justify-center bg-[#030303]">
+      <div className="w-8 h-8 rounded-full border-2 border-cyan-500/30 border-t-cyan-400 animate-spin" />
     </div>
   );
 }
 
 export default function ModelsPage() {
   return (
-    <div className="flex flex-col items-center w-full overflow-hidden bg-[#000000] text-foreground selection:bg-primary/30 selection:text-white">
+    <div className="flex flex-col items-center w-full overflow-hidden bg-[#030303] text-foreground selection:bg-primary/30 selection:text-white">
       <Suspense fallback={<LoadingFallback />}>
         <ModelsExplorer />
       </Suspense>

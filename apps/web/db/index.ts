@@ -17,7 +17,9 @@ export const db = (() => {
     "postgresql://placeholder:placeholder@localhost:5432/placeholder";
 
   if (!process.env.DATABASE_URL && process.env.NODE_ENV !== "production") {
-    console.warn("⚠️  DATABASE_URL is not defined. Using placeholder for build.");
+    console.warn(
+      "⚠️  DATABASE_URL is not defined. Using placeholder for build.",
+    );
   }
 
   const isNeon = DATABASE_URL.includes("neon.tech");

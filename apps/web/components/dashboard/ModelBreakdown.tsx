@@ -49,7 +49,9 @@ export function ModelBreakdown({ logs, maxItems = 7 }: ModelBreakdownProps) {
                 {model}
               </span>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-slate-600 font-mono">{share}%</span>
+                <span className="text-[10px] text-slate-600 font-mono">
+                  {share}%
+                </span>
                 <span className="text-xs text-slate-500 font-mono w-6 text-right tabular-nums">
                   {count}
                 </span>
@@ -59,7 +61,11 @@ export function ModelBreakdown({ logs, maxItems = 7 }: ModelBreakdownProps) {
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${pct}%` }}
-                transition={{ duration: 0.7, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] as const }}
+                transition={{
+                  duration: 0.7,
+                  delay: i * 0.08,
+                  ease: [0.16, 1, 0.3, 1] as const,
+                }}
                 className={`h-full rounded-full bg-gradient-to-r ${barColors[i % barColors.length]} opacity-80 group-hover:opacity-100 transition-opacity`}
               />
             </div>

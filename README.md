@@ -476,18 +476,18 @@ graph LR
 
 <div align="center">
 
-| Stage | Package | Purpose |
-| :---: | :------ | :------ |
-| 1️⃣ | `validator/` | Input validation & schema checks |
-| 2️⃣ | `router/` | Model→provider mapping, A/B routing, budget-aware selection |
-| 3️⃣ | `cache/` | TTL + semantic dedup + Redis response caching |
-| 4️⃣ | `guardrails/` | Content policy enforcement & input filtering |
-| 5️⃣ | `moderation/` | Output moderation & safety checks |
-| 6️⃣ | `translator/` | Format translation: Anthropic ↔ OpenAI ↔ Generic |
-| 7️⃣ | `provider/` | Provider registry, key rotation, health checks, failover |
-| 8️⃣ | `telemetry/` | Request tracing, metrics, and observability |
-| 9️⃣ | `circuitbreaker/` | Per-provider circuit breaking with configurable thresholds |
-| 🔟 | `watcher/` | Response quality monitoring & anomaly detection |
+| Stage | Package           | Purpose                                                     |
+| :---: | :---------------- | :---------------------------------------------------------- |
+|  1️⃣   | `validator/`      | Input validation & schema checks                            |
+|  2️⃣   | `router/`         | Model→provider mapping, A/B routing, budget-aware selection |
+|  3️⃣   | `cache/`          | TTL + semantic dedup + Redis response caching               |
+|  4️⃣   | `guardrails/`     | Content policy enforcement & input filtering                |
+|  5️⃣   | `moderation/`     | Output moderation & safety checks                           |
+|  6️⃣   | `translator/`     | Format translation: Anthropic ↔ OpenAI ↔ Generic            |
+|  7️⃣   | `provider/`       | Provider registry, key rotation, health checks, failover    |
+|  8️⃣   | `telemetry/`      | Request tracing, metrics, and observability                 |
+|  9️⃣   | `circuitbreaker/` | Per-provider circuit breaking with configurable thresholds  |
+|  🔟   | `watcher/`        | Response quality monitoring & anomaly detection             |
 
 </div>
 
@@ -498,39 +498,39 @@ graph LR
 <details>
 <summary><b>📦 Full subpackage map</b></summary>
 
-| Subpackage | Purpose |
-| :--------- | :------ |
-| `anthropic/` | Anthropic format types & SSE event handling |
-| `audit/` | Request/response audit logging |
-| `batch/` | Batch job processing |
-| `budget/` | Budget enforcement & spending limits |
-| `cache/` | TTL + semantic dedup + Redis caching |
-| `circuitbreaker/` | Per-provider circuit breaking |
-| `credentials/` | Credential management & rotation |
-| `embeddings/` | Embedding generation & handling |
-| `guardrails/` | Content policy enforcement |
-| `interfaces/` | Shared pipeline interfaces |
-| `loadbalancer/` | Provider load balancing strategies |
-| `moderation/` | Output moderation & safety |
-| `openai/` | OpenAI format schema types |
-| `otel/` | OpenTelemetry integration |
-| `pipeline/` | 10-stage pipeline orchestrator |
-| `provider/` | Provider registry, health, fallback |
-| `registry/` | Model & provider registration |
-| `router/` | Model→provider routing, A/B, budget-aware |
-| `security/` | Security scanning & validation |
-| `stores/` | Persistent storage abstractions |
-| `streaming/` | SSE streaming infrastructure |
-| `thinking/` | Extended thinking / chain-of-thought |
-| `tokens/` | Token counting & estimation |
-| `tools/` | Function calling & web search tools |
-| `translator/` | Anthropic ↔ OpenAI ↔ Generic format translation |
-| `usage/` | Usage tracking & metering |
-| `util/` | Shared utilities |
-| `validator/` | Input validation & schema checks |
-| `virtualkeys/` | Virtual key management |
-| `watcher/` | Response quality & anomaly monitoring |
-| `ws/` | WebSocket streaming support |
+| Subpackage        | Purpose                                         |
+| :---------------- | :---------------------------------------------- |
+| `anthropic/`      | Anthropic format types & SSE event handling     |
+| `audit/`          | Request/response audit logging                  |
+| `batch/`          | Batch job processing                            |
+| `budget/`         | Budget enforcement & spending limits            |
+| `cache/`          | TTL + semantic dedup + Redis caching            |
+| `circuitbreaker/` | Per-provider circuit breaking                   |
+| `credentials/`    | Credential management & rotation                |
+| `embeddings/`     | Embedding generation & handling                 |
+| `guardrails/`     | Content policy enforcement                      |
+| `interfaces/`     | Shared pipeline interfaces                      |
+| `loadbalancer/`   | Provider load balancing strategies              |
+| `moderation/`     | Output moderation & safety                      |
+| `openai/`         | OpenAI format schema types                      |
+| `otel/`           | OpenTelemetry integration                       |
+| `pipeline/`       | 10-stage pipeline orchestrator                  |
+| `provider/`       | Provider registry, health, fallback             |
+| `registry/`       | Model & provider registration                   |
+| `router/`         | Model→provider routing, A/B, budget-aware       |
+| `security/`       | Security scanning & validation                  |
+| `stores/`         | Persistent storage abstractions                 |
+| `streaming/`      | SSE streaming infrastructure                    |
+| `thinking/`       | Extended thinking / chain-of-thought            |
+| `tokens/`         | Token counting & estimation                     |
+| `tools/`          | Function calling & web search tools             |
+| `translator/`     | Anthropic ↔ OpenAI ↔ Generic format translation |
+| `usage/`          | Usage tracking & metering                       |
+| `util/`           | Shared utilities                                |
+| `validator/`      | Input validation & schema checks                |
+| `virtualkeys/`    | Virtual key management                          |
+| `watcher/`        | Response quality & anomaly monitoring           |
+| `ws/`             | WebSocket streaming support                     |
 
 </details>
 
@@ -540,16 +540,16 @@ graph LR
 
 <div align="center">
 
-| Provider | Models | Streaming | Embeddings | Tools |
-| :------- | :----- | :-------: | :--------: | :---: |
-| **OpenAI** | GPT-4o, GPT-4.1, o3, o4-mini, GPT-4o-mini | ✅ | ✅ | ✅ |
-| **Anthropic** | Claude Opus 4, Claude Sonnet 4, Claude Haiku 4.5 | ✅ | ❌ | ✅ |
-| **Google** | Gemini 2.5 Pro, Gemini 2.5 Flash | ✅ | ✅ | ✅ |
-| **Groq** | Llama 4, Mixtral, Gemma 2 | ✅ | ❌ | ❌ |
-| **NVIDIA NIM** | Various optimized models | ✅ | ✅ | ❌ |
-| **Mistral** | Mistral Large, Medium, Small | ✅ | ✅ | ✅ |
-| **xAI** | Grok 3, Grok 3 Mini | ✅ | ❌ | ❌ |
-| **Cohere** | Command R+, Embed v3 | ✅ | ✅ | ❌ |
+| Provider       | Models                                           | Streaming | Embeddings | Tools |
+| :------------- | :----------------------------------------------- | :-------: | :--------: | :---: |
+| **OpenAI**     | GPT-4o, GPT-4.1, o3, o4-mini, GPT-4o-mini        |    ✅     |     ✅     |  ✅   |
+| **Anthropic**  | Claude Opus 4, Claude Sonnet 4, Claude Haiku 4.5 |    ✅     |     ❌     |  ✅   |
+| **Google**     | Gemini 2.5 Pro, Gemini 2.5 Flash                 |    ✅     |     ✅     |  ✅   |
+| **Groq**       | Llama 4, Mixtral, Gemma 2                        |    ✅     |     ❌     |  ❌   |
+| **NVIDIA NIM** | Various optimized models                         |    ✅     |     ✅     |  ❌   |
+| **Mistral**    | Mistral Large, Medium, Small                     |    ✅     |     ✅     |  ✅   |
+| **xAI**        | Grok 3, Grok 3 Mini                              |    ✅     |     ❌     |  ❌   |
+| **Cohere**     | Command R+, Embed v3                             |    ✅     |     ✅     |  ❌   |
 
 </div>
 
@@ -589,39 +589,39 @@ graph LR
 | <img src="https://img.shields.io/badge/AI_SDK-000000?style=flat-square&logo=vercel&color=222" />             | AI/LLM Integration                |     6.0.x     |
 | <img src="https://img.shields.io/badge/TanStack_Query-FF4154?style=flat-square&logo=reactquery&color=222" /> | Server State Management           |    5.71.0     |
 | <img src="https://img.shields.io/badge/Lucide-000000?style=flat-square&logo=lucide&color=222" />             | Icon Library                      |    1.14.0     |
-| <img src="https://img.shields.io/badge/Monaco-000000?style=flat-square&logo=monacoeditor&color=222" />       | Code Editor                       |    4.7.0      |
+| <img src="https://img.shields.io/badge/Monaco-000000?style=flat-square&logo=monacoeditor&color=222" />       | Code Editor                       |     4.7.0     |
 | <img src="https://img.shields.io/badge/Mermaid-FF3670?style=flat-square&color=222" />                        | Diagrams & Flowcharts             |    11.14.0    |
-| <img src="https://img.shields.io/badge/xterm.js-2B2B2B?style=flat-square&color=222" />                       | Terminal Emulator                  |    5.5.0      |
+| <img src="https://img.shields.io/badge/xterm.js-2B2B2B?style=flat-square&color=222" />                       | Terminal Emulator                 |     5.5.0     |
 
 ### Backend
 
-| Technology                                                                                                  | Purpose                      |     Version     |
-| :---------------------------------------------------------------------------------------------------------- | :--------------------------- | :-------------: |
-| <img src="https://img.shields.io/badge/Go-00ADD8?style=flat-square&logo=go&color=222" />                    | Runtime & Language           |     1.25.0      |
-| <img src="https://img.shields.io/badge/Chi_Router-000000?style=flat-square&color=222" />                    | HTTP Router & Middleware     |     v5.2.5      |
-| <img src="https://img.shields.io/badge/pgx-336791?style=flat-square&logo=postgresql&color=222" />           | PostgreSQL Driver + Pool     |     v5.9.2      |
-| <img src="https://img.shields.io/badge/mongo_driver-47A248?style=flat-square&logo=mongodb&color=222" />     | MongoDB Driver               |     v2.1.0      |
-| <img src="https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&color=222" />            | Embedded DB (lite mode)      | modernc v1.53.0 |
-| <img src="https://img.shields.io/badge/JWT-000000?style=flat-square&logo=jsonwebtokens&color=222" />        | Token Authentication         |     v5.3.1      |
-| <img src="https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&color=222" />              | Caching & Rate Limiting      |     v9.19.0     |
-| <img src="https://img.shields.io/badge/Prometheus-E6522C?style=flat-square&logo=prometheus&color=222" />    | Metrics Collection           |   client_golang |
-| <img src="https://img.shields.io/badge/Stripe-635BFF?style=flat-square&logo=stripe&color=222" />            | Payment Processing           |     v76.25.0    |
-| <img src="https://img.shields.io/badge/OpenAI_SDK-412991?style=flat-square&logo=openai&color=222" />        | Official OpenAI Go SDK       |     v3.35.0     |
-| <img src="https://img.shields.io/badge/Anthropic_SDK-D4A574?style=flat-square&color=222" />                 | Official Anthropic Go SDK    |     v1.43.0     |
-| <img src="https://img.shields.io/badge/Slog-000000?style=flat-square&color=222" />                          | Structured Logging           |     stdlib      |
+| Technology                                                                                               | Purpose                   |     Version     |
+| :------------------------------------------------------------------------------------------------------- | :------------------------ | :-------------: |
+| <img src="https://img.shields.io/badge/Go-00ADD8?style=flat-square&logo=go&color=222" />                 | Runtime & Language        |     1.25.0      |
+| <img src="https://img.shields.io/badge/Chi_Router-000000?style=flat-square&color=222" />                 | HTTP Router & Middleware  |     v5.2.5      |
+| <img src="https://img.shields.io/badge/pgx-336791?style=flat-square&logo=postgresql&color=222" />        | PostgreSQL Driver + Pool  |     v5.9.2      |
+| <img src="https://img.shields.io/badge/mongo_driver-47A248?style=flat-square&logo=mongodb&color=222" />  | MongoDB Driver            |     v2.1.0      |
+| <img src="https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&color=222" />         | Embedded DB (lite mode)   | modernc v1.53.0 |
+| <img src="https://img.shields.io/badge/JWT-000000?style=flat-square&logo=jsonwebtokens&color=222" />     | Token Authentication      |     v5.3.1      |
+| <img src="https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&color=222" />           | Caching & Rate Limiting   |     v9.19.0     |
+| <img src="https://img.shields.io/badge/Prometheus-E6522C?style=flat-square&logo=prometheus&color=222" /> | Metrics Collection        |  client_golang  |
+| <img src="https://img.shields.io/badge/Stripe-635BFF?style=flat-square&logo=stripe&color=222" />         | Payment Processing        |    v76.25.0     |
+| <img src="https://img.shields.io/badge/OpenAI_SDK-412991?style=flat-square&logo=openai&color=222" />     | Official OpenAI Go SDK    |     v3.35.0     |
+| <img src="https://img.shields.io/badge/Anthropic_SDK-D4A574?style=flat-square&color=222" />              | Official Anthropic Go SDK |     v1.43.0     |
+| <img src="https://img.shields.io/badge/Slog-000000?style=flat-square&color=222" />                       | Structured Logging        |     stdlib      |
 
 ### Infrastructure
 
-| Technology                                                                                                  | Purpose                          |
-| :---------------------------------------------------------------------------------------------------------- | :------------------------------- |
-| <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&color=0f172a" /> | Primary Database                 |
-| <img src="https://img.shields.io/badge/Neon-00E599?style=flat-square&logo=neon&color=0f172a" />             | Serverless PostgreSQL            |
-| <img src="https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&color=0f172a" />           | Caching + Rate Limiting          |
-| <img src="https://img.shields.io/badge/MongoDB-47A248?style=flat-square&logo=mongodb&color=0f172a" />       | Alternative DB (profile: mongo)  |
-| <img src="https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&color=0f172a" />         | Embedded DB (lite runtime)       |
-| <img src="https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&color=0f172a" />         | Containerization                 |
-| <img src="https://img.shields.io/badge/Turborepo-EF4444?style=flat-square&logo=turborepo&color=0f172a" />   | Monorepo Task Runner             |
-| <img src="https://img.shields.io/badge/Railway-0B0D0E?style=flat-square&logo=railway&color=0f172a" />       | Deployment Platform              |
+| Technology                                                                                                  | Purpose                         |
+| :---------------------------------------------------------------------------------------------------------- | :------------------------------ |
+| <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&color=0f172a" /> | Primary Database                |
+| <img src="https://img.shields.io/badge/Neon-00E599?style=flat-square&logo=neon&color=0f172a" />             | Serverless PostgreSQL           |
+| <img src="https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&color=0f172a" />           | Caching + Rate Limiting         |
+| <img src="https://img.shields.io/badge/MongoDB-47A248?style=flat-square&logo=mongodb&color=0f172a" />       | Alternative DB (profile: mongo) |
+| <img src="https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&color=0f172a" />         | Embedded DB (lite runtime)      |
+| <img src="https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&color=0f172a" />         | Containerization                |
+| <img src="https://img.shields.io/badge/Turborepo-EF4444?style=flat-square&logo=turborepo&color=0f172a" />   | Monorepo Task Runner            |
+| <img src="https://img.shields.io/badge/Railway-0B0D0E?style=flat-square&logo=railway&color=0f172a" />       | Deployment Platform             |
 
 <br/>
 
@@ -787,14 +787,14 @@ owsiwa/
 
 ### 🔓 Public Endpoints
 
-| Method | Endpoint            | Description                  |
-| :----- | :------------------ | :--------------------------- |
-| `GET`  | `/health`           | Backend health check         |
-| `GET`  | `/health/providers` | LLM provider health summary  |
-| `GET`  | `/api/models`       | List available AI models     |
-| `GET`  | `/v1/models`        | OpenAI-compatible model list |
-| `GET`  | `/api/setup/status` | Admin bootstrap status       |
-| `POST` | `/api/setup/bootstrap` | First-time admin setup    |
+| Method | Endpoint               | Description                  |
+| :----- | :--------------------- | :--------------------------- |
+| `GET`  | `/health`              | Backend health check         |
+| `GET`  | `/health/providers`    | LLM provider health summary  |
+| `GET`  | `/api/models`          | List available AI models     |
+| `GET`  | `/v1/models`           | OpenAI-compatible model list |
+| `GET`  | `/api/setup/status`    | Admin bootstrap status       |
+| `POST` | `/api/setup/bootstrap` | First-time admin setup       |
 
 ### 🔐 Authenticated Endpoints
 
@@ -909,10 +909,10 @@ owsiwa/
 <details>
 <summary><b>📊 Usage & Logs</b> — 2 endpoints</summary>
 
-| Method | Endpoint         | Description               |
-| :----- | :--------------- | :------------------------ |
-| `GET`  | `/api/logs`      | Request logs (paginated)  |
-| `GET`  | `/api/analytics` | Usage analytics           |
+| Method | Endpoint         | Description              |
+| :----- | :--------------- | :----------------------- |
+| `GET`  | `/api/logs`      | Request logs (paginated) |
+| `GET`  | `/api/analytics` | Usage analytics          |
 
 </details>
 
@@ -1096,12 +1096,12 @@ curl http://localhost:8080/api/chat \
 
 <div align="center">
 
-| Mode | `DB_TYPE` | Driver | Use Case |
-| :--- | :-------- | :----- | :------- |
-| 🐘 **PostgreSQL** | `postgres` (default) | pgx v5 | Production, full feature set |
-| ☁️ **Neon** | `neon` | @neondatabase/serverless | Cloud serverless PostgreSQL |
-| 🍃 **MongoDB** | `mongodb` | mongo-driver v2 | Alternative document store (Docker profile) |
-| 📦 **SQLite** | `sqlite` | modernc.org/sqlite | Embedded single-binary runtime (lite) |
+| Mode              | `DB_TYPE`            | Driver                   | Use Case                                    |
+| :---------------- | :------------------- | :----------------------- | :------------------------------------------ |
+| 🐘 **PostgreSQL** | `postgres` (default) | pgx v5                   | Production, full feature set                |
+| ☁️ **Neon**       | `neon`               | @neondatabase/serverless | Cloud serverless PostgreSQL                 |
+| 🍃 **MongoDB**    | `mongodb`            | mongo-driver v2          | Alternative document store (Docker profile) |
+| 📦 **SQLite**     | `sqlite`             | modernc.org/sqlite       | Embedded single-binary runtime (lite)       |
 
 </div>
 
@@ -1208,7 +1208,7 @@ cache_stats (id, hits, misses, evictions, period_start)
 
 | Metric                  | Count |
 | :---------------------- | ----: |
-| Total tables            |   71  |
+| Total tables            |    71 |
 | SQL migrations          |    23 |
 | Performance indexes     |   40+ |
 | Foreign key constraints |   50+ |
@@ -1328,12 +1328,12 @@ docker compose --profile mongo up -d
 docker compose up -d postgres redis
 ```
 
-| Service              | Image                | Port |
-| :------------------- | :------------------- | :--: |
-| 🐘 **PostgreSQL 16** | `postgres:16-alpine` | 5432 |
-| 🔴 **Redis 7**       | `redis:7-alpine`     | 6379 |
-| 🌐 **Frontend**      | `owsiwa-web`         | 3000 |
-| ⚙️ **Backend**       | `owsiwa-api`         | 8080 |
+| Service              | Image                | Port  |
+| :------------------- | :------------------- | :---: |
+| 🐘 **PostgreSQL 16** | `postgres:16-alpine` | 5432  |
+| 🔴 **Redis 7**       | `redis:7-alpine`     | 6379  |
+| 🌐 **Frontend**      | `owsiwa-web`         | 3000  |
+| ⚙️ **Backend**       | `owsiwa-api`         | 8080  |
 | 🍃 **MongoDB 7**     | `mongo:7`            | 27017 |
 
 </td>
@@ -1367,26 +1367,26 @@ https://yapa.up.railway.app/v1/messages
 
 ### Environment Variables
 
-| Variable                                | Required | Description                     |
-| :-------------------------------------- | :------: | :------------------------------ |
-| `DATABASE_URL`                          |    ✅    | PostgreSQL connection string    |
-| `AUTH_SECRET`                           |    ✅    | JWT signing secret              |
-| `NEXTAUTH_SECRET`                       |    ✅    | NextAuth session secret         |
-| `NEXTAUTH_URL`                          |    ✅    | Public base URL                 |
-| `BACKEND_URL`                           |    ✅    | Go backend URL                  |
+| Variable                                | Required | Description                                       |
+| :-------------------------------------- | :------: | :------------------------------------------------ |
+| `DATABASE_URL`                          |    ✅    | PostgreSQL connection string                      |
+| `AUTH_SECRET`                           |    ✅    | JWT signing secret                                |
+| `NEXTAUTH_SECRET`                       |    ✅    | NextAuth session secret                           |
+| `NEXTAUTH_URL`                          |    ✅    | Public base URL                                   |
+| `BACKEND_URL`                           |    ✅    | Go backend URL                                    |
 | `DB_TYPE`                               |    ❌    | `postgres` (default), `neon`, `mongodb`, `sqlite` |
-| `ENV`                                   |    ❌    | `development` (debug) or `production` |
-| `OPENAI_API_KEY`                        |    ❌    | OpenAI API key                  |
-| `NVIDIA_API_KEY`                        |    ❌    | NVIDIA NIM API key              |
-| `ANTHROPIC_API_KEY`                     |    ❌    | Anthropic API key               |
-| `GROQ_API_KEY`                          |    ❌    | Groq API key                    |
-| `GEMINI_API_KEY`                        |    ❌    | Google Gemini API key           |
-| `MISTRAL_API_KEY`                       |    ❌    | Mistral API key                 |
-| `RATE_LIMIT_RPM`                        |    ❌    | Rate limit per minute           |
-| `STRIPE_SECRET_KEY`                     |    ❌    | Stripe secret key               |
-| `STRIPE_WEBHOOK_SECRET`                 |    ❌    | Stripe webhook secret           |
-| `SMTP_HOST` / `SMTP_USER` / `SMTP_PASS` |    ❌    | SMTP email config               |
-| `REDIS_URL`                             |    ❌    | Redis connection URL            |
+| `ENV`                                   |    ❌    | `development` (debug) or `production`             |
+| `OPENAI_API_KEY`                        |    ❌    | OpenAI API key                                    |
+| `NVIDIA_API_KEY`                        |    ❌    | NVIDIA NIM API key                                |
+| `ANTHROPIC_API_KEY`                     |    ❌    | Anthropic API key                                 |
+| `GROQ_API_KEY`                          |    ❌    | Groq API key                                      |
+| `GEMINI_API_KEY`                        |    ❌    | Google Gemini API key                             |
+| `MISTRAL_API_KEY`                       |    ❌    | Mistral API key                                   |
+| `RATE_LIMIT_RPM`                        |    ❌    | Rate limit per minute                             |
+| `STRIPE_SECRET_KEY`                     |    ❌    | Stripe secret key                                 |
+| `STRIPE_WEBHOOK_SECRET`                 |    ❌    | Stripe webhook secret                             |
+| `SMTP_HOST` / `SMTP_USER` / `SMTP_PASS` |    ❌    | SMTP email config                                 |
+| `REDIS_URL`                             |    ❌    | Redis connection URL                              |
 
 <br/>
 
@@ -1413,13 +1413,13 @@ https://yapa.up.railway.app/v1/messages
 
 ### 🔐 Authentication
 
-| Feature | Implementation |
-| :------ | :------------- |
-| **User Auth** | NextAuth v5 (GitHub + Google OAuth) |
-| **Admin Auth** | Separate admin auth flow with bootstrap |
-| **API Key Auth** | `x-api-key` header for programmatic access |
-| **JWT Tokens** | HS256, configurable expiry |
-| **Token Blacklist** | Revoked tokens invalidated instantly |
+| Feature              | Implementation                             |
+| :------------------- | :----------------------------------------- |
+| **User Auth**        | NextAuth v5 (GitHub + Google OAuth)        |
+| **Admin Auth**       | Separate admin auth flow with bootstrap    |
+| **API Key Auth**     | `x-api-key` header for programmatic access |
+| **JWT Tokens**       | HS256, configurable expiry                 |
+| **Token Blacklist**  | Revoked tokens invalidated instantly       |
 | **First-time Setup** | Admin bootstrap via `/api/setup/bootstrap` |
 
 </td>
@@ -1427,17 +1427,17 @@ https://yapa.up.railway.app/v1/messages
 
 ### 🛡️ Protection
 
-| Feature | Implementation |
-| :------ | :------------- |
-| **Rate Limiting** | Sliding window + Redis per-user limits |
-| **CORS** | Configurable origin allowlist |
-| **Input Validation** | Zod v4 (frontend) + Go validation (backend) |
-| **SQL Injection** | All queries parameterized via pgx |
-| **Password Hashing** | bcrypt with salt |
-| **Request Logging** | Full audit trail with IP tracking |
-| **IP Lists** | Allowlist / blocklist with expiry |
-| **Suspicious Activity** | Automated detection & alerting |
-| **Sandbox Mode** | `X-Sandbox: true` header for safe testing |
+| Feature                 | Implementation                              |
+| :---------------------- | :------------------------------------------ |
+| **Rate Limiting**       | Sliding window + Redis per-user limits      |
+| **CORS**                | Configurable origin allowlist               |
+| **Input Validation**    | Zod v4 (frontend) + Go validation (backend) |
+| **SQL Injection**       | All queries parameterized via pgx           |
+| **Password Hashing**    | bcrypt with salt                            |
+| **Request Logging**     | Full audit trail with IP tracking           |
+| **IP Lists**            | Allowlist / blocklist with expiry           |
+| **Suspicious Activity** | Automated detection & alerting              |
+| **Sandbox Mode**        | `X-Sandbox: true` header for safe testing   |
 
 </td>
 </tr>

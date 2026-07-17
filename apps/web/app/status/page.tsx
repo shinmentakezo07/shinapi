@@ -26,7 +26,14 @@ type StatusLevel = "operational" | "degraded" | "outage" | "maintenance";
 
 const statusConfig: Record<
   StatusLevel,
-  { label: string; color: string; bg: string; border: string; dot: string; ring: string }
+  {
+    label: string;
+    color: string;
+    bg: string;
+    border: string;
+    dot: string;
+    ring: string;
+  }
 > = {
   operational: {
     label: "Operational",
@@ -71,14 +78,62 @@ interface SystemComponent {
 }
 
 const systems: SystemComponent[] = [
-  { name: "API Gateway", status: "operational", description: "Edge routing, auth, quota enforcement", uptime: "99.998%", icon: Globe },
-  { name: "Chat Completions", status: "operational", description: "OpenAI-compatible /v1/chat/completions", uptime: "99.992%", icon: Zap },
-  { name: "Embeddings", status: "operational", description: "Vector generation and semantic cache", uptime: "99.987%", icon: Database },
-  { name: "Provider Routing", status: "operational", description: "Multi-vendor failover and key rotation", uptime: "99.999%", icon: Cpu },
-  { name: "Streaming (SSE)", status: "operational", description: "Server-sent event delivery", uptime: "99.995%", icon: Activity },
-  { name: "Batch API", status: "operational", description: "Async job submission and polling", uptime: "99.989%", icon: Layers },
-  { name: "Webhooks Delivery", status: "degraded", description: "Outbound event delivery and DLQ", uptime: "99.851%", icon: Webhook },
-  { name: "Dashboard & Console", status: "operational", description: "Web app at app.yapapa.com", uptime: "99.972%", icon: Server },
+  {
+    name: "API Gateway",
+    status: "operational",
+    description: "Edge routing, auth, quota enforcement",
+    uptime: "99.998%",
+    icon: Globe,
+  },
+  {
+    name: "Chat Completions",
+    status: "operational",
+    description: "OpenAI-compatible /v1/chat/completions",
+    uptime: "99.992%",
+    icon: Zap,
+  },
+  {
+    name: "Embeddings",
+    status: "operational",
+    description: "Vector generation and semantic cache",
+    uptime: "99.987%",
+    icon: Database,
+  },
+  {
+    name: "Provider Routing",
+    status: "operational",
+    description: "Multi-vendor failover and key rotation",
+    uptime: "99.999%",
+    icon: Cpu,
+  },
+  {
+    name: "Streaming (SSE)",
+    status: "operational",
+    description: "Server-sent event delivery",
+    uptime: "99.995%",
+    icon: Activity,
+  },
+  {
+    name: "Batch API",
+    status: "operational",
+    description: "Async job submission and polling",
+    uptime: "99.989%",
+    icon: Layers,
+  },
+  {
+    name: "Webhooks Delivery",
+    status: "degraded",
+    description: "Outbound event delivery and DLQ",
+    uptime: "99.851%",
+    icon: Webhook,
+  },
+  {
+    name: "Dashboard & Console",
+    status: "operational",
+    description: "Web app at app.yapapa.com",
+    uptime: "99.972%",
+    icon: Server,
+  },
 ];
 
 interface Incident {
@@ -98,10 +153,26 @@ const recentIncidents: Incident[] = [
     duration: "47 min",
     affected: ["Webhooks Delivery"],
     updates: [
-      { time: "14:23 UTC", message: "Investigating elevated webhook delivery latency in the us-east-1 region." },
-      { time: "14:38 UTC", message: "Identified a backlog in the retry worker. Scaling workers and increasing concurrency." },
-      { time: "14:51 UTC", message: "Backlog cleared. Webhook latency returned to baseline. Monitoring." },
-      { time: "15:10 UTC", message: "Resolved. No data loss. Postmortem will be published within 48 hours." },
+      {
+        time: "14:23 UTC",
+        message:
+          "Investigating elevated webhook delivery latency in the us-east-1 region.",
+      },
+      {
+        time: "14:38 UTC",
+        message:
+          "Identified a backlog in the retry worker. Scaling workers and increasing concurrency.",
+      },
+      {
+        time: "14:51 UTC",
+        message:
+          "Backlog cleared. Webhook latency returned to baseline. Monitoring.",
+      },
+      {
+        time: "15:10 UTC",
+        message:
+          "Resolved. No data loss. Postmortem will be published within 48 hours.",
+      },
     ],
   },
   {
@@ -111,9 +182,20 @@ const recentIncidents: Incident[] = [
     duration: "12 min",
     affected: ["Streaming (SSE)", "Provider Routing"],
     updates: [
-      { time: "09:14 UTC", message: "Some EU customers may see SSE connections drop. Investigating." },
-      { time: "09:21 UTC", message: "Identified — load balancer health check misfire in eu-west-1. Failing over." },
-      { time: "09:26 UTC", message: "Resolved. Failover complete and healthy." },
+      {
+        time: "09:14 UTC",
+        message:
+          "Some EU customers may see SSE connections drop. Investigating.",
+      },
+      {
+        time: "09:21 UTC",
+        message:
+          "Identified — load balancer health check misfire in eu-west-1. Failing over.",
+      },
+      {
+        time: "09:26 UTC",
+        message: "Resolved. Failover complete and healthy.",
+      },
     ],
   },
   {
@@ -123,9 +205,21 @@ const recentIncidents: Incident[] = [
     duration: "1h 12min",
     affected: ["Chat Completions", "Provider Routing"],
     updates: [
-      { time: "16:45 UTC", message: "Anthropic upstream reports elevated 529 errors. Failing over to secondary keys." },
-      { time: "17:12 UTC", message: "Anthropic upstream has recovered. Returning to normal routing distribution." },
-      { time: "17:57 UTC", message: "All Anthropic requests succeeded post-failover. Resolving incident." },
+      {
+        time: "16:45 UTC",
+        message:
+          "Anthropic upstream reports elevated 529 errors. Failing over to secondary keys.",
+      },
+      {
+        time: "17:12 UTC",
+        message:
+          "Anthropic upstream has recovered. Returning to normal routing distribution.",
+      },
+      {
+        time: "17:57 UTC",
+        message:
+          "All Anthropic requests succeeded post-failover. Resolving incident.",
+      },
     ],
   },
 ];
@@ -188,16 +282,15 @@ export default function StatusPage() {
             <div
               className={cn(
                 "absolute -top-20 -right-20 w-72 h-72 rounded-full blur-3xl pointer-events-none",
-                allOperational ? "bg-emerald-500/[0.12]" : "bg-amber-500/[0.12]",
+                allOperational
+                  ? "bg-emerald-500/[0.12]"
+                  : "bg-amber-500/[0.12]",
               )}
             />
             <div className="relative flex flex-wrap items-center justify-between gap-6">
               <div>
                 <div className="flex items-center gap-3 mb-3">
-                  <motion.span
-                    className="relative flex h-3 w-3"
-                    aria-hidden
-                  >
+                  <motion.span className="relative flex h-3 w-3" aria-hidden>
                     <span
                       className={cn(
                         "absolute inline-flex h-full w-full rounded-full opacity-60 animate-ping",
@@ -263,7 +356,11 @@ export default function StatusPage() {
                   initial={{ opacity: 0, y: 12 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-50px" }}
-                  transition={{ duration: 0.5, delay: i * 0.04, ease: [0.22, 1, 0.36, 1] }}
+                  transition={{
+                    duration: 0.5,
+                    delay: i * 0.04,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
                   className="relative p-5 rounded-2xl border border-white/[0.07] bg-gradient-to-br from-white/[0.025] to-transparent hover:border-indigo-500/20 transition-all duration-300"
                 >
                   <div className="flex items-start gap-3 mb-4">
@@ -286,7 +383,9 @@ export default function StatusPage() {
                         cfg.color,
                       )}
                     >
-                      <span className={cn("w-1.5 h-1.5 rounded-full", cfg.dot)} />
+                      <span
+                        className={cn("w-1.5 h-1.5 rounded-full", cfg.dot)}
+                      />
                       {cfg.label}
                     </div>
                   </div>
@@ -335,7 +434,11 @@ export default function StatusPage() {
                 initial={{ opacity: 0, y: 12 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
-                transition={{ duration: 0.5, delay: idx * 0.05, ease: [0.22, 1, 0.36, 1] }}
+                transition={{
+                  duration: 0.5,
+                  delay: idx * 0.05,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
                 className="group rounded-2xl border border-white/[0.07] bg-gradient-to-br from-white/[0.02] to-transparent overflow-hidden hover:border-indigo-500/20 transition-all duration-300"
               >
                 <summary className="cursor-pointer p-5 list-none flex items-center gap-4">
@@ -345,8 +448,8 @@ export default function StatusPage() {
                       incident.status === "resolved"
                         ? "border-emerald-500/20 bg-emerald-500/[0.08]"
                         : incident.status === "monitoring"
-                        ? "border-sky-500/20 bg-sky-500/[0.08]"
-                        : "border-amber-500/20 bg-amber-500/[0.08]",
+                          ? "border-sky-500/20 bg-sky-500/[0.08]"
+                          : "border-amber-500/20 bg-amber-500/[0.08]",
                     )}
                   >
                     {incident.status === "resolved" ? (
@@ -444,7 +547,9 @@ export default function StatusPage() {
                 key={row.label}
                 className="p-5 rounded-2xl border border-white/[0.07] bg-gradient-to-br from-white/[0.025] to-transparent"
               >
-                <div className="text-[11px] font-mono text-white/40 mb-2">{row.label}</div>
+                <div className="text-[11px] font-mono text-white/40 mb-2">
+                  {row.label}
+                </div>
                 <div className="text-[24px] font-semibold text-white/95 tracking-tight tabular-nums mb-3">
                   {row.uptime}
                 </div>

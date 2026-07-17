@@ -49,7 +49,9 @@ export default function AdminAuditPage() {
       <AdminEmptyState
         icon={FileText}
         title="Failed to load audit logs"
-        description={error instanceof Error ? error.message : "An error occurred"}
+        description={
+          error instanceof Error ? error.message : "An error occurred"
+        }
       />
     );
   }

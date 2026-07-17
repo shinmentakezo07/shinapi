@@ -92,14 +92,20 @@ function getDateRange(range: string) {
   let from: string;
   switch (range) {
     case "30d":
-      from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+      from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0];
       break;
     case "90d":
-      from = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+      from = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0];
       break;
     case "7d":
     default:
-      from = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+      from = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0];
       break;
   }
   return { from, to };
@@ -119,7 +125,9 @@ export default function ExportJobsPage() {
     queryFn: () => getSDK().listExportJobs(1, 50),
     refetchInterval: (query) => {
       const jobs = query.state.data?.data ?? [];
-      return jobs.some((j) => j.status === "pending" || j.status === "processing")
+      return jobs.some(
+        (j) => j.status === "pending" || j.status === "processing",
+      )
         ? 5000
         : false;
     },

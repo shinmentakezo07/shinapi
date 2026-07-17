@@ -21,12 +21,7 @@ export default function PricingPage() {
         visible: { transition: { staggerChildren: 0.06 } },
       }}
     >
-      <Section
-        id="pricing"
-        icon={TrendingUp}
-        title="Pricing & Credits"
-       
-      >
+      <Section id="pricing" icon={TrendingUp} title="Pricing & Credits">
         <p>
           Yapapa uses a credit-based pricing system. Credits are deducted per
           request based on the model and token usage. Purchase credits through

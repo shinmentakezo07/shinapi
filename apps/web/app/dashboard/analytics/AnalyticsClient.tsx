@@ -96,7 +96,11 @@ function SparklineCard({
     <motion.div
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: index * 0.05, ease: [0.16, 1, 0.3, 1] }}
+      transition={{
+        duration: 0.5,
+        delay: index * 0.05,
+        ease: [0.16, 1, 0.3, 1],
+      }}
       whileHover={{ y: -3 }}
       className="group relative"
     >
@@ -172,7 +176,7 @@ function SparklineCard({
                   key={i}
                   className="flex-1 rounded-sm"
                   style={{
-                    height: `${10 + (i * 7) % 60}%`,
+                    height: `${10 + ((i * 7) % 60)}%`,
                     backgroundColor: `${accent}30`,
                   }}
                 />
@@ -273,7 +277,8 @@ export default function AnalyticsClient() {
   const totalTokens = useMemo(
     () =>
       recentLogs.reduce(
-        (s, l) => s + (Number(l.inputTokens) || 0) + (Number(l.outputTokens) || 0),
+        (s, l) =>
+          s + (Number(l.inputTokens) || 0) + (Number(l.outputTokens) || 0),
         0,
       ),
     [recentLogs],
@@ -320,7 +325,9 @@ export default function AnalyticsClient() {
   // Sparklines from filtered daily
   const sparkRequests = filteredDaily.map((d) => d.requests ?? 0);
   const sparkCost = filteredDaily.map((d) => d.cost ?? 0);
-  const sparkLatency = filteredDaily.map((d) => Number((d as any).latency) || 0);
+  const sparkLatency = filteredDaily.map(
+    (d) => Number((d as any).latency) || 0,
+  );
   const sparkTokens = filteredDaily.map((d) => d.tokens ?? 0);
   const sparkSuccess = filteredDaily.map((_, i) => {
     const slice = filteredDaily.slice(Math.max(0, i - 2), i + 1);
@@ -336,7 +343,9 @@ export default function AnalyticsClient() {
   const costDeltaPct = useMemo(() => {
     if (filteredDaily.length < 2) return 0;
     const half = Math.floor(filteredDaily.length / 2);
-    const first = filteredDaily.slice(0, half).reduce((s, d) => s + (d.cost ?? 0), 0);
+    const first = filteredDaily
+      .slice(0, half)
+      .reduce((s, d) => s + (d.cost ?? 0), 0);
     const second = filteredDaily
       .slice(half)
       .reduce((s, d) => s + (d.cost ?? 0), 0);
@@ -345,7 +354,9 @@ export default function AnalyticsClient() {
   const reqDeltaPct = useMemo(() => {
     if (filteredDaily.length < 2) return 0;
     const half = Math.floor(filteredDaily.length / 2);
-    const first = filteredDaily.slice(0, half).reduce((s, d) => s + (d.requests ?? 0), 0);
+    const first = filteredDaily
+      .slice(0, half)
+      .reduce((s, d) => s + (d.requests ?? 0), 0);
     const second = filteredDaily
       .slice(half)
       .reduce((s, d) => s + (d.requests ?? 0), 0);
@@ -373,15 +384,26 @@ export default function AnalyticsClient() {
   const modelPerf = useMemo(() => {
     const map = new Map<
       string,
-      { count: number; cost: number; tokens: number; latency: number; latSum: number }
+      {
+        count: number;
+        cost: number;
+        tokens: number;
+        latency: number;
+        latSum: number;
+      }
     >();
     recentLogs.forEach((l) => {
-      const cur =
-        map.get(l.model) ??
-        { count: 0, cost: 0, tokens: 0, latency: 0, latSum: 0 };
+      const cur = map.get(l.model) ?? {
+        count: 0,
+        cost: 0,
+        tokens: 0,
+        latency: 0,
+        latSum: 0,
+      };
       cur.count += 1;
       cur.cost += Number(l.cost) || 0;
-      cur.tokens += (Number(l.inputTokens) || 0) + (Number(l.outputTokens) || 0);
+      cur.tokens +=
+        (Number(l.inputTokens) || 0) + (Number(l.outputTokens) || 0);
       cur.latSum += Number(l.latency) || 0;
       map.set(l.model, cur);
     });
@@ -561,7 +583,11 @@ export default function AnalyticsClient() {
                 icon={Activity}
                 accent="#3b82f6"
                 spark={sparkRequests}
-                change={reqDeltaPct !== 0 ? `${reqDeltaPct >= 0 ? "+" : ""}${reqDeltaPct}%` : undefined}
+                change={
+                  reqDeltaPct !== 0
+                    ? `${reqDeltaPct >= 0 ? "+" : ""}${reqDeltaPct}%`
+                    : undefined
+                }
                 changeType={reqDeltaPct >= 0 ? "positive" : "negative"}
               />
               <SparklineCard
@@ -625,7 +651,10 @@ export default function AnalyticsClient() {
                 {
                   label: "Peak traffic window",
                   value: peakHour ? peakHour.hour : "—",
-                  sub: peakHour && peakHour.requests > 0 ? `${peakHour.requests} req` : "no logs",
+                  sub:
+                    peakHour && peakHour.requests > 0
+                      ? `${peakHour.requests} req`
+                      : "no logs",
                   icon: Clock,
                   accent: "#06b6d4",
                 },
@@ -638,8 +667,12 @@ export default function AnalyticsClient() {
                 },
                 {
                   label: "Top model",
-                  value: topModel ? topModel.model.split("/").pop() ?? topModel.model : "—",
-                  sub: topModel ? `${topModel.percentage}% of traffic` : "no data",
+                  value: topModel
+                    ? (topModel.model.split("/").pop() ?? topModel.model)
+                    : "—",
+                  sub: topModel
+                    ? `${topModel.percentage}% of traffic`
+                    : "no data",
                   icon: Cpu,
                   accent: "#8b5cf6",
                 },
@@ -696,7 +729,11 @@ export default function AnalyticsClient() {
               >
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={filteredDaily}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" vertical={false} />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="#ffffff08"
+                      vertical={false}
+                    />
                     <XAxis
                       dataKey="date"
                       stroke="#475569"
@@ -718,7 +755,10 @@ export default function AnalyticsClient() {
                       axisLine={false}
                       tickLine={false}
                     />
-                    <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "#ffffff05" }} />
+                    <Tooltip
+                      contentStyle={tooltipStyle}
+                      cursor={{ fill: "#ffffff05" }}
+                    />
                     <Legend wrapperStyle={{ fontSize: "11px" }} />
                     <Bar
                       yAxisId="left"
@@ -761,8 +801,16 @@ export default function AnalyticsClient() {
                             x2="0"
                             y2="1"
                           >
-                            <stop offset="5%" stopColor={p.fill} stopOpacity={0.5} />
-                            <stop offset="95%" stopColor={p.fill} stopOpacity={0} />
+                            <stop
+                              offset="5%"
+                              stopColor={p.fill}
+                              stopOpacity={0.5}
+                            />
+                            <stop
+                              offset="95%"
+                              stopColor={p.fill}
+                              stopOpacity={0}
+                            />
                           </linearGradient>
                         ))}
                       </defs>
@@ -783,7 +831,10 @@ export default function AnalyticsClient() {
                         axisLine={false}
                         tickLine={false}
                       />
-                      <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: "#ffffff20" }} />
+                      <Tooltip
+                        contentStyle={tooltipStyle}
+                        cursor={{ stroke: "#ffffff20" }}
+                      />
                       {providerSeries.providers.map((p) => (
                         <Area
                           key={p.name}
@@ -885,7 +936,10 @@ export default function AnalyticsClient() {
               >
                 <div
                   className="flex gap-1 w-full"
-                  style={{ gridTemplateColumns: "repeat(24, minmax(0, 1fr))", display: "grid" }}
+                  style={{
+                    gridTemplateColumns: "repeat(24, minmax(0, 1fr))",
+                    display: "grid",
+                  }}
                 >
                   {heatStrip.map((v, i) => {
                     const hour = i.toString().padStart(2, "0");
@@ -895,8 +949,12 @@ export default function AnalyticsClient() {
                         title={`${hour}:00`}
                         className="aspect-square rounded-[3px]"
                         style={{
-                          backgroundColor: v > 0 ? `rgba(236,72,153,${0.12 + v * 0.78})` : "#ffffff06",
-                          boxShadow: v > 0.6 ? "0 0 6px rgba(236,72,153,0.35)" : "none",
+                          backgroundColor:
+                            v > 0
+                              ? `rgba(236,72,153,${0.12 + v * 0.78})`
+                              : "#ffffff06",
+                          boxShadow:
+                            v > 0.6 ? "0 0 6px rgba(236,72,153,0.35)" : "none",
                         }}
                       />
                     );
@@ -924,12 +982,30 @@ export default function AnalyticsClient() {
                 <ResponsiveContainer width="100%" height={250}>
                   <AreaChart data={hourlyRequests}>
                     <defs>
-                      <linearGradient id="colorHourly" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
+                      <linearGradient
+                        id="colorHourly"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor="#06b6d4"
+                          stopOpacity={0.3}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="#06b6d4"
+                          stopOpacity={0}
+                        />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" vertical={false} />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="#ffffff08"
+                      vertical={false}
+                    />
                     <XAxis
                       dataKey="hour"
                       stroke="#475569"
@@ -941,7 +1017,10 @@ export default function AnalyticsClient() {
                       axisLine={false}
                       tickLine={false}
                     />
-                    <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: "#ffffff20" }} />
+                    <Tooltip
+                      contentStyle={tooltipStyle}
+                      cursor={{ stroke: "#ffffff20" }}
+                    />
                     <Area
                       type="monotone"
                       dataKey="requests"
@@ -981,7 +1060,10 @@ export default function AnalyticsClient() {
                         axisLine={false}
                         tickLine={false}
                       />
-                      <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: "#ffffff20" }} />
+                      <Tooltip
+                        contentStyle={tooltipStyle}
+                        cursor={{ stroke: "#ffffff20" }}
+                      />
                       <Line
                         type="monotone"
                         dataKey="latency"
@@ -1018,7 +1100,11 @@ export default function AnalyticsClient() {
                     ]}
                     layout="vertical"
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" horizontal={false} />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="#ffffff08"
+                      horizontal={false}
+                    />
                     <XAxis
                       type="number"
                       stroke="#475569"
@@ -1062,10 +1148,14 @@ export default function AnalyticsClient() {
                     </div>
                   </div>
                   <div className="text-center">
-                    <div className="text-xs text-slate-500">Avg tokens / req</div>
+                    <div className="text-xs text-slate-500">
+                      Avg tokens / req
+                    </div>
                     <div className="text-sm font-mono font-bold text-white mt-0.5">
                       {recentLogs.length > 0
-                        ? Math.round(totalTokens / recentLogs.length).toLocaleString()
+                        ? Math.round(
+                            totalTokens / recentLogs.length,
+                          ).toLocaleString()
                         : "0"}
                     </div>
                   </div>
@@ -1115,13 +1205,17 @@ export default function AnalyticsClient() {
                             </div>
                           </div>
                           <div className="flex flex-col items-end shrink-0 w-20">
-                            <span className="text-[10px] text-slate-600">latency</span>
+                            <span className="text-[10px] text-slate-600">
+                              latency
+                            </span>
                             <span className="text-xs font-mono text-yellow-400">
                               {m.avgLatency}ms
                             </span>
                           </div>
                           <div className="flex flex-col items-end shrink-0 w-16">
-                            <span className="text-[10px] text-slate-600">cost</span>
+                            <span className="text-[10px] text-slate-600">
+                              cost
+                            </span>
                             <span className="text-xs font-mono text-emerald-400">
                               ${(m.cost / 100000).toFixed(2)}
                             </span>
@@ -1161,18 +1255,33 @@ export default function AnalyticsClient() {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="text-[10px] font-mono text-slate-600 uppercase tracking-wider">
-                          <th className="px-4 py-2 text-left font-bold">Status</th>
-                          <th className="px-4 py-2 text-left font-bold">Model</th>
-                          <th className="px-4 py-2 text-left font-bold">Provider</th>
-                          <th className="px-4 py-2 text-right font-bold">Tokens</th>
-                          <th className="px-4 py-2 text-right font-bold">Latency</th>
-                          <th className="px-4 py-2 text-right font-bold">Cost</th>
-                          <th className="px-4 py-2 text-right font-bold">When</th>
+                          <th className="px-4 py-2 text-left font-bold">
+                            Status
+                          </th>
+                          <th className="px-4 py-2 text-left font-bold">
+                            Model
+                          </th>
+                          <th className="px-4 py-2 text-left font-bold">
+                            Provider
+                          </th>
+                          <th className="px-4 py-2 text-right font-bold">
+                            Tokens
+                          </th>
+                          <th className="px-4 py-2 text-right font-bold">
+                            Latency
+                          </th>
+                          <th className="px-4 py-2 text-right font-bold">
+                            Cost
+                          </th>
+                          <th className="px-4 py-2 text-right font-bold">
+                            When
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-white/[0.04]">
                         {recentFeed.map((log, i) => {
-                          const ok = log.status === "success" || log.status === "200";
+                          const ok =
+                            log.status === "success" || log.status === "200";
                           const toks =
                             (Number(log.inputTokens) || 0) +
                             (Number(log.outputTokens) || 0);

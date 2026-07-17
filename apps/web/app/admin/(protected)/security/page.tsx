@@ -63,7 +63,9 @@ export default function AdminSecurityPage() {
       <AdminEmptyState
         icon={Shield}
         title="Failed to load security data"
-        description={error instanceof Error ? error.message : "An error occurred"}
+        description={
+          error instanceof Error ? error.message : "An error occurred"
+        }
       />
     );
   }

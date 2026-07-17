@@ -36,7 +36,10 @@ async function fetchSetupStatus(): Promise<boolean> {
       // Locking everybody out when the backend is down is worse UX.
       return false;
     }
-    const json = (await res.json()) as { success?: boolean; data?: { needsSetup?: boolean } };
+    const json = (await res.json()) as {
+      success?: boolean;
+      data?: { needsSetup?: boolean };
+    };
     const v = Boolean(json?.success && json?.data?.needsSetup === true);
     setupCacheSlot.__draSetupCache = { value: v, ts: now };
     return v;
@@ -51,8 +54,7 @@ export default auth(async (req: NextRequest & { auth: any }) => {
   // ── Existing dashboard / login guards ──────────────────────────────
   const isLoggedIn = !!req.auth?.user;
   const isOnDashboard = path.startsWith("/dashboard");
-  const isOnAuth =
-    path.startsWith("/login") || path.startsWith("/signup");
+  const isOnAuth = path.startsWith("/login") || path.startsWith("/signup");
 
   if (isOnDashboard && !isLoggedIn) {
     return Response.redirect(new URL("/login", req.nextUrl));

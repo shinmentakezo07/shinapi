@@ -328,17 +328,21 @@ function PlatformPulse({
   dailyUsage,
   totalCost,
 }: {
-  dailyUsage: { date: string; requests: number; cost: number; tokens: number }[];
+  dailyUsage: {
+    date: string;
+    requests: number;
+    cost: number;
+    tokens: number;
+  }[];
   totalCost: number;
 }) {
   const monthRequests = dailyUsage.reduce((s, d) => s + (d.requests ?? 0), 0);
   const monthTokens = dailyUsage.reduce((s, d) => s + (d.tokens ?? 0), 0);
-  const costsToday =
-    dailyUsage.length > 0 ? dailyUsage[0].cost : 0;
+  const costsToday = dailyUsage.length > 0 ? dailyUsage[0].cost : 0;
   const todayPct =
     monthRequests > 0
       ? Math.min(
-          (dailyUsage[0]?.requests || 0) / Math.max(monthRequests, 1) * 100,
+          ((dailyUsage[0]?.requests || 0) / Math.max(monthRequests, 1)) * 100,
           100,
         )
       : 0;
@@ -419,7 +423,14 @@ function ActivityFeed({
   recentLogs,
   isLoading,
 }: {
-  recentLogs: { id: string; model: string; provider: string; cost: number; status: string; createdAt: string }[];
+  recentLogs: {
+    id: string;
+    model: string;
+    provider: string;
+    cost: number;
+    status: string;
+    createdAt: string;
+  }[];
   isLoading: boolean;
 }) {
   const activities = recentLogs.slice(0, 6);
@@ -566,7 +577,9 @@ export default function DashboardOverviewClient() {
   const totalCost = recentLogs.reduce((s, l) => s + l.cost, 0);
   const avgLatency =
     recentLogs.length > 0
-      ? Math.round(recentLogs.reduce((s, l) => s + l.latency, 0) / recentLogs.length)
+      ? Math.round(
+          recentLogs.reduce((s, l) => s + l.latency, 0) / recentLogs.length,
+        )
       : 0;
   const creditsRemaining = credits?.balance ?? 0;
 
@@ -630,7 +643,10 @@ export default function DashboardOverviewClient() {
         className="space-y-5"
       >
         {/* ── Row 1: Header ── */}
-        <motion.div variants={fadeUp} className="flex items-end justify-between">
+        <motion.div
+          variants={fadeUp}
+          className="flex items-end justify-between"
+        >
           <div>
             <div className="flex items-center gap-3 mb-1">
               <h1 className="text-[22px] font-semibold tracking-[-0.025em]">
@@ -641,7 +657,10 @@ export default function DashboardOverviewClient() {
                 Live
               </span>
             </div>
-            <p className="text-[12px] font-mono tracking-wide" style={{ color: "var(--admin-text-dim)" }}>
+            <p
+              className="text-[12px] font-mono tracking-wide"
+              style={{ color: "var(--admin-text-dim)" }}
+            >
               {new Date().toLocaleDateString("en-US", {
                 weekday: "long",
                 month: "long",
@@ -660,8 +679,14 @@ export default function DashboardOverviewClient() {
               <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
             </Link>
             <div className="flex items-center gap-2">
-              <Clock className="w-3.5 h-3.5" style={{ color: "var(--admin-text-dim)" }} />
-              <span className="text-[11px] font-mono" style={{ color: "var(--admin-text-dim)" }}>
+              <Clock
+                className="w-3.5 h-3.5"
+                style={{ color: "var(--admin-text-dim)" }}
+              />
+              <span
+                className="text-[11px] font-mono"
+                style={{ color: "var(--admin-text-dim)" }}
+              >
                 Auto-refresh 30s
               </span>
             </div>
@@ -685,12 +710,20 @@ export default function DashboardOverviewClient() {
               </div>
             </div>
             <div className="lg:col-span-3 flex flex-col gap-4">
-              <div className="admin-card p-5"><div className="admin-skeleton h-20" /></div>
-              <div className="admin-card p-5"><div className="admin-skeleton h-20" /></div>
-              <div className="admin-card p-5"><div className="admin-skeleton h-20" /></div>
+              <div className="admin-card p-5">
+                <div className="admin-skeleton h-20" />
+              </div>
+              <div className="admin-card p-5">
+                <div className="admin-skeleton h-20" />
+              </div>
+              <div className="admin-card p-5">
+                <div className="admin-skeleton h-20" />
+              </div>
             </div>
             <div className="lg:col-span-4">
-              <div className="admin-card p-6 h-full"><div className="admin-skeleton h-full min-h-[200px]" /></div>
+              <div className="admin-card p-6 h-full">
+                <div className="admin-skeleton h-full min-h-[200px]" />
+              </div>
             </div>
           </div>
         ) : (
@@ -736,15 +769,25 @@ export default function DashboardOverviewClient() {
         {/* ── Row 4: Credits + Activity + Commands ── */}
         {isLoading ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="admin-card p-6"><div className="admin-skeleton h-40" /></div>
-            <div className="lg:col-span-2 admin-card p-6"><div className="admin-skeleton h-40" /></div>
+            <div className="admin-card p-6">
+              <div className="admin-skeleton h-40" />
+            </div>
+            <div className="lg:col-span-2 admin-card p-6">
+              <div className="admin-skeleton h-40" />
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Credits hero — small */}
-            <motion.div variants={fadeUp} className="admin-card p-6 flex flex-col">
+            <motion.div
+              variants={fadeUp}
+              className="admin-card p-6 flex flex-col"
+            >
               <SectionHeading title="Credits" subtitle="Balance" />
-              <p className="text-[34px] font-bold font-mono tracking-[-0.03em] leading-none" style={{ color: "var(--admin-text)" }}>
+              <p
+                className="text-[34px] font-bold font-mono tracking-[-0.03em] leading-none"
+                style={{ color: "var(--admin-text)" }}
+              >
                 ${(creditsRemaining / 100000).toFixed(2)}
               </p>
               <div className="mt-auto pt-6">
@@ -767,8 +810,12 @@ export default function DashboardOverviewClient() {
         {/* ── Row 5: Quick Commands + Top Models ── */}
         {isLoading ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="admin-card p-6"><div className="admin-skeleton h-48" /></div>
-            <div className="lg:col-span-2 admin-card p-6"><div className="admin-skeleton h-48" /></div>
+            <div className="admin-card p-6">
+              <div className="admin-skeleton h-48" />
+            </div>
+            <div className="lg:col-span-2 admin-card p-6">
+              <div className="admin-skeleton h-48" />
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -820,7 +867,11 @@ function TopModels({
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${m.pct}%` }}
-                  transition={{ delay: 0.3 + i * 0.08, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                  transition={{
+                    delay: 0.3 + i * 0.08,
+                    duration: 0.7,
+                    ease: [0.16, 1, 0.3, 1],
+                  }}
                   className="h-full rounded-full"
                   style={{
                     background: "linear-gradient(to right, #3b82f6, #7c3aed)",
@@ -837,7 +888,9 @@ function TopModels({
       ) : (
         <div className="text-center py-10">
           <BarChart3 className="w-5 h-5 text-[var(--admin-text-dim)] mx-auto mb-2 opacity-40" />
-          <p className="text-[12px] text-[var(--admin-text-dim)]">No model usage yet</p>
+          <p className="text-[12px] text-[var(--admin-text-dim)]">
+            No model usage yet
+          </p>
         </div>
       )}
     </motion.div>

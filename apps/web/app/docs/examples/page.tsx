@@ -28,12 +28,7 @@ export default function ExamplesPage() {
         visible: { transition: { staggerChildren: 0.06 } },
       }}
     >
-      <Section
-        id="examples"
-        icon={Terminal}
-        title="Code Examples"
-       
-      >
+      <Section id="examples" icon={Terminal} title="Code Examples">
         <p className="text-white/80">
           Full working examples in multiple languages to help you integrate
           quickly.

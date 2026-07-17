@@ -52,7 +52,10 @@ export function PageSection({
   return (
     <section
       id={id}
-      className={cn("relative mb-20 sm:mb-28 last:mb-0 scroll-mt-24", className)}
+      className={cn(
+        "relative mb-20 sm:mb-28 last:mb-0 scroll-mt-24",
+        className,
+      )}
     >
       <header className="mb-8">
         <div className="flex items-center gap-3 mb-5">

@@ -12,71 +12,167 @@ import { getDocsBaseUrl } from "@/lib/docs-config";
 const BASE_URL = getDocsBaseUrl();
 
 const SDK_METHODS = [
-  { group: "Chat", methods: [
-    { name: "chat(params)", desc: "Send a chat completion request. Supports streaming via stream: true." },
-    { name: "chatStream(params)", desc: "Streaming chat with async iterator / SSE parsing." },
-  ]},
-  { group: "Embeddings", methods: [
-    { name: "embed(params)", desc: "Generate embeddings from text input." },
-  ]},
-  { group: "Models", methods: [
-    { name: "listModels()", desc: "List all available models with capabilities and pricing." },
-    { name: "listModels(provider)", desc: "List models for a specific provider." },
-  ]},
-  { group: "Conversations", methods: [
-    { name: "createConversation(params)", desc: "Create a new conversation thread." },
-    { name: "listConversations()", desc: "List recent conversations." },
-    { name: "getConversation(id)", desc: "Get conversation with full message history." },
-    { name: "deleteConversation(id)", desc: "Delete a conversation permanently." },
-    { name: "sendMessage(id, params)", desc: "Send a message and get AI response." },
-  ]},
-  { group: "Prompts", methods: [
-    { name: "createPrompt(params)", desc: "Create a prompt template with variable placeholders." },
-    { name: "listPrompts()", desc: "List all saved prompt templates." },
-    { name: "getPrompt(name)", desc: "Get a template by name." },
-    { name: "renderPrompt(name, variables)", desc: "Render a template with variable substitution." },
-    { name: "deletePrompt(name)", desc: "Delete a prompt template." },
-  ]},
-  { group: "Batch", methods: [
-    { name: "createBatch(params)", desc: "Submit a batch of chat requests." },
-    { name: "getBatch(id)", desc: "Check batch job status and retrieve results." },
-  ]},
-  { group: "Files", methods: [
-    { name: "uploadFiles(formData)", desc: "Upload image files for vision models." },
-    { name: "listFiles()", desc: "List all uploaded files." },
-  ]},
-  { group: "Billing", methods: [
-    { name: "getCredits()", desc: "Get current credit balance and spending." },
-    { name: "purchaseCredits(params)", desc: "Purchase additional credits." },
-    { name: "getTransactions()", desc: "List credit transaction history." },
-    { name: "getBudget()", desc: "Get daily/monthly budget limits and spending." },
-    { name: "setBudget(params)", desc: "Set budget limits." },
-  ]},
-  { group: "API Keys", methods: [
-    { name: "listKeys()", desc: "List all API keys." },
-    { name: "createKey(params)", desc: "Create a new API key with optional scopes." },
-    { name: "revokeKey(id)", desc: "Revoke an API key (immediately disables it)." },
-    { name: "deleteKey(id)", desc: "Permanently delete an API key." },
-  ]},
-  { group: "Webhooks", methods: [
-    { name: "listWebhooks()", desc: "List configured webhook endpoints." },
-    { name: "createWebhook(params)", desc: "Create a webhook endpoint." },
-    { name: "getWebhook(id)", desc: "Get webhook configuration." },
-    { name: "updateWebhook(id, params)", desc: "Update webhook settings." },
-    { name: "deleteWebhook(id)", desc: "Delete a webhook endpoint." },
-  ]},
-  { group: "Organizations", methods: [
-    { name: "listOrganizations()", desc: "List organizations you belong to." },
-    { name: "createOrganization(params)", desc: "Create a new organization." },
-    { name: "getOrganization(id)", desc: "Get organization details." },
-    { name: "listMembers(orgId)", desc: "List organization members." },
-    { name: "inviteMember(orgId, params)", desc: "Invite a user to an organization." },
-    { name: "acceptInvite(token)", desc: "Accept an organization invitation." },
-  ]},
-  { group: "Analytics", methods: [
-    { name: "getAnalytics(params)", desc: "Get usage analytics over time." },
-    { name: "getLogs(params)", desc: "Paginated request logs." },
-  ]},
+  {
+    group: "Chat",
+    methods: [
+      {
+        name: "chat(params)",
+        desc: "Send a chat completion request. Supports streaming via stream: true.",
+      },
+      {
+        name: "chatStream(params)",
+        desc: "Streaming chat with async iterator / SSE parsing.",
+      },
+    ],
+  },
+  {
+    group: "Embeddings",
+    methods: [
+      { name: "embed(params)", desc: "Generate embeddings from text input." },
+    ],
+  },
+  {
+    group: "Models",
+    methods: [
+      {
+        name: "listModels()",
+        desc: "List all available models with capabilities and pricing.",
+      },
+      {
+        name: "listModels(provider)",
+        desc: "List models for a specific provider.",
+      },
+    ],
+  },
+  {
+    group: "Conversations",
+    methods: [
+      {
+        name: "createConversation(params)",
+        desc: "Create a new conversation thread.",
+      },
+      { name: "listConversations()", desc: "List recent conversations." },
+      {
+        name: "getConversation(id)",
+        desc: "Get conversation with full message history.",
+      },
+      {
+        name: "deleteConversation(id)",
+        desc: "Delete a conversation permanently.",
+      },
+      {
+        name: "sendMessage(id, params)",
+        desc: "Send a message and get AI response.",
+      },
+    ],
+  },
+  {
+    group: "Prompts",
+    methods: [
+      {
+        name: "createPrompt(params)",
+        desc: "Create a prompt template with variable placeholders.",
+      },
+      { name: "listPrompts()", desc: "List all saved prompt templates." },
+      { name: "getPrompt(name)", desc: "Get a template by name." },
+      {
+        name: "renderPrompt(name, variables)",
+        desc: "Render a template with variable substitution.",
+      },
+      { name: "deletePrompt(name)", desc: "Delete a prompt template." },
+    ],
+  },
+  {
+    group: "Batch",
+    methods: [
+      { name: "createBatch(params)", desc: "Submit a batch of chat requests." },
+      {
+        name: "getBatch(id)",
+        desc: "Check batch job status and retrieve results.",
+      },
+    ],
+  },
+  {
+    group: "Files",
+    methods: [
+      {
+        name: "uploadFiles(formData)",
+        desc: "Upload image files for vision models.",
+      },
+      { name: "listFiles()", desc: "List all uploaded files." },
+    ],
+  },
+  {
+    group: "Billing",
+    methods: [
+      {
+        name: "getCredits()",
+        desc: "Get current credit balance and spending.",
+      },
+      { name: "purchaseCredits(params)", desc: "Purchase additional credits." },
+      { name: "getTransactions()", desc: "List credit transaction history." },
+      {
+        name: "getBudget()",
+        desc: "Get daily/monthly budget limits and spending.",
+      },
+      { name: "setBudget(params)", desc: "Set budget limits." },
+    ],
+  },
+  {
+    group: "API Keys",
+    methods: [
+      { name: "listKeys()", desc: "List all API keys." },
+      {
+        name: "createKey(params)",
+        desc: "Create a new API key with optional scopes.",
+      },
+      {
+        name: "revokeKey(id)",
+        desc: "Revoke an API key (immediately disables it).",
+      },
+      { name: "deleteKey(id)", desc: "Permanently delete an API key." },
+    ],
+  },
+  {
+    group: "Webhooks",
+    methods: [
+      { name: "listWebhooks()", desc: "List configured webhook endpoints." },
+      { name: "createWebhook(params)", desc: "Create a webhook endpoint." },
+      { name: "getWebhook(id)", desc: "Get webhook configuration." },
+      { name: "updateWebhook(id, params)", desc: "Update webhook settings." },
+      { name: "deleteWebhook(id)", desc: "Delete a webhook endpoint." },
+    ],
+  },
+  {
+    group: "Organizations",
+    methods: [
+      {
+        name: "listOrganizations()",
+        desc: "List organizations you belong to.",
+      },
+      {
+        name: "createOrganization(params)",
+        desc: "Create a new organization.",
+      },
+      { name: "getOrganization(id)", desc: "Get organization details." },
+      { name: "listMembers(orgId)", desc: "List organization members." },
+      {
+        name: "inviteMember(orgId, params)",
+        desc: "Invite a user to an organization.",
+      },
+      {
+        name: "acceptInvite(token)",
+        desc: "Accept an organization invitation.",
+      },
+    ],
+  },
+  {
+    group: "Analytics",
+    methods: [
+      { name: "getAnalytics(params)", desc: "Get usage analytics over time." },
+      { name: "getLogs(params)", desc: "Paginated request logs." },
+    ],
+  },
 ];
 
 export default function SDKPage() {
@@ -108,9 +204,15 @@ export default function SDKPage() {
             <code className="px-1.5 py-0.5 rounded-md bg-indigo-500/[0.08] text-indigo-200/95 font-mono text-[13px] border border-indigo-500/[0.12]">
               @/lib/api/sdk
             </code>{" "}
-            in the web app. Use <code className="px-1.5 py-0.5 rounded-md bg-indigo-500/[0.08] text-indigo-200/95 font-mono text-[13px] border border-indigo-500/[0.12]">getSDK()</code> to
-            get an authenticated instance, or create a <code className="px-1.5 py-0.5 rounded-md bg-indigo-500/[0.08] text-indigo-200/95 font-mono text-[13px] border border-indigo-500/[0.12]">DraSDK</code> with
-            a custom base URL and API key.
+            in the web app. Use{" "}
+            <code className="px-1.5 py-0.5 rounded-md bg-indigo-500/[0.08] text-indigo-200/95 font-mono text-[13px] border border-indigo-500/[0.12]">
+              getSDK()
+            </code>{" "}
+            to get an authenticated instance, or create a{" "}
+            <code className="px-1.5 py-0.5 rounded-md bg-indigo-500/[0.08] text-indigo-200/95 font-mono text-[13px] border border-indigo-500/[0.12]">
+              DraSDK
+            </code>{" "}
+            with a custom base URL and API key.
           </p>
           <CodeBlock
             language="typescript"
@@ -173,11 +275,12 @@ const data = await sdk.chat({
             React Query hooks
           </DocsSubhead>
           <p className="text-sm text-white/55 leading-[1.75] mb-5">
-            The SDK is wrapped with React Query hooks for automatic caching, refetching,
-            and loading states. Import from{" "}
+            The SDK is wrapped with React Query hooks for automatic caching,
+            refetching, and loading states. Import from{" "}
             <code className="px-1.5 py-0.5 rounded-md bg-indigo-500/[0.08] text-indigo-200/95 font-mono text-[13px] border border-indigo-500/[0.12]">
               @/lib/api/hooks
-            </code>.
+            </code>
+            .
           </p>
           <CodeBlock
             language="typescript"
@@ -219,8 +322,8 @@ function MyComponent() {
             <code className="px-1.5 py-0.5 rounded-md bg-indigo-500/[0.08] text-indigo-200/95 font-mono text-[13px] border border-indigo-500/[0.12]">
               pkg/sdk/
             </code>{" "}
-            in the backend. It implements the same ~40 methods as the TypeScript SDK
-            for server-to-server integration.
+            in the backend. It implements the same ~40 methods as the TypeScript
+            SDK for server-to-server integration.
           </p>
           <CodeBlock
             language="go"
@@ -249,12 +352,10 @@ credits, err := client.GetCredits(ctx)`}
 
         {/* OpenAI SDK drop-in */}
         <div className="mt-14">
-          <DocsSubhead>
-            OpenAI SDK drop-in
-          </DocsSubhead>
+          <DocsSubhead>OpenAI SDK drop-in</DocsSubhead>
           <p className="text-sm text-white/55 leading-[1.75] mb-5">
-            You can also use the official OpenAI SDK by changing only the base URL.
-            This is the fastest way to migrate existing applications.
+            You can also use the official OpenAI SDK by changing only the base
+            URL. This is the fastest way to migrate existing applications.
           </p>
           <CodeBlock
             examples={{
@@ -301,9 +402,7 @@ client := openai.NewClient(
 
         {/* Method reference */}
         <div className="mt-14">
-          <DocsSubhead>
-            Method reference
-          </DocsSubhead>
+          <DocsSubhead>Method reference</DocsSubhead>
           <div className="space-y-6">
             {SDK_METHODS.map((group) => (
               <div key={group.group}>
@@ -319,7 +418,9 @@ client := openai.NewClient(
                       <code className="text-[12px] font-mono text-indigo-200/80 whitespace-nowrap flex-shrink-0 min-w-[220px]">
                         {m.name}
                       </code>
-                      <span className="text-xs text-white/40 leading-[1.6]">{m.desc}</span>
+                      <span className="text-xs text-white/40 leading-[1.6]">
+                        {m.desc}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -329,9 +430,9 @@ client := openai.NewClient(
         </div>
 
         <TipBox variant="info">
-          Dashboard components MUST use the SDK via <code>getSDK()</code> or React Query hooks
-          from <code>@/lib/api/hooks</code>. Mock data is forbidden and enforced by the
-          wiring verification test suite.
+          Dashboard components MUST use the SDK via <code>getSDK()</code> or
+          React Query hooks from <code>@/lib/api/hooks</code>. Mock data is
+          forbidden and enforced by the wiring verification test suite.
         </TipBox>
       </Section>
     </motion.div>

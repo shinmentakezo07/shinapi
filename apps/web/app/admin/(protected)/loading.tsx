@@ -1,7 +1,13 @@
 // /admin/(protected)/* — Admin shell skeleton. The protected layout adds
 // the top bar (server-rendered) and sidebar (client-side). This skeleton
 // matches the page content area beneath those.
-import { Skeleton, SkeletonGrid, SkeletonHeader, SkeletonList, SkeletonStats } from "@/components/ui/skeleton";
+import {
+  Skeleton,
+  SkeletonGrid,
+  SkeletonHeader,
+  SkeletonList,
+  SkeletonStats,
+} from "@/components/ui/skeleton";
 
 export default function AdminLoading() {
   return (

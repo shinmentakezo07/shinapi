@@ -54,13 +54,13 @@
 
 ## Service Boundaries
 
-| Boundary | Responsibility | Technology |
-|----------|---------------|------------|
-| **Frontend** (`apps/web/`) | User-facing UI, auth, dashboard, playground, docs | Next.js 16, React 19, TypeScript |
-| **Backend API** (`apps/backend/`) | Auth, quota, billing, LLM proxy, admin, webhooks | Go 1.25, chi, pgx |
-| **LLM Pipeline** (`pkg/llm/`) | 10-stage request processing, provider abstraction, routing | Go packages (19 subpackages) |
-| **Database** | User data, API keys, logs, credits, billing | PostgreSQL 16 |
-| **External Providers** | Actual AI inference | OpenAI, Anthropic, Gemini, Groq, etc. |
+| Boundary                          | Responsibility                                             | Technology                            |
+| --------------------------------- | ---------------------------------------------------------- | ------------------------------------- |
+| **Frontend** (`apps/web/`)        | User-facing UI, auth, dashboard, playground, docs          | Next.js 16, React 19, TypeScript      |
+| **Backend API** (`apps/backend/`) | Auth, quota, billing, LLM proxy, admin, webhooks           | Go 1.25, chi, pgx                     |
+| **LLM Pipeline** (`pkg/llm/`)     | 10-stage request processing, provider abstraction, routing | Go packages (19 subpackages)          |
+| **Database**                      | User data, API keys, logs, credits, billing                | PostgreSQL 16                         |
+| **External Providers**            | Actual AI inference                                        | OpenAI, Anthropic, Gemini, Groq, etc. |
 
 ---
 
@@ -91,15 +91,15 @@ Client (SDK or UI)
 
 ## Key Entry Points
 
-| Entry Point | File | Purpose |
-|-------------|------|---------|
-| **Backend HTTP Server** | `apps/backend/cmd/api/main.go` | Config → DB → Redis → Repos → LLM Providers → Services → Handlers → Chi Router |
-| **Backend Routes** | `apps/backend/cmd/api/routes.go` (~400 lines) | All 100+ route definitions + middleware chains |
-| **Frontend Root** | `apps/web/app/layout.tsx` | Root layout, providers, theme |
-| **Frontend Auth** | `apps/web/auth.ts` + `auth.config.ts` | NextAuth v5 config (GitHub + Google OAuth) |
-| **Frontend Proxy** | `apps/web/lib/api/proxy.ts` | Server-side proxy to backend (all `app/api/*` routes) |
-| **SDK (TypeScript)** | `apps/web/lib/api/sdk.ts` (~1700 lines) | Typed client for all backend endpoints |
-| **SDK (Go)** | `apps/backend/pkg/sdk/client.go` (~1860 lines) | Official Go SDK (parity with TS SDK) |
+| Entry Point             | File                                           | Purpose                                                                        |
+| ----------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------ |
+| **Backend HTTP Server** | `apps/backend/cmd/api/main.go`                 | Config → DB → Redis → Repos → LLM Providers → Services → Handlers → Chi Router |
+| **Backend Routes**      | `apps/backend/cmd/api/routes.go` (~400 lines)  | All 100+ route definitions + middleware chains                                 |
+| **Frontend Root**       | `apps/web/app/layout.tsx`                      | Root layout, providers, theme                                                  |
+| **Frontend Auth**       | `apps/web/auth.ts` + `auth.config.ts`          | NextAuth v5 config (GitHub + Google OAuth)                                     |
+| **Frontend Proxy**      | `apps/web/lib/api/proxy.ts`                    | Server-side proxy to backend (all `app/api/*` routes)                          |
+| **SDK (TypeScript)**    | `apps/web/lib/api/sdk.ts` (~1700 lines)        | Typed client for all backend endpoints                                         |
+| **SDK (Go)**            | `apps/backend/pkg/sdk/client.go` (~1860 lines) | Official Go SDK (parity with TS SDK)                                           |
 
 ---
 
@@ -123,42 +123,42 @@ All three paths converge in `internal/middleware/auth.go` → inject `*domain.Us
 
 ## Critical Shared State
 
-| State | Location | Notes |
-|-------|----------|-------|
-| `AUTH_SECRET` | Env var | **MUST be identical** in frontend and backend (HS256 JWT) |
-| API Key hashes | `api_keys.key` (hashed) | Never return raw key after creation |
-| Credit balances | `user_credits.balance` | Deducted async after successful LLM call |
-| Provider keys | `providers` table + `pkg/llm/provider/` | Multi-key rotation + circuit breaker per provider |
-| Rate limits | In-memory map OR Redis | Sliding window, configurable per-endpoint |
+| State           | Location                                | Notes                                                     |
+| --------------- | --------------------------------------- | --------------------------------------------------------- |
+| `AUTH_SECRET`   | Env var                                 | **MUST be identical** in frontend and backend (HS256 JWT) |
+| API Key hashes  | `api_keys.key` (hashed)                 | Never return raw key after creation                       |
+| Credit balances | `user_credits.balance`                  | Deducted async after successful LLM call                  |
+| Provider keys   | `providers` table + `pkg/llm/provider/` | Multi-key rotation + circuit breaker per provider         |
+| Rate limits     | In-memory map OR Redis                  | Sliding window, configurable per-endpoint                 |
 
 ---
 
 ## Operational Subsystems
 
-| Subsystem | Key Files | Purpose |
-|-----------|-----------|---------|
-| **RBAC** | `internal/service/rbac.go`, `008_rbac.sql` | Role + permission model (`users.read`, `billing.write`, etc.) |
-| **SSO** | `internal/handler/rbac_handlers.go` | OIDC config storage, domain-restricted sign-in |
-| **Fine-Tuning** | `internal/service/fine_tuning.go` | Async job queue for model fine-tuning (JSONL datasets) |
-| **Webhooks** | `internal/service/webhook.go` | 10 event types, exponential backoff, DLQ |
-| **Exports** | `internal/service/export.go` | Async CSV/JSON exports (logs, usage, audit) |
-| **Provider Plugins** | `internal/service/provider_plugin.go` | Dynamic provider registration via admin API |
-| **Notifications** | `internal/handler/sse.go` | Per-user SSE hub for real-time alerts |
+| Subsystem            | Key Files                                  | Purpose                                                       |
+| -------------------- | ------------------------------------------ | ------------------------------------------------------------- |
+| **RBAC**             | `internal/service/rbac.go`, `008_rbac.sql` | Role + permission model (`users.read`, `billing.write`, etc.) |
+| **SSO**              | `internal/handler/rbac_handlers.go`        | OIDC config storage, domain-restricted sign-in                |
+| **Fine-Tuning**      | `internal/service/fine_tuning.go`          | Async job queue for model fine-tuning (JSONL datasets)        |
+| **Webhooks**         | `internal/service/webhook.go`              | 10 event types, exponential backoff, DLQ                      |
+| **Exports**          | `internal/service/export.go`               | Async CSV/JSON exports (logs, usage, audit)                   |
+| **Provider Plugins** | `internal/service/provider_plugin.go`      | Dynamic provider registration via admin API                   |
+| **Notifications**    | `internal/handler/sse.go`                  | Per-user SSE hub for real-time alerts                         |
 
 ---
 
 ## File Count by Layer (approximate)
 
-| Layer | Files | Notes |
-|-------|-------|-------|
-| Frontend pages | ~60 | `app/**/page.tsx` + layouts |
-| Frontend components | ~80 | `components/ui/`, `components/dashboard/`, etc. |
-| Frontend API layer | ~10 | SDK, hooks, proxy, errors, types |
-| Backend handlers | ~25 | `internal/handler/*.go` |
-| Backend services | ~20 | `internal/service/*.go` |
-| Backend repos | ~15 | `internal/repository/*.go` |
-| LLM pipeline | 19 packages | `pkg/llm/*/` (validator → watcher) |
-| Database migrations | 20 | `migrations/001_*.sql` through `020_*.sql` (hand-applied) |
+| Layer               | Files       | Notes                                                     |
+| ------------------- | ----------- | --------------------------------------------------------- |
+| Frontend pages      | ~60         | `app/**/page.tsx` + layouts                               |
+| Frontend components | ~80         | `components/ui/`, `components/dashboard/`, etc.           |
+| Frontend API layer  | ~10         | SDK, hooks, proxy, errors, types                          |
+| Backend handlers    | ~25         | `internal/handler/*.go`                                   |
+| Backend services    | ~20         | `internal/service/*.go`                                   |
+| Backend repos       | ~15         | `internal/repository/*.go`                                |
+| LLM pipeline        | 19 packages | `pkg/llm/*/` (validator → watcher)                        |
+| Database migrations | 20          | `migrations/001_*.sql` through `020_*.sql` (hand-applied) |
 
 ---
 

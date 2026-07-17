@@ -109,9 +109,7 @@ export default function ModelsPage() {
         </div>
 
         <div className="mt-8">
-          <DocsSubhead>
-            Fetching models via API
-          </DocsSubhead>
+          <DocsSubhead>Fetching models via API</DocsSubhead>
           <p className="text-sm text-white/50 mb-4">
             Use the API to get the complete, dynamically-updated list of
             supported models. This is useful for populating model selectors in
@@ -127,9 +125,7 @@ export default function ModelsPage() {
         </div>
 
         <div className="mt-8">
-          <DocsSubhead>
-            OpenAI-compatible endpoint
-          </DocsSubhead>
+          <DocsSubhead>OpenAI-compatible endpoint</DocsSubhead>
           <p className="text-sm text-white/50 mb-4">
             Use{" "}
             <code className="px-1.5 py-0.5 rounded-md bg-white/[0.05] text-white/70 font-mono text-xs">
@@ -148,9 +144,7 @@ export default function ModelsPage() {
         </div>
 
         <div className="mt-8">
-          <DocsSubhead>
-            Response format
-          </DocsSubhead>
+          <DocsSubhead>Response format</DocsSubhead>
           <CodeBlock
             language="json"
             code={`{
@@ -179,9 +173,7 @@ export default function ModelsPage() {
         </div>
 
         <div className="mt-8">
-          <DocsSubhead>
-            Provider-specific model listing
-          </DocsSubhead>
+          <DocsSubhead>Provider-specific model listing</DocsSubhead>
           <p className="text-sm text-white/50 mb-4">
             Filter models by provider to see only the models available from a
             specific provider.

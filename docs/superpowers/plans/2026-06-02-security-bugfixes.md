@@ -129,6 +129,7 @@
 **Root cause:** The original issue was a public backend route that trusted arbitrary `email/name/provider` claims and minted backend JWTs. Current backend routing no longer registers `/auth/oauth`, but frontend still calls it.
 
 **Files:**
+
 - Modify: `apps/web/auth.ts:44-57,90-147`
 - Test: `apps/backend/cmd/api/routes_test.go` or nearest existing route test file
 - Test: `apps/web/tests/integration/auth-flow.test.ts` if OAuth callback behavior is already represented
@@ -232,6 +233,7 @@ Expected: existing credentials auth behavior still passes. If tests assert OAuth
 **Root cause:** `OpenAIEmbeddings` skips billing directly from `r.Header.Get("X-Sandbox")`, while chat completions require an authenticated admin user.
 
 **Files:**
+
 - Modify: `apps/backend/internal/handler/openai_proxy.go:41-45,351-354`
 - Test: `apps/backend/internal/handler/openai_proxy_test.go`
 
@@ -314,6 +316,7 @@ Expected: PASS.
 **Root cause:** Preflight calls `EstimateTokens(model, nil)` instead of using actual request messages, so balance checks undercharge before provider dispatch.
 
 **Files:**
+
 - Modify: `apps/backend/internal/handler/openai_proxy.go:65-119`
 - Modify: `apps/backend/internal/handler/anthropic_messages.go:144-178,326-339`
 - Test: `apps/backend/internal/handler/openai_proxy_test.go`
@@ -452,6 +455,7 @@ Expected: PASS.
 **Root cause:** `QuotaTracker.CheckRequest` checks `mq.tokens + estimatedTokens` but never increments `mq.tokens`, while tests already expect it to increment.
 
 **Files:**
+
 - Modify: `apps/backend/internal/middleware/quota.go:120-134`
 - Modify/Test: `apps/backend/internal/middleware/quota_test.go:79-104`
 
@@ -517,6 +521,7 @@ Expected: PASS.
 **Root cause:** Original webhook URL is validated, but the default Go HTTP client follows redirects without validating the target. Update path validates only syntax.
 
 **Files:**
+
 - Modify: `apps/backend/pkg/webhook/webhook.go:53-57`
 - Modify: `apps/backend/internal/service/webhook.go:102-113`
 - Test: `apps/backend/pkg/webhook/webhook_test.go`
@@ -609,6 +614,7 @@ Expected: PASS.
 **Root cause:** `apps/backend/api` is a compiled ELF binary tracked in git. `.gitignore` ignores `apps/backend/cmd/api/api` but not `apps/backend/api`.
 
 **Files:**
+
 - Modify: `.gitignore:12-15`
 - Delete from git tracking: `apps/backend/api`
 
@@ -660,6 +666,7 @@ Expected: no output.
 **Root cause:** `next.config.ts` allows TypeScript errors in production, has weak CSP, and lacks HSTS.
 
 **Files:**
+
 - Modify: `apps/web/next.config.ts:2-35`
 
 - [ ] **Step 1: Replace config with environment-aware headers**
@@ -738,6 +745,7 @@ Expected: If type errors appear now that `ignoreBuildErrors` is removed, fix tho
 **Root cause:** New public pages were added before supporting detail/RSS/careers/status-live routes existed.
 
 **Files:**
+
 - Modify: `apps/web/app/blog/page.tsx`
 - Modify: `apps/web/app/changelog/page.tsx`
 - Modify: `apps/web/app/about/page.tsx`
@@ -795,13 +803,13 @@ If `next/link` does not accept this in the current setup, use a normal `<a>` for
 Replace:
 
 ```tsx
-title="What we&apos;re building"
+title = "What we&apos;re building";
 ```
 
 with:
 
 ```tsx
-title="What we're building"
+title = "What we're building";
 ```
 
 Replace:
@@ -857,6 +865,7 @@ Expected: build succeeds and wiring verification still passes.
 **Root cause:** The form gives a success state without submitting, query-topic CTAs are ignored, and labels are not programmatically associated.
 
 **Files:**
+
 - Modify: `apps/web/app/contact/page.tsx`
 - Modify: `apps/web/app/enterprise/page.tsx`
 - Modify: `apps/web/app/roadmap/page.tsx`
@@ -930,7 +939,13 @@ Remove the fake `submitted` state and success panel.
 Update `Field` props:
 
 ```tsx
-function Field({ label, name, type = "text", placeholder, required = false }: {
+function Field({
+  label,
+  name,
+  type = "text",
+  placeholder,
+  required = false,
+}: {
   label: string;
   name: string;
   type?: string;
@@ -940,10 +955,20 @@ function Field({ label, name, type = "text", placeholder, required = false }: {
   const id = `contact-${name}`;
   return (
     <div>
-      <label htmlFor={id} className="text-[10px] font-mono uppercase tracking-[0.18em] text-white/35 block mb-2">
+      <label
+        htmlFor={id}
+        className="text-[10px] font-mono uppercase tracking-[0.18em] text-white/35 block mb-2"
+      >
         {label}
       </label>
-      <input id={id} type={type} name={name} placeholder={placeholder} required={required} className="...existing classes..." />
+      <input
+        id={id}
+        type={type}
+        name={name}
+        placeholder={placeholder}
+        required={required}
+        className="...existing classes..."
+      />
     </div>
   );
 }
@@ -986,13 +1011,13 @@ Either keep aliases from Step 1 or change CTAs:
 
 ```tsx
 // enterprise/page.tsx
-href="/contact?topic=sales"
+href = "/contact?topic=sales";
 
 // roadmap/page.tsx
-href="/contact?topic=partnerships"
+href = "/contact?topic=partnerships";
 
 // legal/page.tsx
-href="/contact?topic=security"
+href = "/contact?topic=security";
 ```
 
 - [ ] **Step 5: Run frontend tests/build**
@@ -1014,6 +1039,7 @@ Expected: PASS or actionable diagnostics unrelated to this change.
 **Root cause:** Several enterprise handlers return raw `err.Error()` to clients.
 
 **Files:**
+
 - Modify: `apps/backend/internal/handler/enterprise.go:66-68,91-93,163-165,216-219`
 
 - [ ] **Step 1: Add small helper in `enterprise.go`**
@@ -1079,6 +1105,7 @@ Expected: PASS.
 **Recommended scope for this pass:** Do not change DB storage unless migration is planned. Stop returning secrets from list/get responses and avoid pre-populating edit form with secret. Keep raw secret internally for dispatch.
 
 **Files:**
+
 - Modify: `apps/backend/internal/repository/webhook.go`
 - Modify: `apps/web/app/dashboard/webhooks/page.tsx`
 - Test: `apps/backend/internal/repository/webhook_test.go`
@@ -1143,6 +1170,7 @@ Expected: PASS or precise type updates needed for webhook DTO shape.
 **Root cause:** Project rule requires `UPDATE.md` entry after code changes.
 
 **Files:**
+
 - Modify: `UPDATE.md`
 
 - [ ] **Step 1: Gather line ranges**
@@ -1200,6 +1228,7 @@ Expected: one new entry with required sections.
 ## Task 13: Final Verification and Reviews
 
 **Files:**
+
 - No direct edits unless prior tasks expose failures.
 
 - [ ] **Step 1: Run backend verification**

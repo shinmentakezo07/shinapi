@@ -11,7 +11,14 @@ import {
 import { creditPackages } from "@/lib/pricing-data";
 import type { CreditPackage } from "@/lib/pricing-data";
 
-type Accent = { bg: string; ring: string; text: string; glow: string; from: string; to: string };
+type Accent = {
+  bg: string;
+  ring: string;
+  text: string;
+  glow: string;
+  from: string;
+  to: string;
+};
 
 function CyberButton({
   children,
@@ -124,11 +131,7 @@ function PlanCard({
         <div className="absolute -inset-[1.5px] rounded-[32px] opacity-60 blur-[2px] overflow-hidden">
           <motion.div
             aria-hidden
-            animate={
-              prefersReduced
-                ? undefined
-                : { rotate: 360 }
-            }
+            animate={prefersReduced ? undefined : { rotate: 360 }}
             transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
             className="absolute inset-[-200%]"
             style={{
@@ -185,7 +188,11 @@ function PlanCard({
                 {!prefersReduced && (
                   <motion.span
                     animate={{ opacity: [1, 0.2, 1] }}
-                    transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+                    transition={{
+                      duration: 1.6,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
                     className="w-1.5 h-1.5 rounded-full bg-yellow-300 shadow-[0_0_8px_rgba(234,179,8,0.9)]"
                   />
                 )}
@@ -206,7 +213,9 @@ function PlanCard({
           {/* Price */}
           <div className="mb-5">
             <div className="flex items-baseline gap-1">
-              <span className="text-lg font-medium text-muted-foreground">$</span>
+              <span className="text-lg font-medium text-muted-foreground">
+                $
+              </span>
               <span className="text-5xl md:text-6xl font-bold tracking-tighter text-white tabular-nums">
                 {plan.amount.replace("$", "")}
               </span>
@@ -240,7 +249,10 @@ function PlanCard({
                 Value
               </span>
               <span className="font-mono text-xs font-bold text-white/80 tabular-nums">
-                {creditsPerDollar} <span className="text-muted-foreground/60 font-medium">cr / $1</span>
+                {creditsPerDollar}{" "}
+                <span className="text-muted-foreground/60 font-medium">
+                  cr / $1
+                </span>
               </span>
             </div>
           </div>
@@ -262,7 +274,10 @@ function PlanCard({
                     accent.ring,
                   ].join(" ")}
                 >
-                  <Check className={`w-2.5 h-2.5 ${plan.color}`} strokeWidth={3} />
+                  <Check
+                    className={`w-2.5 h-2.5 ${plan.color}`}
+                    strokeWidth={3}
+                  />
                 </span>
                 <span className="leading-relaxed">{feature}</span>
               </li>

@@ -39,7 +39,7 @@ export default function ApiReferencePage() {
 
   const totalEndpoints = API_CATEGORIES.reduce(
     (acc, cat) => acc + cat.endpoints.length,
-    0
+    0,
   );
 
   /* ── Scroll spy ── */
@@ -53,7 +53,7 @@ export default function ApiReferencePage() {
           }
         });
       },
-      { rootMargin: "-20% 0px -70% 0px", threshold: 0 }
+      { rootMargin: "-20% 0px -70% 0px", threshold: 0 },
     );
 
     Object.values(sectionRefs.current).forEach((el) => {
@@ -109,7 +109,7 @@ export default function ApiReferencePage() {
                     "relative flex items-center gap-2 flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-medium border transition-all duration-200 cursor-pointer",
                     isActive
                       ? `${cat.bgColor} ${cat.borderColor} ${cat.textColor} shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]`
-                      : "bg-white/[0.02] border-white/[0.06] text-white/35 hover:text-white/60 hover:bg-white/[0.04] hover:border-white/[0.08]"
+                      : "bg-white/[0.02] border-white/[0.06] text-white/35 hover:text-white/60 hover:bg-white/[0.04] hover:border-white/[0.08]",
                   )}
                 >
                   <cat.icon className="w-3.5 h-3.5" />
@@ -119,7 +119,7 @@ export default function ApiReferencePage() {
                       "ml-0.5 px-1.5 py-px rounded-full text-[9px] font-mono",
                       isActive
                         ? "bg-white/10 text-white/80"
-                        : "bg-white/[0.04] text-white/40"
+                        : "bg-white/[0.04] text-white/40",
                     )}
                   >
                     {cat.endpoints.length}
@@ -172,7 +172,10 @@ export default function ApiReferencePage() {
                 <span className="text-[10px] font-mono text-white/30 uppercase tracking-wider hidden sm:inline">
                   Base URL
                 </span>
-                <code className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.08] text-emerald-300/90 font-mono text-[13px] group cursor-pointer hover:border-white/[0.12] transition-all" onClick={handleCopyBaseUrl}>
+                <code
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.08] text-emerald-300/90 font-mono text-[13px] group cursor-pointer hover:border-white/[0.12] transition-all"
+                  onClick={handleCopyBaseUrl}
+                >
                   <Terminal className="w-3.5 h-3.5 text-emerald-400/60" />
                   {BASE_URL}
                   <span className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -194,7 +197,7 @@ export default function ApiReferencePage() {
                   "px-3 py-1 rounded-full text-[11px] font-medium border transition-all cursor-pointer",
                   !activeMethod
                     ? "bg-indigo-500/[0.1] border-indigo-500/25 text-indigo-200 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
-                    : "bg-transparent border-white/[0.06] text-white/30 hover:text-white/50 hover:border-white/[0.08]"
+                    : "bg-transparent border-white/[0.06] text-white/30 hover:text-white/50 hover:border-white/[0.08]",
                 )}
               >
                 All
@@ -211,13 +214,13 @@ export default function ApiReferencePage() {
                       ? m === "GET"
                         ? "bg-emerald-500/[0.1] border-emerald-500/25 text-emerald-200 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
                         : m === "POST"
-                        ? "bg-indigo-500/[0.1] border-indigo-500/25 text-indigo-200 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
-                        : m === "PUT"
-                        ? "bg-amber-500/[0.1] border-amber-500/25 text-amber-200 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
-                        : m === "PATCH"
-                        ? "bg-orange-500/[0.1] border-orange-500/25 text-orange-200 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
-                        : "bg-rose-500/[0.1] border-rose-500/25 text-rose-200 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
-                      : "bg-transparent border-white/[0.06] text-white/30 hover:text-white/50 hover:border-white/[0.08]"
+                          ? "bg-indigo-500/[0.1] border-indigo-500/25 text-indigo-200 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
+                          : m === "PUT"
+                            ? "bg-amber-500/[0.1] border-amber-500/25 text-amber-200 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
+                            : m === "PATCH"
+                              ? "bg-orange-500/[0.1] border-orange-500/25 text-orange-200 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
+                              : "bg-rose-500/[0.1] border-rose-500/25 text-rose-200 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
+                      : "bg-transparent border-white/[0.06] text-white/30 hover:text-white/50 hover:border-white/[0.08]",
                   )}
                 >
                   {m}
@@ -235,9 +238,8 @@ export default function ApiReferencePage() {
                   exit={{ opacity: 0, y: -8 }}
                   className="text-xs text-white/40 font-mono"
                 >
-                  Showing{" "}
-                  {filtered.reduce((n, c) => n + c.endpoints.length, 0)} of{" "}
-                  {totalEndpoints} endpoints
+                  Showing {filtered.reduce((n, c) => n + c.endpoints.length, 0)}{" "}
+                  of {totalEndpoints} endpoints
                 </motion.div>
               )}
             </AnimatePresence>
@@ -287,14 +289,14 @@ export default function ApiReferencePage() {
                     className={cn(
                       "flex items-center gap-3 mb-4 p-4 rounded-2xl border",
                       "bg-gradient-to-br from-white/[0.02] to-transparent",
-                      cat.borderColor
+                      cat.borderColor,
                     )}
                   >
                     <div
                       className={cn(
                         "w-10 h-10 rounded-xl flex items-center justify-center border shadow-sm",
                         cat.bgColor,
-                        cat.borderColor
+                        cat.borderColor,
                       )}
                     >
                       <cat.icon className={cn("w-5 h-5", cat.textColor)} />
@@ -303,7 +305,7 @@ export default function ApiReferencePage() {
                       <h3
                         className={cn(
                           "text-lg font-semibold tracking-tight",
-                          cat.textColor
+                          cat.textColor,
                         )}
                       >
                         {cat.label}

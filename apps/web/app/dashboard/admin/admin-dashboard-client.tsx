@@ -221,52 +221,59 @@ export default function AdminDashboardClient() {
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   <AnimatePresence>
-                    {users.map((u: { id: string; name: string; email: string; role: string }) => (
-                      <motion.tr
-                        key={u.id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                      >
-                        <td className="py-3 text-white">{u.name}</td>
-                        <td className="py-3 text-gray-400">{u.email}</td>
-                        <td className="py-3">
-                          <RoleBadge role={u.role} />
-                        </td>
-                        <td className="py-3 text-right">
-                          {deleteConfirm === u.id ? (
-                            <div className="flex items-center justify-end gap-2">
+                    {users.map(
+                      (u: {
+                        id: string;
+                        name: string;
+                        email: string;
+                        role: string;
+                      }) => (
+                        <motion.tr
+                          key={u.id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                        >
+                          <td className="py-3 text-white">{u.name}</td>
+                          <td className="py-3 text-gray-400">{u.email}</td>
+                          <td className="py-3">
+                            <RoleBadge role={u.role} />
+                          </td>
+                          <td className="py-3 text-right">
+                            {deleteConfirm === u.id ? (
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={() => setDeleteConfirm(null)}
+                                  className="text-gray-400 hover:text-white text-xs px-2 py-1"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(u.id)}
+                                  disabled={deleteUser.isPending}
+                                  className="bg-red-500/20 text-red-400 hover:bg-red-500/30 text-xs px-3 py-1.5 rounded flex items-center gap-1 disabled:opacity-50"
+                                >
+                                  {deleteUser.isPending ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="w-3 h-3" />
+                                  )}
+                                  Confirm
+                                </button>
+                              </div>
+                            ) : (
                               <button
-                                onClick={() => setDeleteConfirm(null)}
-                                className="text-gray-400 hover:text-white text-xs px-2 py-1"
+                                onClick={() => setDeleteConfirm(u.id)}
+                                className="text-red-400 hover:text-red-300 text-xs flex items-center gap-1 ml-auto"
                               >
-                                Cancel
+                                <Trash2 className="w-3 h-3" />
+                                Delete
                               </button>
-                              <button
-                                onClick={() => handleDelete(u.id)}
-                                disabled={deleteUser.isPending}
-                                className="bg-red-500/20 text-red-400 hover:bg-red-500/30 text-xs px-3 py-1.5 rounded flex items-center gap-1 disabled:opacity-50"
-                              >
-                                {deleteUser.isPending ? (
-                                  <Loader2 className="w-3 h-3 animate-spin" />
-                                ) : (
-                                  <Trash2 className="w-3 h-3" />
-                                )}
-                                Confirm
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => setDeleteConfirm(u.id)}
-                              className="text-red-400 hover:text-red-300 text-xs flex items-center gap-1 ml-auto"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                              Delete
-                            </button>
-                          )}
-                        </td>
-                      </motion.tr>
-                    ))}
+                            )}
+                          </td>
+                        </motion.tr>
+                      ),
+                    )}
                   </AnimatePresence>
                 </tbody>
               </table>

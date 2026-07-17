@@ -171,33 +171,33 @@ app/layout.tsx (Root)
 
 ### UI Primitives (`components/ui/`)
 
-| Component | Purpose |
-|-----------|---------|
-| `button.tsx` | cva-based button with variants (primary, secondary, ghost, danger) |
-| `glass-card.tsx` | Glassmorphism container with backdrop blur |
-| `loading-spinner.tsx` | Animated loading indicator |
-| `toast.tsx` | Toast notification system (success, error, info) |
+| Component             | Purpose                                                            |
+| --------------------- | ------------------------------------------------------------------ |
+| `button.tsx`          | cva-based button with variants (primary, secondary, ghost, danger) |
+| `glass-card.tsx`      | Glassmorphism container with backdrop blur                         |
+| `loading-spinner.tsx` | Animated loading indicator                                         |
+| `toast.tsx`           | Toast notification system (success, error, info)                   |
 
 ### Dashboard Components (`components/dashboard/`)
 
-| Component | Purpose |
-|-----------|---------|
-| `MetricCard.tsx` | KPI display (number + label + trend) |
-| `DataTable.tsx` | Generic table with sorting, pagination, row actions |
-| `StatusBadge.tsx` | Color-coded status pills (success, error, pending, etc.) |
-| `LogDetailDrawer.tsx` | Slide-in drawer for request log details |
-| `ModelBreakdown.tsx` | Usage by model pie/bar chart data |
-| `AnimatedCounter.tsx` | Number animation for metrics |
+| Component             | Purpose                                                  |
+| --------------------- | -------------------------------------------------------- |
+| `MetricCard.tsx`      | KPI display (number + label + trend)                     |
+| `DataTable.tsx`       | Generic table with sorting, pagination, row actions      |
+| `StatusBadge.tsx`     | Color-coded status pills (success, error, pending, etc.) |
+| `LogDetailDrawer.tsx` | Slide-in drawer for request log details                  |
+| `ModelBreakdown.tsx`  | Usage by model pie/bar chart data                        |
+| `AnimatedCounter.tsx` | Number animation for metrics                             |
 
 ### Domain-Specific Component Groups
 
-| Group | Location | Purpose |
-|-------|----------|---------|
-| **Admin** | `components/admin/` | Admin-specific UI (tables, forms, modals) |
-| **Docs** | `components/docs/` | Documentation page primitives |
-| **Models** | `components/models/` + `components/models/detail/` | Model cards, comparison, detail views |
-| **Playground** | `components/playground/` | Multi-model chat, parameter controls |
-| **Pricing** | `components/pricing/` | Pricing tiers, credit packages, checkout |
+| Group          | Location                                           | Purpose                                   |
+| -------------- | -------------------------------------------------- | ----------------------------------------- |
+| **Admin**      | `components/admin/`                                | Admin-specific UI (tables, forms, modals) |
+| **Docs**       | `components/docs/`                                 | Documentation page primitives             |
+| **Models**     | `components/models/` + `components/models/detail/` | Model cards, comparison, detail views     |
+| **Playground** | `components/playground/`                           | Multi-model chat, parameter controls      |
+| **Pricing**    | `components/pricing/`                              | Pricing tiers, credit packages, checkout  |
 
 ---
 
@@ -210,22 +210,22 @@ app/layout.tsx (Root)
 ```ts
 class DraSDK {
   // Auth
-  async login(email, password): Promise<AuthResponse>
-  async signup(email, password, name): Promise<AuthResponse>
-  async getCurrentUser(): Promise<User>
+  async login(email, password): Promise<AuthResponse>;
+  async signup(email, password, name): Promise<AuthResponse>;
+  async getCurrentUser(): Promise<User>;
 
   // Keys
-  async createApiKey(name, scopes): Promise<ApiKey>
-  async listApiKeys(): Promise<ApiKey[]>
-  async revokeApiKey(id): Promise<void>
+  async createApiKey(name, scopes): Promise<ApiKey>;
+  async listApiKeys(): Promise<ApiKey[]>;
+  async revokeApiKey(id): Promise<void>;
 
   // Chat / LLM
-  async chatCompletions(req): Promise<ChatResponse>
-  async streamChat(req): AsyncIterable<StreamChunk>
+  async chatCompletions(req): Promise<ChatResponse>;
+  async streamChat(req): AsyncIterable<StreamChunk>;
 
   // Admin (separate admin-sdk.ts)
-  async adminListUsers(filters): Promise<Paginated<User>>
-  async adminUpdateProvider(id, config): Promise<Provider>
+  async adminListUsers(filters): Promise<Paginated<User>>;
+  async adminUpdateProvider(id, config): Promise<Provider>;
   // ... 30+ more
 }
 ```
@@ -240,22 +240,23 @@ class DraSDK {
 // Example pattern
 export function useApiKeys() {
   return useQuery({
-    queryKey: ['api-keys'],
+    queryKey: ["api-keys"],
     queryFn: () => getSDK().listApiKeys(),
     staleTime: 5 * 60 * 1000, // 5 min
-  })
+  });
 }
 
 export function useCreateApiKey() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (name) => getSDK().createApiKey(name),
-    onSuccess: () => queryClient.invalidateQueries(['api-keys']),
-  })
+    onSuccess: () => queryClient.invalidateQueries(["api-keys"]),
+  });
 }
 ```
 
 **Hook Categories**:
+
 - Auth: `useCurrentUser`, `useLogin`, `useLogout`
 - Keys: `useApiKeys`, `useCreateApiKey`, `useRevokeApiKey`
 - Credits: `useCredits`, `usePurchaseCredits`
@@ -277,6 +278,7 @@ export function useCreateApiKey() {
 ### 4. Direct Fetch (AVOID in dashboard)
 
 Dashboard components **MUST** use `getSDK()` + hooks. Enforced by:
+
 - `tests/wiring-verification.test.ts` (static analysis)
 - `scripts/smoke-test.sh` (CI gate)
 
@@ -284,13 +286,13 @@ Dashboard components **MUST** use `getSDK()` + hooks. Enforced by:
 
 ## State Management
 
-| Concern | Tool | Location |
-|---------|------|----------|
-| **Server State** (API data) | TanStack Query v5 | `lib/api/hooks.ts` |
-| **Client State** (UI, modals, forms) | React `useState` + Zustand (if complex) | Component-local or `lib/store/` |
-| **URL State** (filters, pagination, tabs) | `useSearchParams()` + Next.js router | Dashboard pages |
-| **Form State** | React Hook Form + Zod | Auth forms, admin forms, settings |
-| **Auth Session** | NextAuth v5 | `auth.ts`, `proxy.ts`, middleware |
+| Concern                                   | Tool                                    | Location                          |
+| ----------------------------------------- | --------------------------------------- | --------------------------------- |
+| **Server State** (API data)               | TanStack Query v5                       | `lib/api/hooks.ts`                |
+| **Client State** (UI, modals, forms)      | React `useState` + Zustand (if complex) | Component-local or `lib/store/`   |
+| **URL State** (filters, pagination, tabs) | `useSearchParams()` + Next.js router    | Dashboard pages                   |
+| **Form State**                            | React Hook Form + Zod                   | Auth forms, admin forms, settings |
+| **Auth Session**                          | NextAuth v5                             | `auth.ts`, `proxy.ts`, middleware |
 
 **Rule**: Do NOT duplicate server state into client stores. Derive or re-fetch.
 
@@ -315,9 +317,9 @@ Dashboard components **MUST** use `getSDK()` + hooks. Enforced by:
 **Component Variants**: Use `cva` (class-variance-authority) + `tailwind-merge`
 
 ```ts
-const buttonVariants = cva('base-classes', {
-  variants: { variant: { primary: '...', ghost: '...' } }
-})
+const buttonVariants = cva("base-classes", {
+  variants: { variant: { primary: "...", ghost: "..." } },
+});
 ```
 
 ### Design Tokens (in globals.css)
@@ -331,10 +333,10 @@ const buttonVariants = cva('base-classes', {
 
 ## Animations
 
-| Library | Use Case |
-|---------|----------|
-| **Framer Motion** | Component-level (modals, drawers, page transitions, hover states) |
-| **GSAP + ScrollTrigger** | Scroll-triggered sequences (landing page, docs, hero reveals) |
+| Library                  | Use Case                                                          |
+| ------------------------ | ----------------------------------------------------------------- |
+| **Framer Motion**        | Component-level (modals, drawers, page transitions, hover states) |
+| **GSAP + ScrollTrigger** | Scroll-triggered sequences (landing page, docs, hero reveals)     |
 
 **Performance Rule**: Animate only compositor-friendly properties (`transform`, `opacity`, `clip-path`). Use `will-change` narrowly.
 
@@ -356,6 +358,7 @@ API Key flow (for SDKs):
 ```
 
 **Session Cookie Names** (checked in order):
+
 1. `authjs.session-token`
 2. `__Secure-authjs.session-token`
 3. `next-auth.session-token`
@@ -365,29 +368,30 @@ API Key flow (for SDKs):
 
 ## Key Configuration Files
 
-| File | Purpose |
-|------|---------|
-| `next.config.ts` | Standalone output, image domains, webpack aliases, security headers |
-| `tsconfig.json` | Path aliases (`@/` → `apps/web/`), excludes `db/seed*.ts` + `scripts/**/*` |
-| `vitest.config.ts` | jsdom, `@/` alias, coverage thresholds |
-| `drizzle.config.ts` | DB connection for Drizzle migrations |
-| `postcss.config.cjs` | Tailwind v4 PostCSS plugin |
-| `auth.ts` + `auth.config.ts` | NextAuth providers (GitHub, Google), callbacks, JWT config |
-| `middleware.ts` | Proxy middleware (auth redirects, API proxy) |
+| File                         | Purpose                                                                    |
+| ---------------------------- | -------------------------------------------------------------------------- |
+| `next.config.ts`             | Standalone output, image domains, webpack aliases, security headers        |
+| `tsconfig.json`              | Path aliases (`@/` → `apps/web/`), excludes `db/seed*.ts` + `scripts/**/*` |
+| `vitest.config.ts`           | jsdom, `@/` alias, coverage thresholds                                     |
+| `drizzle.config.ts`          | DB connection for Drizzle migrations                                       |
+| `postcss.config.cjs`         | Tailwind v4 PostCSS plugin                                                 |
+| `auth.ts` + `auth.config.ts` | NextAuth providers (GitHub, Google), callbacks, JWT config                 |
+| `middleware.ts`              | Proxy middleware (auth redirects, API proxy)                               |
 
 ---
 
 ## Testing
 
-| Type | Tool | Location | Coverage |
-|------|------|----------|----------|
-| Unit (SDK, hooks, utils) | Vitest | `tests/lib/api/`, co-located | SDK errors, hook wiring |
-| Component (visual) | Playwright screenshots | `e2e/` | Landing, dashboard key flows |
-| E2E | Playwright | `e2e/` | Auth, chat, billing purchase |
-| Wiring Verification | Custom script | `tests/wiring-verification.test.ts` | **No mock data in dashboard** |
-| Smoke Test | Bash | `scripts/smoke-test.sh` | Route coverage, SDK imports, dashboard invariants |
+| Type                     | Tool                   | Location                            | Coverage                                          |
+| ------------------------ | ---------------------- | ----------------------------------- | ------------------------------------------------- |
+| Unit (SDK, hooks, utils) | Vitest                 | `tests/lib/api/`, co-located        | SDK errors, hook wiring                           |
+| Component (visual)       | Playwright screenshots | `e2e/`                              | Landing, dashboard key flows                      |
+| E2E                      | Playwright             | `e2e/`                              | Auth, chat, billing purchase                      |
+| Wiring Verification      | Custom script          | `tests/wiring-verification.test.ts` | **No mock data in dashboard**                     |
+| Smoke Test               | Bash                   | `scripts/smoke-test.sh`             | Route coverage, SDK imports, dashboard invariants |
 
 **Known Gaps** (from `ops.md`):
+
 - No component unit tests (React Testing Library)
 - No accessibility tests (axe-core)
 - No SDK error-handling tests

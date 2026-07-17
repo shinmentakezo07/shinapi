@@ -42,14 +42,8 @@ export function normalizeModelInfo(raw: CatalogModelRaw): ModelInfo {
     id,
     name: raw.name || id,
     provider,
-    inputPricePer1k: num(
-      raw.inputPricePer1k ?? raw.input_price_per_1k,
-      0,
-    ),
-    outputPricePer1k: num(
-      raw.outputPricePer1k ?? raw.output_price_per_1k,
-      0,
-    ),
+    inputPricePer1k: num(raw.inputPricePer1k ?? raw.input_price_per_1k, 0),
+    outputPricePer1k: num(raw.outputPricePer1k ?? raw.output_price_per_1k, 0),
     contextWindow: num(raw.contextWindow ?? raw.context_window, 0),
     description: raw.description || "",
     capabilities: Array.isArray(raw.capabilities) ? raw.capabilities : [],

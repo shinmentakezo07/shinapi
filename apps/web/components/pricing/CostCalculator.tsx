@@ -143,7 +143,9 @@ function CustomSlider({
           style={{
             left: `${percentage}%`,
             x: "-50%",
-            boxShadow: isDragging ? thumbShadow : "0 0 10px rgba(255,255,255,0.15)",
+            boxShadow: isDragging
+              ? thumbShadow
+              : "0 0 10px rgba(255,255,255,0.15)",
           }}
           animate={{ scale: isDragging ? 1.25 : 1 }}
           transition={{ duration: 0.15 }}

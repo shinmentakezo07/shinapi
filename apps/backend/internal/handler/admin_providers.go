@@ -18,12 +18,17 @@ import (
 
 // validProviderTypes is the set of recognized provider types.
 var validProviderTypes = map[string]bool{
-	"openai":    true,
-	"anthropic": true,
-	"generic":   true,
-	"groq":      true,
-	"nvidia":    true,
-	"gemini":    true,
+	"openai":     true,
+	"anthropic":  true,
+	"generic":    true,
+	"groq":       true,
+	"nvidia":     true,
+	"gemini":     true,
+	"deepseek":   true,
+	"mistral":    true,
+	"cohere":     true,
+	"openrouter": true,
+	"custom":     true,
 }
 
 // validProviderStatuses is the set of recognized provider statuses.

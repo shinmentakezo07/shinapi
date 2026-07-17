@@ -210,6 +210,14 @@ export default function DocsLayout({
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="fixed top-0 right-0 bottom-0 z-50 w-72 bg-[#08080b]/97 backdrop-blur-2xl border-l border-white/[0.07] lg:hidden overflow-y-auto"
           >
+            {/* top ambient gradient */}
+            <div
+              className="absolute top-0 left-0 right-0 h-32 pointer-events-none opacity-50"
+              style={{
+                background:
+                  "linear-gradient(to bottom, rgba(99,102,241,0.07), transparent)",
+              }}
+            />
             <SidebarContent
               mobile
               onClose={() => setSidebarOpen(false)}
@@ -224,7 +232,23 @@ export default function DocsLayout({
       </AnimatePresence>
 
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex flex-col fixed left-0 top-[58px] bottom-0 w-[260px] border-r border-white/[0.07] bg-[#06060a]/85 backdrop-blur-xl z-20">
+      <aside className="hidden lg:flex flex-col fixed left-0 top-[58px] bottom-0 w-[260px] border-r border-white/[0.07] bg-[#06060a]/85 backdrop-blur-xl z-20 overflow-hidden">
+        {/* top ambient gradient fade */}
+        <div
+          className="absolute top-0 left-0 right-0 h-32 pointer-events-none opacity-60"
+          style={{
+            background:
+              "linear-gradient(to bottom, rgba(99,102,241,0.07), transparent)",
+          }}
+        />
+        {/* bottom ambient gradient fade */}
+        <div
+          className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none opacity-40"
+          style={{
+            background:
+              "linear-gradient(to top, rgba(34,211,238,0.04), transparent)",
+          }}
+        />
         <SidebarContent
           navGroups={filteredNavGroups}
           filter={sidebarFilter}
@@ -237,7 +261,11 @@ export default function DocsLayout({
       {/* Main content — gateway shell with left-gutter signal rail */}
       <div className="lg:ml-[260px] relative z-10">
         {/* Persistent signal rail — fills as the reader scrolls the page */}
-        <div className="docs-signal-rail hidden lg:block" aria-hidden style={{ ["--gw-rail-fill" as string]: "0%" }} />
+        <div
+          className="docs-signal-rail hidden lg:block"
+          aria-hidden
+          style={{ ["--gw-rail-fill" as string]: "0%" }}
+        />
         <SignalRailFill />
         <main className="max-w-[800px] mx-auto px-6 sm:px-10 pt-[80px] pb-20">
           <DocsPageShell>{children}</DocsPageShell>
@@ -272,18 +300,36 @@ function SidebarContent({
     <div className="flex flex-col h-full docs-sidebar">
       {/* ── Header ── */}
       <div className="relative flex items-center justify-between px-5 py-4 border-b border-white/[0.06] overflow-hidden">
-        {/* ambient glow */}
+        {/* ambient glow — indigo */}
         <div
-          className="absolute -top-8 -left-6 w-28 h-28 rounded-full opacity-50 pointer-events-none"
+          className="absolute -top-10 -left-10 w-32 h-32 rounded-full opacity-60 pointer-events-none"
           style={{
             background:
-              "radial-gradient(circle, rgba(99,102,241,0.16), transparent 70%)",
+              "radial-gradient(circle, rgba(99,102,241,0.18), transparent 70%)",
           }}
         />
+        {/* ambient glow — cyan secondary */}
+        <div
+          className="absolute -bottom-8 right-0 w-24 h-24 rounded-full opacity-30 pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(34,211,238,0.12), transparent 70%)",
+          }}
+        />
+        {/* animated gradient sweep */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div
+            className="absolute inset-0 opacity-20"
+            style={{
+              background:
+                "linear-gradient(115deg, transparent 30%, rgba(99,102,241,0.06) 50%, transparent 70%)",
+            }}
+          />
+        </div>
         <div className="flex items-center gap-2.5 relative z-10">
           <div className="relative">
             <div
-              className={`w-9 h-9 rounded-xl ${ACCENT.bg} border ${ACCENT.border} flex items-center justify-center shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),0_4px_12px_-4px_rgba(99,102,241,0.35)]`}
+              className={`w-9 h-9 rounded-xl ${ACCENT.bg} border ${ACCENT.border} flex items-center justify-center shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),0_4px_12px_-4px_rgba(99,102,241,0.35)] transition-all duration-300`}
             >
               <Book className={`w-[15px] h-[15px] ${ACCENT.text}`} />
             </div>
@@ -295,7 +341,7 @@ function SidebarContent({
               Documentation
             </span>
             <span className="flex items-center gap-1 mt-0.5">
-              <span className="inline-flex items-center gap-1 px-1.5 py-px rounded-[3px] bg-indigo-500/[0.08] border border-indigo-500/20">
+              <span className="inline-flex items-center gap-1 px-1.5 py-px rounded-[3px] bg-gradient-to-r from-indigo-500/10 to-cyan-500/[0.06] border border-indigo-500/20">
                 <span className="w-1 h-1 rounded-full bg-indigo-300" />
                 <span className="text-[9px] font-mono font-semibold tracking-[0.08em] text-indigo-200/80">
                   v1.0
@@ -319,7 +365,7 @@ function SidebarContent({
       </div>
 
       {/* ── Filter ── */}
-      <div className="px-4 pt-3">
+      <div className="px-4 pt-3 relative z-10">
         <div className="relative group">
           <Search
             className={`absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/20 group-focus-within:text-indigo-200/70 transition-colors duration-200`}
@@ -330,7 +376,7 @@ function SidebarContent({
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             aria-label="Filter documentation pages"
-            className="w-full bg-white/[0.025] border border-white/[0.07] rounded-xl pl-9 pr-8 py-2.5 text-xs text-white/65 placeholder:text-white/25 font-mono outline-none focus:border-indigo-500/35 focus:bg-indigo-500/[0.05] focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] transition-all duration-200"
+            className="w-full bg-white/[0.025] border border-white/[0.07] rounded-xl pl-9 pr-8 py-2.5 text-xs text-white/65 placeholder:text-white/25 font-mono outline-none focus:border-indigo-500/35 focus:bg-indigo-500/[0.05] focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1),0_0_20px_-4px_rgba(99,102,241,0.25)] transition-all duration-200"
           />
           {filter && (
             <button
@@ -351,22 +397,23 @@ function SidebarContent({
 
       {/* ── Nav groups ── */}
       <nav
-        className="flex-1 overflow-y-auto py-3 docs-scroll"
+        className="flex-1 overflow-y-auto py-3 docs-scroll relative z-10"
         role="navigation"
         aria-label="Documentation navigation"
       >
         {navGroups.length > 0 ? (
           navGroups.map((group, gi) => {
             return (
-              <div key={group.label} className={gi > 0 ? "mt-1" : ""}>
+              <div key={group.label} className={gi > 0 ? "mt-2" : ""}>
                 <div className="flex items-center gap-2 px-4 pt-4 pb-1.5">
-                  <span className="text-[9px] font-mono font-semibold uppercase tracking-[0.2em] text-indigo-200/55">
+                  <span className="w-1 h-1 rounded-full bg-indigo-400/40 shadow-[0_0_4px_rgba(129,140,248,0.5)]" />
+                  <span className="text-[9px] font-mono font-semibold uppercase tracking-[0.2em] text-indigo-200/55 group-hover:text-indigo-200/75 transition-colors">
                     {group.label}
                   </span>
-                  <span className="text-[9px] font-mono text-white/20">
+                  <span className="text-[9px] font-mono text-white/20 tabular-nums">
                     {group.items.length}
                   </span>
-                  <div className="h-px flex-1 bg-gradient-to-r from-indigo-500/15 to-transparent" />
+                  <div className="h-px flex-1 bg-gradient-to-r from-indigo-500/15 via-indigo-500/[0.06] to-transparent" />
                 </div>
                 <div className="space-y-px px-2">
                   {group.items.map((item) => {
@@ -376,16 +423,16 @@ function SidebarContent({
                         key={item.id}
                         onClick={() => navigateTo(item.id)}
                         aria-current={isActive ? "page" : undefined}
-                        className={`relative flex items-center gap-3 px-3 py-[10px] rounded-xl text-sm w-full text-left transition-all duration-200 cursor-pointer group ${
+                        className={`relative flex items-center gap-3 px-3 py-[10px] rounded-xl text-sm w-full text-left transition-all duration-200 cursor-pointer group/item ${
                           isActive
-                            ? `text-white bg-indigo-500/[0.09] border border-indigo-500/25 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05),0_4px_16px_-6px_rgba(99,102,241,0.45)]`
-                            : "text-white/40 hover:text-white/75 hover:bg-white/[0.045] hover:border-white/[0.06] border border-transparent"
+                            ? `text-white bg-gradient-to-r from-indigo-500/[0.12] to-indigo-500/[0.04] border border-indigo-500/25 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05),0_4px_16px_-6px_rgba(99,102,241,0.45)]`
+                            : "text-white/40 hover:text-white/75 hover:bg-white/[0.045] hover:border-white/[0.06] border border-transparent hover:translate-x-0.5"
                         }`}
                       >
                         {isActive && (
                           <motion.div
                             layoutId="sidebar-active"
-                            className="absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-full bg-gradient-to-b from-indigo-300 to-indigo-400 shadow-[0_0_10px_rgba(165,180,252,0.8)]"
+                            className="absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-full bg-gradient-to-b from-indigo-300 via-indigo-300 to-cyan-300 shadow-[0_0_10px_rgba(165,180,252,0.8),0_0_18px_-2px_rgba(34,211,238,0.4)]"
                             transition={{
                               type: "spring",
                               stiffness: 350,
@@ -393,13 +440,21 @@ function SidebarContent({
                             }}
                           />
                         )}
-                        <item.icon
-                          className={`w-[14px] h-[14px] flex-shrink-0 transition-all duration-200 ${
+                        <span
+                          className={`flex-shrink-0 w-5 h-5 rounded-md flex items-center justify-center transition-all duration-200 ${
                             isActive
-                              ? "text-indigo-200 drop-shadow-[0_0_4px_rgba(165,180,252,0.5)]"
-                              : "text-white/25 group-hover:text-white/50 group-hover:scale-110"
+                              ? "bg-gradient-to-br from-indigo-500/20 to-indigo-500/5 border border-indigo-500/20 shadow-[0_0_8px_-2px_rgba(99,102,241,0.3)]"
+                              : "border border-transparent group-hover/item:border-white/[0.06] group-hover/item:bg-white/[0.03]"
                           }`}
-                        />
+                        >
+                          <item.icon
+                            className={`w-[14px] h-[14px] transition-all duration-200 ${
+                              isActive
+                                ? "text-indigo-200 drop-shadow-[0_0_4px_rgba(165,180,252,0.5)]"
+                                : "text-white/25 group-hover/item:text-white/55 group-hover/item:scale-110"
+                            }`}
+                          />
+                        </span>
                         <span className="truncate text-[13px] font-medium">
                           {item.label}
                         </span>
@@ -426,13 +481,15 @@ function SidebarContent({
       </nav>
 
       {/* ── Footer ── */}
-      <div className="px-3 py-3 border-t border-white/[0.06] bg-white/[0.01]">
+      <div className="px-3 py-3 border-t border-white/[0.06] bg-white/[0.01] relative z-10">
+        {/* gradient top border accent */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/15 to-transparent" />
         <div className="flex items-center gap-1.5">
           <a
             href="https://github.com/shinmentakezo07/owsiwa"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] font-mono text-white/35 hover:text-white/70 hover:bg-white/[0.04] transition-all duration-200 cursor-pointer group"
+            className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] font-mono text-white/35 hover:text-white/70 hover:bg-gradient-to-r hover:from-white/[0.04] hover:to-indigo-500/[0.04] transition-all duration-200 cursor-pointer group"
           >
             <svg
               className="w-3.5 h-3.5 group-hover:text-indigo-200/70 transition-colors"
@@ -459,7 +516,7 @@ function SidebarContent({
         <div className="flex items-center justify-center gap-1.5 mt-2 px-1">
           <span className="relative flex h-1.5 w-1.5">
             <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400/60 animate-ping opacity-75" />
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.8)]" />
           </span>
           <span className="text-[9px] font-mono uppercase tracking-[0.15em] text-white/25">
             All systems operational

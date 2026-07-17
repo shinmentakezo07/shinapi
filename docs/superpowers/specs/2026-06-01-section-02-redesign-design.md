@@ -13,7 +13,7 @@ User-selected direction: **terminal / hacker aesthetic**. User-selected approach
 
 ## Concept
 
-Replace the entire bento + tracker + micro-vizzes with a single terminal viewport. As the user scrolls, a "shell session" types and runs through the four steps in order. The scroll *is* the demo — the user watches the product do the thing, not four marketing cards explaining what it does. Final state is a blinking caret on `$ _`.
+Replace the entire bento + tracker + micro-vizzes with a single terminal viewport. As the user scrolls, a "shell session" types and runs through the four steps in order. The scroll _is_ the demo — the user watches the product do the thing, not four marketing cards explaining what it does. Final state is a blinking caret on `$ _`.
 
 The section commits to a single metaphor (a terminal session) and stops hedging. There is no second visual idea competing with it.
 
@@ -83,6 +83,7 @@ The caret is a Framer Motion `<motion.span>` rendered as the last child of the m
 ### Reduced motion
 
 When `useReducedMotion()` returns true:
+
 - Skip typewriter — render the full command immediately.
 - Skip staggered output fade — render the full step at once when its threshold is crossed.
 - Caret still blinks (visual continuity is fine, motion is the issue, not blinking).
@@ -123,14 +124,14 @@ The final `$ _` block is rendered when step 3 is reached, with `_` being the bli
 
 Per the small-files rule (200–400 lines typical, 800 max), the implementation is split across six files under `apps/web/components/section-02/`:
 
-| File | Lines (target) | Responsibility |
-|------|----------------|----------------|
-| `IntegrationFlow.tsx` | ~150 | Section shell, header, scroll wiring, composition |
-| `TerminalSession.tsx` | ~220 | The viewport body, step queue, output reveals, inline `useCopy` + copy button |
-| `TerminalChrome.tsx` | ~60 | Window chrome (traffic lights, title bar) |
-| `Typewriter.tsx` | ~50 | `useTypewriter` hook + small `<Typewriter>` render helper |
-| `StatusStrip.tsx` | ~80 | `tail -f`-style status line, live timestamp |
-| `TerminalCTA.tsx` | ~80 | The two terminal-styled CTA links |
+| File                  | Lines (target) | Responsibility                                                                |
+| --------------------- | -------------- | ----------------------------------------------------------------------------- |
+| `IntegrationFlow.tsx` | ~150           | Section shell, header, scroll wiring, composition                             |
+| `TerminalSession.tsx` | ~220           | The viewport body, step queue, output reveals, inline `useCopy` + copy button |
+| `TerminalChrome.tsx`  | ~60            | Window chrome (traffic lights, title bar)                                     |
+| `Typewriter.tsx`      | ~50            | `useTypewriter` hook + small `<Typewriter>` render helper                     |
+| `StatusStrip.tsx`     | ~80            | `tail -f`-style status line, live timestamp                                   |
+| `TerminalCTA.tsx`     | ~80            | The two terminal-styled CTA links                                             |
 
 Line counts are targets, not hard caps. The current `apps/web/components/IntegrationFlow.tsx` (1559 lines) is **deleted**, not edited in place. The `app/page.tsx` import path updates to `import { IntegrationFlow } from "@/components/section-02/IntegrationFlow"`.
 
@@ -139,7 +140,7 @@ Line counts are targets, not hard caps. The current `apps/web/components/Integra
 ### `IntegrationFlow` (default export of the section)
 
 ```typescript
-export function IntegrationFlow(): JSX.Element
+export function IntegrationFlow(): JSX.Element;
 ```
 
 Owns: section ref, `useScroll` progress, current-step state, terminal mounting. Renders: atmospheric background (kept from current), header, terminal session, status strip, CTA. No props.
@@ -148,10 +149,10 @@ Owns: section ref, `useScroll` progress, current-step state, terminal mounting. 
 
 ```typescript
 interface TerminalSessionProps {
-  currentStep: 0 | 1 | 2 | 3
-  reachedSteps: ReadonlySet<0 | 1 | 2 | 3>
+  currentStep: 0 | 1 | 2 | 3;
+  reachedSteps: ReadonlySet<0 | 1 | 2 | 3>;
 }
-export function TerminalSession(props: TerminalSessionProps): JSX.Element
+export function TerminalSession(props: TerminalSessionProps): JSX.Element;
 ```
 
 Receives the current step and the set of reached steps from `IntegrationFlow`. Owns the internal typewriter + output reveal state. No direct scroll listener.
@@ -160,20 +161,20 @@ Receives the current step and the set of reached steps from `IntegrationFlow`. O
 
 ```typescript
 interface TypewriterOptions {
-  speedMs?: number        // default 28
-  startDelayMs?: number   // default 0
+  speedMs?: number; // default 28
+  startDelayMs?: number; // default 0
 }
 function useTypewriter(
   text: string,
   active: boolean,
   options?: TypewriterOptions,
-): { display: string; done: boolean }
+): { display: string; done: boolean };
 ```
 
 ### `StatusStrip`
 
 ```typescript
-export function StatusStrip(): JSX.Element
+export function StatusStrip(): JSX.Element;
 ```
 
 Self-contained. Sets up its own `setInterval` for the timestamp. Static numbers (12,847 / 0 / 47ms / 100+) are hardcoded for the design — we do not pretend they're live.
@@ -181,7 +182,7 @@ Self-contained. Sets up its own `setInterval` for the timestamp. Static numbers 
 ### `TerminalCTA`
 
 ```typescript
-export function TerminalCTA(): JSX.Element
+export function TerminalCTA(): JSX.Element;
 ```
 
 Self-contained. Two `<Link>` elements pointing to `/signup` and `/docs`. No props.
@@ -205,16 +206,16 @@ The following are no longer used and should be deleted along with `IntegrationFl
 
 ## Edge cases
 
-| Case | Behavior |
-|------|----------|
-| User scrolls quickly past all thresholds | Step reveals still happen in order; the typewriter doesn't pile up — once `done: true` for a step, it stays done. Outputs cascade in. |
-| User scrolls back up | Already-revealed content stays. `currentStep` decreases. The typewriter on the most recently active step (if not yet done) is paused and resumed cleanly via `active` toggle. |
+| Case                                      | Behavior                                                                                                                                                                                |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| User scrolls quickly past all thresholds  | Step reveals still happen in order; the typewriter doesn't pile up — once `done: true` for a step, it stays done. Outputs cascade in.                                                   |
+| User scrolls back up                      | Already-revealed content stays. `currentStep` decreases. The typewriter on the most recently active step (if not yet done) is paused and resumed cleanly via `active` toggle.           |
 | User lands mid-section (deep link / hash) | First render: thresholds crossed at mount time are computed from `getBoundingClientRect` of the section. Reached state is initialized from that, so the relevant steps reveal on mount. |
-| `prefers-reduced-motion` | Typewriter is bypassed. Outputs fade in. Caret still pulses (blinking is a visual property, not motion in the disorienting sense — but if needed, render caret statically). |
-| Mobile (<640px) | Terminal body is horizontally scrollable with `overflow-x-auto`. Status strip wraps. CTA stack vertically. |
-| Hydration | All scroll-state hooks are inside a `"use client"` component. The section already is. No server-rendered mismatch risk. |
-| `navigator.clipboard` unavailable | `useCopy` already swallows that error. No regression. |
-| Browser blocks autoplay / animations | None used (we do not autoplay video/audio). Typewriter uses `setTimeout`, which always runs. |
+| `prefers-reduced-motion`                  | Typewriter is bypassed. Outputs fade in. Caret still pulses (blinking is a visual property, not motion in the disorienting sense — but if needed, render caret statically).             |
+| Mobile (<640px)                           | Terminal body is horizontally scrollable with `overflow-x-auto`. Status strip wraps. CTA stack vertically.                                                                              |
+| Hydration                                 | All scroll-state hooks are inside a `"use client"` component. The section already is. No server-rendered mismatch risk.                                                                 |
+| `navigator.clipboard` unavailable         | `useCopy` already swallows that error. No regression.                                                                                                                                   |
+| Browser blocks autoplay / animations      | None used (we do not autoplay video/audio). Typewriter uses `setTimeout`, which always runs.                                                                                            |
 
 ## Testing
 

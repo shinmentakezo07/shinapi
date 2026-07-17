@@ -94,7 +94,7 @@ docker-compose --profile mongo up -d  # Start Postgres + Mongo profile
 
 ### Frontend architecture
 
-- **Next.js 16 canary is NOT your training data.** Breaking changes from v14/15 — APIs, conventions, and file structure differ. Read `node_modules/next/dist/docs/` before writing any code and heed deprecation notices. `"use cache"` replaces old `revalidate`/`dynamic` — implicit caching is gone. `fetch()` is no longer cached by default.
+- **Next.js 16 canary is NOT your training data.** Breaking changes from v14/15 — APIs, conventions, and file structure differ. Do not assume v14/15 patterns (e.g. `revalidate`/`dynamic`); verify against the Next.js 16 docs before writing code. `"use cache"` replaces old `revalidate`/`dynamic` — implicit caching is gone. `fetch()` is no longer cached by default.
 - **App Router routes**: Product/auth surfaces — `app/dashboard/` (protected), `app/playground/`, `app/pricing/`, `app/models/`, `app/gateway/`, `app/admin/`, `app/login/`, `app/signup/`, `app/docs/`, `app/forgot-password/`, `app/enterprise/`, `app/status/`. Marketing/shell surfaces — `app/about/`, `app/blog/`, `app/changelog/`, `app/contact/`, `app/legal/`, `app/roadmap/`. API routes in `app/api/*` proxy to Go backend through `lib/api/proxy.ts`.
 - **Auth**: NextAuth v5 in `auth.ts`/`auth.config.ts`. JWT HS256 secrets must match the backend. OAuth: GitHub + Google. Fallback: `AUTH_SECRET || NEXTAUTH_SECRET`.
 - **Proxy middleware** (`proxy.ts`): redirects unauthenticated `/dashboard/*` to login, authenticated `/login`/`/signup` to dashboard.
@@ -144,35 +144,42 @@ docker-compose --profile mongo up -d  # Start Postgres + Mongo profile
 - **UPDATE.md is MANDATORY.** After completing ANY code change (no matter how small), you MUST append an entry to `UPDATE.md` following the exact template defined in that file. The entry must include: timestamp, **session name/ID**, conventional-commit title, "Why" explanation, files-changed table with line ranges, and Before/After code blocks showing the exact old and new code. **No task is "done" until the UPDATE.md entry is written.** Use the same session name across all entries from the same session so later agents can group changes by session. This is non-negotiable — skipping this step is a violation of project rules.
 
 **UPDATE.md Entry Template:**
-```markdown
+
+````markdown
 ## [N]. [Short Title]
 
 **Session**: [Session Name/ID]
 **Date**: [YYYY-MM-DD HH:MM]
 
 ### Why
+
 [Problem or motivation — not just what changed]
 
 ### Files Changed
 
-| File | Lines | Change Type |
-|------|-------|-------------|
-| path/to/file.ts | L10-25 | modified |
-| path/to/new.ts | L1-50 | created |
+| File            | Lines  | Change Type |
+| --------------- | ------ | ----------- |
+| path/to/file.ts | L10-25 | modified    |
+| path/to/new.ts  | L1-50  | created     |
 
 ### Before
+
 ```code
 // exact old code with file path and line number
 ```
+````
 
 ### After
+
 ```code
 // exact new code with file path and line number
 ```
 
 ### Notes
+
 [Optional: side effects, follow-ups, migration steps]
-```
+
+````
 
 - **No `as any` or `@ts-ignore`** in TypeScript — enforced at review
 - **No mock data** in dashboard components — must use `getSDK()`. Enforced by `tests/wiring-verification.test.ts` and `scripts/smoke-test.sh`.
@@ -198,7 +205,7 @@ npm run format         # Prettier on TS/TSX/MD
 
 # Full-stack verification
 bash scripts/smoke-test.sh  # Wiring verification after significant changes
-```
+````
 
 ## Tests and Verification
 

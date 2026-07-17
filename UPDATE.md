@@ -7008,3 +7008,117 @@ useEffect(() => {
 - The first client paint renders an empty string, which matches the server's empty string, so React is satisfied; the date then populates immediately after mount.
 - Left the `HeroMetric` mini-bar chart (`Math.random()` heights, `i === new Date().getHours()` highlight) alone — that whole subtree is gated behind `if (isLoading || !stats)`, so it only renders after the React Query result resolves (i.e. strictly client-side after mount), so it cannot cause an SSR/hydration mismatch.
 - Quality gates: `tsc --noEmit` clean, prettier clean on edited file.
+
+## [66]. Fix admin provider/API-key/model creation — 3 bugs
+
+**Session**: admin-add-flows-fix
+**Date**: 2026-07-17 19:30
+
+### Why
+
+Three bugs blocked the admin "add provider", "add API key", and "add alias"
+flows. (1) The frontend provider-type dropdown offered deepseek/mistral/cohere/
+openrouter/custom, but the backend `validProviderTypes` map rejected them —
+creating a provider with any of those types returned 400 "invalid providerType".
+(2) `AddProviderKeyRaw` never set `k.ID` before INSERT — on Postgres the empty
+string failed UUID syntax validation, and on SQLite the first key landed with
+id="" and the second hit a UNIQUE constraint violation. It also left
+`k.IsActive` at the Go zero-value `false`, so newly added keys were always
+inactive and `getActiveRawKeyForProvider` skipped them — the provider could
+never authenticate with the new key. (3) `CreateAlias` had the same missing-ID
+bug — empty `a.ID` caused UUID syntax errors (Postgres) or UNIQUE violations
+on the second alias (SQLite).
+
+### Files Changed
+
+| File                                          | Lines    | Change Type |
+| --------------------------------------------- | -------- | ----------- |
+| apps/backend/internal/handler/admin_providers.go | L27-31 | modified    |
+| apps/backend/internal/service/admin.go         | L598-610 | modified    |
+| apps/backend/internal/service/admin.go         | L733-737 | modified    |
+
+### Before
+
+```go
+// admin_providers.go — validProviderTypes
+var validProviderTypes = map[string]bool{
+	"openai":    true,
+	"anthropic": true,
+	"generic":   true,
+	"groq":      true,
+	"nvidia":    true,
+	"gemini":    true,
+}
+```
+
+```go
+// admin.go — AddProviderKeyRaw
+func (s *AdminService) AddProviderKeyRaw(ctx context.Context, k *domain.ProviderKey, rawKey string) error {
+	prefix, lastFour, hash := deriveKeyParts(rawKey)
+	k.KeyPrefix = prefix
+	// ...
+```
+
+```go
+// admin.go — CreateAlias
+func (s *AdminService) CreateAlias(ctx context.Context, a *domain.ModelAlias) error {
+	return s.modelRepo.CreateAlias(ctx, a)
+}
+```
+
+### After
+
+```go
+// admin_providers.go — validProviderTypes (added 5 types)
+var validProviderTypes = map[string]bool{
+	"openai":     true,
+	"anthropic":  true,
+	"generic":    true,
+	"groq":       true,
+	"nvidia":     true,
+	"gemini":     true,
+	"deepseek":   true,
+	"mistral":    true,
+	"cohere":     true,
+	"openrouter": true,
+	"custom":     true,
+}
+```
+
+```go
+// admin.go — AddProviderKeyRaw (defaults for ID, Strategy, Weight, IsActive)
+func (s *AdminService) AddProviderKeyRaw(ctx context.Context, k *domain.ProviderKey, rawKey string) error {
+	if k.ID == "" {
+		k.ID = domain.NewID()
+	}
+	if k.Strategy == "" {
+		k.Strategy = domain.KeyStrategyRoundRobin
+	}
+	if k.Weight == 0 {
+		k.Weight = 1
+	}
+	if !k.IsActive {
+		k.IsActive = true
+	}
+	prefix, lastFour, hash := deriveKeyParts(rawKey)
+	k.KeyPrefix = prefix
+	// ...
+```
+
+```go
+// admin.go — CreateAlias (assign PK when missing)
+func (s *AdminService) CreateAlias(ctx context.Context, a *domain.ModelAlias) error {
+	if a.ID == "" {
+		a.ID = domain.NewID()
+	}
+	return s.modelRepo.CreateAlias(ctx, a)
+}
+```
+
+### Notes
+
+- `CreateModel` already sets `m.ID` and `m.Status` defaults (fixed in commit 5eb7e3f).
+- `CreateProviderFull` already sets `p.ID`, `p.Status`, `p.ProviderType` defaults.
+- The frontend `providers/page.tsx` form was already sending `strategy` and `weight`; the service defaults are a safety net for callers that omit them.
+- `IsActive` defaulting to `true` matches the `CreateProviderFull` embedded-key path which sets `IsActive: true`.
+- Quality gates: `go vet ./internal/handler/... ./internal/service/...` clean, `go build ./...` clean.

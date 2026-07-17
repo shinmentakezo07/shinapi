@@ -163,7 +163,9 @@ export function ModelIdentity({ model, theme, onBack }: ModelIdentityProps) {
               className="text-[clamp(2.5rem,7vw,6.5rem)] font-black tracking-[-0.05em] leading-[0.85] relative"
             >
               {/* Gradient veil behind display name */}
-              <span aria-hidden="true" className="absolute inset-0 -z-10 blur-3xl opacity-30 pointer-events-none"
+              <span
+                aria-hidden="true"
+                className="absolute inset-0 -z-10 blur-3xl opacity-30 pointer-events-none"
                 style={{
                   background: `radial-gradient(ellipse at 20% 50%, ${theme.accent}55, transparent 70%)`,
                 }}
@@ -188,11 +190,34 @@ export function ModelIdentity({ model, theme, onBack }: ModelIdentityProps) {
               transition={{ duration: 0.5, delay: 0.4 }}
               className="flex flex-wrap gap-1.5 mt-4"
             >
-              <TypeChip label="chat" active={!model.id.match(/embed|tts|whisper|image|moderation/i)} accent={theme.accent} />
+              <TypeChip
+                label="chat"
+                active={!model.id.match(/embed|tts|whisper|image|moderation/i)}
+                accent={theme.accent}
+              />
               <TypeChip label="streaming" active={true} accent={theme.accent} />
-              <TypeChip label="tools" active={!!model.supported_parameters?.includes("tools")} accent={theme.accent} />
-              <TypeChip label="json mode" active={!!model.supported_parameters?.includes("response_format")} accent={theme.accent} />
-              <TypeChip label="reasoning" active={!!(model.architecture?.instruct_type === "reasoning" || model.name.match(/reasoning|thinking|r1|o1|o3|qwq/i))} accent={theme.accent} />
+              <TypeChip
+                label="tools"
+                active={!!model.supported_parameters?.includes("tools")}
+                accent={theme.accent}
+              />
+              <TypeChip
+                label="json mode"
+                active={
+                  !!model.supported_parameters?.includes("response_format")
+                }
+                accent={theme.accent}
+              />
+              <TypeChip
+                label="reasoning"
+                active={
+                  !!(
+                    model.architecture?.instruct_type === "reasoning" ||
+                    model.name.match(/reasoning|thinking|r1|o1|o3|qwq/i)
+                  )
+                }
+                accent={theme.accent}
+              />
             </motion.div>
           </div>
 

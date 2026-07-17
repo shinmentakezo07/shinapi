@@ -850,7 +850,9 @@ describe("DraSDK", () => {
       });
 
       const sdk = new DraSDK({ baseUrl: "http://localhost:3000" });
-      const result = await sdk.updateWebhook("w1", { url: "https://example.com/updated-hook" });
+      const result = await sdk.updateWebhook("w1", {
+        url: "https://example.com/updated-hook",
+      });
       expect(result.url).toBe("https://example.com/updated-hook");
     });
 

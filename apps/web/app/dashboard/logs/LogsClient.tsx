@@ -81,7 +81,11 @@ const tableRow = {
   visible: (i: number) => ({
     opacity: 1,
     x: 0,
-    transition: { delay: i * 0.025, duration: 0.35, ease: [0.16, 1, 0.3, 1] as const },
+    transition: {
+      delay: i * 0.025,
+      duration: 0.35,
+      ease: [0.16, 1, 0.3, 1] as const,
+    },
   }),
 };
 
@@ -128,7 +132,9 @@ function SkeletonTableRow() {
 
 export default function LogsClient() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "success" | "error">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "success" | "error">(
+    "all",
+  );
   const [page, setPage] = useState(1);
   const [selectedLog, setSelectedLog] = useState<APILog | null>(null);
   const limit = 20;
@@ -162,32 +168,57 @@ export default function LogsClient() {
         log.provider.toLowerCase().includes(q) ||
         log.id.toLowerCase().includes(q) ||
         log.status.toLowerCase().includes(q);
-      const matchesStatus = statusFilter === "all" || log.status === statusFilter;
+      const matchesStatus =
+        statusFilter === "all" || log.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
   }, [allLogs, searchQuery, statusFilter]);
 
   const totalPages = logsData?.totalPages ?? 1;
-  const displayLogs = searchQuery || statusFilter !== "all" ? filteredLogs : allLogs;
+  const displayLogs =
+    searchQuery || statusFilter !== "all" ? filteredLogs : allLogs;
 
   /* Derived metrics */
   const successCount = allLogs.filter((l) => l.status === "success").length;
   const errorCount = allLogs.filter((l) => l.status === "error").length;
   const avgLatency =
     allLogs.length > 0
-      ? Math.round(allLogs.reduce((sum, log) => sum + log.latency, 0) / allLogs.length)
+      ? Math.round(
+          allLogs.reduce((sum, log) => sum + log.latency, 0) / allLogs.length,
+        )
       : 0;
-  const totalTokens = allLogs.reduce((sum, log) => sum + log.inputTokens + log.outputTokens, 0);
+  const totalTokens = allLogs.reduce(
+    (sum, log) => sum + log.inputTokens + log.outputTokens,
+    0,
+  );
   const totalCost = allLogs.reduce((sum, log) => sum + log.cost, 0);
-  const successRate = allLogs.length > 0 ? ((successCount / allLogs.length) * 100).toFixed(1) : "—";
+  const successRate =
+    allLogs.length > 0
+      ? ((successCount / allLogs.length) * 100).toFixed(1)
+      : "—";
 
   const handleRowClick = useCallback((row: APILog) => setSelectedLog(row), []);
   const handleCloseDrawer = useCallback(() => setSelectedLog(null), []);
 
   const filters = [
-    { key: "all" as const, label: "All", icon: Activity, count: allLogs.length },
-    { key: "success" as const, label: "Success", icon: CheckCircle2, count: successCount },
-    { key: "error" as const, label: "Errors", icon: AlertCircle, count: errorCount },
+    {
+      key: "all" as const,
+      label: "All",
+      icon: Activity,
+      count: allLogs.length,
+    },
+    {
+      key: "success" as const,
+      label: "Success",
+      icon: CheckCircle2,
+      count: successCount,
+    },
+    {
+      key: "error" as const,
+      label: "Errors",
+      icon: AlertCircle,
+      count: errorCount,
+    },
   ];
 
   /* Pagination */
@@ -213,8 +244,16 @@ export default function LogsClient() {
       {/* ── Ambient atmosphere ── */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-indigo-500/[0.03] rounded-full blur-[120px] animate-mesh-shift" />
-        <div className="absolute -top-40 right-1/4 w-[500px] h-[500px] bg-violet-500/[0.02] rounded-full blur-[100px] animate-mesh-shift" style={{ animationDelay: "-5s" }} />
-        <div className="absolute inset-0 opacity-[0.012]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")` }} />
+        <div
+          className="absolute -top-40 right-1/4 w-[500px] h-[500px] bg-violet-500/[0.02] rounded-full blur-[100px] animate-mesh-shift"
+          style={{ animationDelay: "-5s" }}
+        />
+        <div
+          className="absolute inset-0 opacity-[0.012]"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
+          }}
+        />
       </div>
 
       <div className="relative px-4 sm:px-6 lg:px-8 pt-10 pb-20 max-w-[88rem] mx-auto">
@@ -224,7 +263,9 @@ export default function LogsClient() {
             <div className="flex items-end justify-between flex-wrap gap-4">
               <div>
                 <div className="flex items-center gap-3 mb-1">
-                  <h1 className="text-3xl font-bold text-white tracking-tight">Request Logs</h1>
+                  <h1 className="text-3xl font-bold text-white tracking-tight">
+                    Request Logs
+                  </h1>
                   {logsData?.total != null && (
                     <span className="text-[11px] text-slate-500 font-mono tracking-wider uppercase -mb-1">
                       {logsData.total.toLocaleString()} total
@@ -232,7 +273,8 @@ export default function LogsClient() {
                   )}
                 </div>
                 <p className="text-sm text-slate-500 max-w-md mt-1">
-                  Inspect every API request in detail — latency, cost, model, and status.
+                  Inspect every API request in detail — latency, cost, model,
+                  and status.
                 </p>
               </div>
 
@@ -243,7 +285,9 @@ export default function LogsClient() {
                 disabled={isLoading}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-sm font-medium text-slate-300 hover:text-white hover:border-white/[0.15] transition-all disabled:opacity-30"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
+                <RefreshCw
+                  className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`}
+                />
                 Refresh
               </motion.button>
             </div>
@@ -263,8 +307,12 @@ export default function LogsClient() {
                   <AlertCircle className="w-5 h-5 text-red-400" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-red-300 mb-0.5">Error loading logs</p>
-                  <p className="text-xs text-red-400/60 font-mono">{getErrorMessage(error)}</p>
+                  <p className="text-sm font-medium text-red-300 mb-0.5">
+                    Error loading logs
+                  </p>
+                  <p className="text-xs text-red-400/60 font-mono">
+                    {getErrorMessage(error)}
+                  </p>
                   {sdk.lastRequestId() && (
                     <p className="text-[11px] text-red-400/40 mt-1.5 font-mono">
                       Request ID: {sdk.lastRequestId()}
@@ -276,7 +324,10 @@ export default function LogsClient() {
           </AnimatePresence>
 
           {/* ── Metric Cards ── */}
-          <motion.div variants={item} className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-10">
+          <motion.div
+            variants={item}
+            className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-10"
+          >
             {isLoading ? (
               <>
                 <SkeletonCard />
@@ -286,10 +337,46 @@ export default function LogsClient() {
               </>
             ) : (
               <>
-                <MetricCard title="Total Requests" value={logsData?.total ?? 0} icon={Activity} iconColor="text-blue-400" iconBg="bg-blue-500/10" index={0} />
-                <MetricCard title="Successful" value={successCount} change={allLogs.length > 0 ? `${successRate}%` : undefined} changeType="positive" icon={CheckCircle2} iconColor="text-emerald-400" iconBg="bg-emerald-500/10" index={1} />
-                <MetricCard title="Errors" value={errorCount} change={allLogs.length > 0 ? `${((errorCount / allLogs.length) * 100).toFixed(0)}%` : undefined} changeType={errorCount > 0 ? "negative" : "neutral"} icon={AlertCircle} iconColor="text-red-400" iconBg="bg-red-500/10" index={2} />
-                <MetricCard title="Avg Latency" value={`${avgLatency}ms`} icon={Zap} iconColor="text-amber-400" iconBg="bg-amber-500/10" index={3} />
+                <MetricCard
+                  title="Total Requests"
+                  value={logsData?.total ?? 0}
+                  icon={Activity}
+                  iconColor="text-blue-400"
+                  iconBg="bg-blue-500/10"
+                  index={0}
+                />
+                <MetricCard
+                  title="Successful"
+                  value={successCount}
+                  change={allLogs.length > 0 ? `${successRate}%` : undefined}
+                  changeType="positive"
+                  icon={CheckCircle2}
+                  iconColor="text-emerald-400"
+                  iconBg="bg-emerald-500/10"
+                  index={1}
+                />
+                <MetricCard
+                  title="Errors"
+                  value={errorCount}
+                  change={
+                    allLogs.length > 0
+                      ? `${((errorCount / allLogs.length) * 100).toFixed(0)}%`
+                      : undefined
+                  }
+                  changeType={errorCount > 0 ? "negative" : "neutral"}
+                  icon={AlertCircle}
+                  iconColor="text-red-400"
+                  iconBg="bg-red-500/10"
+                  index={2}
+                />
+                <MetricCard
+                  title="Avg Latency"
+                  value={`${avgLatency}ms`}
+                  icon={Zap}
+                  iconColor="text-amber-400"
+                  iconBg="bg-amber-500/10"
+                  index={3}
+                />
               </>
             )}
           </motion.div>
@@ -298,9 +385,24 @@ export default function LogsClient() {
           {!isLoading && allLogs.length > 0 && (
             <motion.div variants={item} className="mb-8">
               <div className="flex flex-wrap items-center gap-4 sm:gap-6 px-5 py-3 rounded-xl border border-white/[0.05] bg-white/[0.015]">
-                <StatItem icon={Hash} label="Tokens" value={totalTokens.toLocaleString()} color="text-purple-400" />
-                <StatItem icon={Zap} label="Cost" value={formatCost(totalCost)} color="text-emerald-400" />
-                <StatItem icon={Eye} label="Showing" value={`${displayLogs.length} of ${logsData?.total ?? 0}`} color="text-slate-300" />
+                <StatItem
+                  icon={Hash}
+                  label="Tokens"
+                  value={totalTokens.toLocaleString()}
+                  color="text-purple-400"
+                />
+                <StatItem
+                  icon={Zap}
+                  label="Cost"
+                  value={formatCost(totalCost)}
+                  color="text-emerald-400"
+                />
+                <StatItem
+                  icon={Eye}
+                  label="Showing"
+                  value={`${displayLogs.length} of ${logsData?.total ?? 0}`}
+                  color="text-slate-300"
+                />
               </div>
             </motion.div>
           )}
@@ -316,7 +418,10 @@ export default function LogsClient() {
                   type="text"
                   placeholder="Search model, provider, ID or status…"
                   value={searchQuery}
-                  onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setPage(1);
+                  }}
                   className="w-full pl-10 pr-4 py-2.5 bg-white/[0.03] border border-white/[0.06] rounded-xl text-sm text-white placeholder:text-slate-600
                     focus:outline-none focus:border-blue-500/30 focus:bg-white/[0.05] transition-all"
                 />
@@ -332,7 +437,10 @@ export default function LogsClient() {
                   return (
                     <button
                       key={key}
-                      onClick={() => { setStatusFilter(key); setPage(1); }}
+                      onClick={() => {
+                        setStatusFilter(key);
+                        setPage(1);
+                      }}
                       className={`relative flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium transition-all ${
                         isActive
                           ? "text-white"
@@ -343,12 +451,18 @@ export default function LogsClient() {
                         <motion.div
                           layoutId="log-filter-pill"
                           className="absolute inset-0 bg-white/[0.06] border border-white/[0.08] rounded-lg"
-                          transition={{ type: "spring", stiffness: 300, damping: 28 }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 28,
+                          }}
                         />
                       )}
                       <Icon className="w-3.5 h-3.5 relative z-10" />
                       <span className="relative z-10">{label}</span>
-                      <span className={`relative z-10 text-[10px] font-mono ml-0.5 ${isActive ? "text-slate-400" : "text-slate-700"}`}>
+                      <span
+                        className={`relative z-10 text-[10px] font-mono ml-0.5 ${isActive ? "text-slate-400" : "text-slate-700"}`}
+                      >
                         {count.toLocaleString()}
                       </span>
                     </button>
@@ -359,15 +473,33 @@ export default function LogsClient() {
           </motion.div>
 
           {/* ── Table + Sidebar ── */}
-          <motion.div variants={item} className="grid grid-cols-1 lg:grid-cols-[1fr_18rem] gap-6 mb-6">
+          <motion.div
+            variants={item}
+            className="grid grid-cols-1 lg:grid-cols-[1fr_18rem] gap-6 mb-6"
+          >
             <div>
               <AnimatePresence mode="wait">
                 {isLoading ? (
-                  <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <motion.div
+                    key="loading"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
                     <div className="rounded-2xl border border-white/[0.06] bg-[#0A0A0A] overflow-hidden">
                       <div className="px-6 py-3.5 border-b border-white/[0.05] flex gap-6 bg-white/[0.015]">
-                        {["Timestamp", "Model", "Tokens", "Cost", "Latency", "Status"].map((h) => (
-                          <div key={h} className="h-3 w-16 bg-white/[0.05] rounded animate-pulse" />
+                        {[
+                          "Timestamp",
+                          "Model",
+                          "Tokens",
+                          "Cost",
+                          "Latency",
+                          "Status",
+                        ].map((h) => (
+                          <div
+                            key={h}
+                            className="h-3 w-16 bg-white/[0.05] rounded animate-pulse"
+                          />
                         ))}
                       </div>
                       {Array.from({ length: 8 }).map((_, i) => (
@@ -376,7 +508,12 @@ export default function LogsClient() {
                     </div>
                   </motion.div>
                 ) : displayLogs.length > 0 ? (
-                  <motion.div key="table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <motion.div
+                    key="table"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
                     <div className="rounded-2xl border border-white/[0.06] bg-[#0A0A0A] overflow-hidden">
                       {/* Table top edge sheen */}
                       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent pointer-events-none" />
@@ -385,8 +522,18 @@ export default function LogsClient() {
                         <table className="w-full text-left">
                           <thead>
                             <tr className="border-b border-white/[0.05] bg-white/[0.015]">
-                              {["Timestamp", "Model", "Tokens", "Cost", "Latency", "Status"].map((h) => (
-                                <th key={h} className="px-5 py-3.5 text-[10px] font-mono font-bold text-slate-500 uppercase tracking-[0.12em]">
+                              {[
+                                "Timestamp",
+                                "Model",
+                                "Tokens",
+                                "Cost",
+                                "Latency",
+                                "Status",
+                              ].map((h) => (
+                                <th
+                                  key={h}
+                                  className="px-5 py-3.5 text-[10px] font-mono font-bold text-slate-500 uppercase tracking-[0.12em]"
+                                >
                                   {h}
                                 </th>
                               ))}
@@ -401,7 +548,12 @@ export default function LogsClient() {
                                 initial="hidden"
                                 animate="visible"
                                 onClick={() => handleRowClick(log)}
-                                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleRowClick(log); } }}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    handleRowClick(log);
+                                  }
+                                }}
                                 role="button"
                                 tabIndex={0}
                                 aria-label={`View details for ${log.model} request ${log.id}`}
@@ -414,36 +566,55 @@ export default function LogsClient() {
                                   <div className="flex items-center gap-2">
                                     <Clock className="w-3 h-3 text-slate-700 shrink-0" />
                                     <div className="flex flex-col">
-                                      <span className="text-sm font-mono text-slate-300 tabular-nums">{formatTime(log.createdAt)}</span>
-                                      <span className="text-[10px] font-mono text-slate-700">{formatDateShort(log.createdAt)}</span>
+                                      <span className="text-sm font-mono text-slate-300 tabular-nums">
+                                        {formatTime(log.createdAt)}
+                                      </span>
+                                      <span className="text-[10px] font-mono text-slate-700">
+                                        {formatDateShort(log.createdAt)}
+                                      </span>
                                     </div>
                                   </div>
                                 </td>
                                 <td className="px-5 py-3.5 whitespace-nowrap">
                                   <div>
-                                    <div className="text-sm font-medium text-white tracking-tight">{log.model}</div>
-                                    <div className="text-[11px] text-slate-600 font-mono mt-0.5">{log.provider}</div>
+                                    <div className="text-sm font-medium text-white tracking-tight">
+                                      {log.model}
+                                    </div>
+                                    <div className="text-[11px] text-slate-600 font-mono mt-0.5">
+                                      {log.provider}
+                                    </div>
                                   </div>
                                 </td>
                                 <td className="px-5 py-3.5 whitespace-nowrap">
                                   <div className="flex items-center gap-2">
                                     <div className="flex-1 min-w-[60px]">
                                       <div className="flex items-center gap-1 text-xs font-mono">
-                                        <span className="text-emerald-400">{log.inputTokens.toLocaleString()}</span>
-                                        <span className="text-slate-700">/</span>
-                                        <span className="text-cyan-400">{log.outputTokens.toLocaleString()}</span>
+                                        <span className="text-emerald-400">
+                                          {log.inputTokens.toLocaleString()}
+                                        </span>
+                                        <span className="text-slate-700">
+                                          /
+                                        </span>
+                                        <span className="text-cyan-400">
+                                          {log.outputTokens.toLocaleString()}
+                                        </span>
                                       </div>
                                       {/* Token ratio bar */}
                                       <div className="mt-1.5 h-1 bg-white/[0.04] rounded-full overflow-hidden flex">
-                                        {log.inputTokens + log.outputTokens > 0 && (
+                                        {log.inputTokens + log.outputTokens >
+                                          0 && (
                                           <>
                                             <div
                                               className="h-full bg-emerald-500/60"
-                                              style={{ width: `${(log.inputTokens / (log.inputTokens + log.outputTokens)) * 100}%` }}
+                                              style={{
+                                                width: `${(log.inputTokens / (log.inputTokens + log.outputTokens)) * 100}%`,
+                                              }}
                                             />
                                             <div
                                               className="h-full bg-cyan-500/60"
-                                              style={{ width: `${(log.outputTokens / (log.inputTokens + log.outputTokens)) * 100}%` }}
+                                              style={{
+                                                width: `${(log.outputTokens / (log.inputTokens + log.outputTokens)) * 100}%`,
+                                              }}
                                             />
                                           </>
                                         )}
@@ -452,16 +623,28 @@ export default function LogsClient() {
                                   </div>
                                 </td>
                                 <td className="px-5 py-3.5 whitespace-nowrap">
-                                  <span className="text-sm font-mono text-emerald-400/90 tabular-nums">{formatCost(log.cost)}</span>
+                                  <span className="text-sm font-mono text-emerald-400/90 tabular-nums">
+                                    {formatCost(log.cost)}
+                                  </span>
                                 </td>
                                 <td className="px-5 py-3.5 whitespace-nowrap">
-                                  <div className={`flex items-center gap-1.5 text-sm font-mono tabular-nums ${latencyColor(log.latency)}`}>
+                                  <div
+                                    className={`flex items-center gap-1.5 text-sm font-mono tabular-nums ${latencyColor(log.latency)}`}
+                                  >
                                     <Zap className="w-3.5 h-3.5 shrink-0 opacity-60" />
                                     {log.latency}ms
                                   </div>
                                 </td>
                                 <td className="px-5 py-3.5 whitespace-nowrap">
-                                  <StatusBadge status={log.status === "success" ? "success" : "error"} label={log.status} size="sm" />
+                                  <StatusBadge
+                                    status={
+                                      log.status === "success"
+                                        ? "success"
+                                        : "error"
+                                    }
+                                    label={log.status}
+                                    size="sm"
+                                  />
                                 </td>
                               </motion.tr>
                             ))}
@@ -475,19 +658,41 @@ export default function LogsClient() {
                     </div>
                   </motion.div>
                 ) : (
-                  <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-24 rounded-2xl border border-white/[0.06] bg-[#0A0A0A]">
-                    <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }} className="inline-block mb-6">
+                  <motion.div
+                    key="empty"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="text-center py-24 rounded-2xl border border-white/[0.06] bg-[#0A0A0A]"
+                  >
+                    <motion.div
+                      animate={{ y: [0, -6, 0] }}
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                      className="inline-block mb-6"
+                    >
                       <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
                         <Hash className="w-10 h-10 text-slate-700" />
                       </div>
                     </motion.div>
-                    <h3 className="text-lg font-semibold text-slate-300 mb-1.5">No logs found</h3>
+                    <h3 className="text-lg font-semibold text-slate-300 mb-1.5">
+                      No logs found
+                    </h3>
                     <p className="text-sm text-slate-600 max-w-sm mx-auto">
-                      {searchQuery || statusFilter !== "all" ? "Try adjusting your filters or search query." : "Logs will appear here once API requests are made."}
+                      {searchQuery || statusFilter !== "all"
+                        ? "Try adjusting your filters or search query."
+                        : "Logs will appear here once API requests are made."}
                     </p>
                     {(searchQuery || statusFilter !== "all") && (
                       <button
-                        onClick={() => { setSearchQuery(""); setStatusFilter("all"); setPage(1); }}
+                        onClick={() => {
+                          setSearchQuery("");
+                          setStatusFilter("all");
+                          setPage(1);
+                        }}
                         className="mt-5 px-5 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-sm text-slate-400 hover:text-white hover:border-white/[0.15] transition-all"
                       >
                         Clear filters
@@ -511,8 +716,12 @@ export default function LogsClient() {
                   <Activity className="w-4 h-4 text-indigo-400" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-white tracking-tight">Top Models</h3>
-                  <p className="text-[11px] text-slate-600 font-mono mt-0.5">Usage distribution</p>
+                  <h3 className="text-sm font-semibold text-white tracking-tight">
+                    Top Models
+                  </h3>
+                  <p className="text-[11px] text-slate-600 font-mono mt-0.5">
+                    Usage distribution
+                  </p>
                 </div>
               </div>
 
@@ -532,19 +741,37 @@ export default function LogsClient() {
 
           {/* ── Pagination ── */}
           {!isLoading && logsData && totalPages > 1 && (
-            <motion.div variants={item} className="flex items-center justify-between rounded-2xl border border-white/[0.06] bg-[#0A0A0A] px-5 py-3.5">
+            <motion.div
+              variants={item}
+              className="flex items-center justify-between rounded-2xl border border-white/[0.06] bg-[#0A0A0A] px-5 py-3.5"
+            >
               <div className="text-sm text-slate-500 font-mono">
-                Page <span className="text-white font-semibold">{logsData.page}</span> of <span className="text-white font-semibold">{totalPages}</span>
-                <span className="text-slate-700 ml-2">· {displayLogs.length} results</span>
+                Page{" "}
+                <span className="text-white font-semibold">
+                  {logsData.page}
+                </span>{" "}
+                of{" "}
+                <span className="text-white font-semibold">{totalPages}</span>
+                <span className="text-slate-700 ml-2">
+                  · {displayLogs.length} results
+                </span>
               </div>
               <div className="flex items-center gap-2">
-                <NavBtn onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
+                <NavBtn
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                >
                   <ChevronLeft className="w-4 h-4" />
                 </NavBtn>
                 <div className="flex gap-1">
                   {generatePages().map((p, i) =>
                     p === "..." ? (
-                      <span key={`e-${i}`} className="text-slate-700 text-sm px-2">···</span>
+                      <span
+                        key={`e-${i}`}
+                        className="text-slate-700 text-sm px-2"
+                      >
+                        ···
+                      </span>
                     ) : (
                       <button
                         key={p}
@@ -560,7 +787,10 @@ export default function LogsClient() {
                     ),
                   )}
                 </div>
-                <NavBtn onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
+                <NavBtn
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                >
                   <ChevronRight className="w-4 h-4" />
                 </NavBtn>
               </div>

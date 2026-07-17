@@ -51,7 +51,12 @@ interface SkeletonProps {
 }
 
 /** Base animated block. */
-export function Skeleton({ className, theme = "default", children, style }: SkeletonProps) {
+export function Skeleton({
+  className,
+  theme = "default",
+  children,
+  style,
+}: SkeletonProps) {
   const t = useTheme(theme);
   return (
     <div
@@ -113,7 +118,9 @@ export function SkeletonHeader({
             <Skeleton theme={theme} className="h-4 w-72" />
           </div>
         </div>
-        {hasAction && <Skeleton theme={theme} className="h-9 w-28 rounded-lg" />}
+        {hasAction && (
+          <Skeleton theme={theme} className="h-9 w-28 rounded-lg" />
+        )}
       </div>
     </SkeletonRoot>
   );
@@ -219,12 +226,17 @@ export function SkeletonList({
               : "admin-card",
           )}
         >
-          <Skeleton theme={theme} className="h-10 w-10 rounded-lg flex-shrink-0" />
+          <Skeleton
+            theme={theme}
+            className="h-10 w-10 rounded-lg flex-shrink-0"
+          />
           <div className="flex-1 space-y-2 min-w-0">
             <Skeleton theme={theme} className="h-3.5 w-48" />
             <Skeleton theme={theme} className="h-2.5 w-72" />
           </div>
-          {withBadge && <Skeleton theme={theme} className="h-6 w-16 rounded-md" />}
+          {withBadge && (
+            <Skeleton theme={theme} className="h-6 w-16 rounded-md" />
+          )}
         </div>
       ))}
     </SkeletonRoot>
@@ -258,9 +270,7 @@ export function SkeletonTable({
         aria-hidden="true"
         className={cn(
           "p-4 border-b",
-          theme === "default"
-            ? "border-white/[0.04]"
-            : "border-white/[0.02]",
+          theme === "default" ? "border-white/[0.04]" : "border-white/[0.02]",
         )}
       >
         <div className="flex gap-4">
@@ -445,11 +455,7 @@ export function DashboardOverviewSkeleton() {
 }
 
 /** /admin/(protected)/* — admin sidebar/topbar placeholder + content shell. */
-export function AdminShellSkeleton({
-  children,
-}: {
-  children?: ReactNode;
-}) {
+export function AdminShellSkeleton({ children }: { children?: ReactNode }) {
   return (
     <SkeletonRoot theme="admin" className="space-y-5">
       <div aria-hidden="true" className="flex items-center justify-between">
@@ -483,7 +489,10 @@ export function AdminDashboardSkeleton() {
       </div>
       {/* Hero + grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <div aria-hidden="true" className="lg:col-span-5 admin-hero-metric admin-card p-8">
+        <div
+          aria-hidden="true"
+          className="lg:col-span-5 admin-hero-metric admin-card p-8"
+        >
           <Skeleton theme="admin" className="h-[200px] w-full" />
         </div>
         <div className="lg:col-span-3 flex flex-col gap-4">
@@ -511,7 +520,10 @@ export function AdminDashboardSkeleton() {
           <Skeleton theme="admin" className="h-4 w-32 mb-4" />
           <div className="grid grid-cols-2 gap-2">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-3 px-3.5 py-3 rounded-xl border border-white/[0.03]">
+              <div
+                key={i}
+                className="flex items-center gap-3 px-3.5 py-3 rounded-xl border border-white/[0.03]"
+              >
                 <Skeleton theme="admin" className="h-3.5 w-3.5" />
                 <Skeleton theme="admin" className="h-3 flex-1" />
               </div>

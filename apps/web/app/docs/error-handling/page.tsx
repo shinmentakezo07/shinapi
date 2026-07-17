@@ -135,11 +135,11 @@ export default function ErrorHandlingPage() {
           Response format
         </h3>
         <p>
-          All errors return a JSON body with a{" "}
-          <code>success</code> field set to <code>false</code>, an{" "}
-          <code>error</code> field with the error type code, and a
-          human-readable <code>message</code>. Optional <code>details</code>{" "}
-          carries structured context (validation errors, quota state, etc).
+          All errors return a JSON body with a <code>success</code> field set to{" "}
+          <code>false</code>, an <code>error</code> field with the error type
+          code, and a human-readable <code>message</code>. Optional{" "}
+          <code>details</code> carries structured context (validation errors,
+          quota state, etc).
         </p>
         <div className="mt-5">
           <CodeBlock
@@ -271,9 +271,9 @@ def api_call_with_retry(url, headers, json, max_retries=3):
         </div>
 
         <TipBox variant="warning">
-          Always log the <code>requestId</code> from error responses. It is
-          the only way for support to trace a specific call through the
-          gateway, provider, and billing pipeline.
+          Always log the <code>requestId</code> from error responses. It is the
+          only way for support to trace a specific call through the gateway,
+          provider, and billing pipeline.
         </TipBox>
 
         <TipBox variant="info">

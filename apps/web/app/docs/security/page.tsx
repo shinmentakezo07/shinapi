@@ -5,7 +5,11 @@ import { Lock, Shield, Activity, Globe, Key, FileCode } from "lucide-react";
 import { Section } from "@/components/docs/Section";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 import { TipBox } from "@/components/docs/TipBox";
-import { DocsCard, DocsIconTile, DocsSubhead } from "@/components/docs/DocsCard";
+import {
+  DocsCard,
+  DocsIconTile,
+  DocsSubhead,
+} from "@/components/docs/DocsCard";
 
 export default function SecurityPage() {
   return (
@@ -54,7 +58,9 @@ export default function SecurityPage() {
                   <h3 className="text-white font-semibold text-sm">
                     {item.title}
                   </h3>
-                  <p className="text-xs text-white/40 mt-1 leading-[1.6]">{item.desc}</p>
+                  <p className="text-xs text-white/40 mt-1 leading-[1.6]">
+                    {item.desc}
+                  </p>
                 </div>
               </div>
             </DocsCard>
@@ -156,8 +162,8 @@ Permissions-Policy: camera=(), microphone=(), geolocation=()`}
                     Body Size Limits
                   </h4>
                   <p className="text-xs text-white/35 leading-relaxed mt-1">
-                    10MB limit on proxy endpoints, 1MB on API endpoints. Prevents
-                    oversized payload attacks.
+                    10MB limit on proxy endpoints, 1MB on API endpoints.
+                    Prevents oversized payload attacks.
                   </p>
                 </div>
               </div>

@@ -103,7 +103,10 @@ function ModelForm({
         ...(form.supportsThinking ? ["thinking"] : []),
       ],
       fallbackModels: form.fallbackModels
-        ? form.fallbackModels.split(",").map((s: string) => s.trim()).filter(Boolean)
+        ? form.fallbackModels
+            .split(",")
+            .map((s: string) => s.trim())
+            .filter(Boolean)
         : [],
     });
   };
@@ -244,7 +247,10 @@ function ModelForm({
           placeholder="Routing weight (1-100)"
           value={form.routingWeight}
           onChange={(e) =>
-            setForm({ ...form, routingWeight: Math.max(1, Number(e.target.value)) })
+            setForm({
+              ...form,
+              routingWeight: Math.max(1, Number(e.target.value)),
+            })
           }
           className="admin-input text-[12px] py-[7px]"
           min={1}
@@ -567,7 +573,11 @@ export default function AdminModelsPage() {
             <AdminEmptyState
               icon={Activity}
               title="Failed to load models"
-              description={modelsError instanceof Error ? modelsError.message : "An error occurred"}
+              description={
+                modelsError instanceof Error
+                  ? modelsError.message
+                  : "An error occurred"
+              }
             />
           ) : (
             <div className="admin-table">
@@ -609,7 +619,8 @@ export default function AdminModelsPage() {
                           {model.displayName}
                         </td>
                         <td className="text-[var(--admin-text-muted)]">
-                          {providerNameMap.get(model.providerId) ?? model.providerId}
+                          {providerNameMap.get(model.providerId) ??
+                            model.providerId}
                         </td>
                         <td className="text-[var(--admin-text-muted)] font-mono text-[11px]">
                           {model.modelGroup || "-"}
@@ -673,7 +684,11 @@ export default function AdminModelsPage() {
                             </select>
                             <button
                               onClick={() => {
-                                if (confirm(`Delete model ${model.modelId}? This will remove it from the registry.`))
+                                if (
+                                  confirm(
+                                    `Delete model ${model.modelId}? This will remove it from the registry.`,
+                                  )
+                                )
                                   deleteModel.mutate(model.id);
                               }}
                               className="rounded-[7px] p-[6px] text-[var(--admin-text-dim)] hover:text-red-400/70 hover:bg-white/[0.03] transition-all"
@@ -733,7 +748,11 @@ export default function AdminModelsPage() {
             <AdminEmptyState
               icon={Activity}
               title="Failed to load aliases"
-              description={aliasesError instanceof Error ? aliasesError.message : "An error occurred"}
+              description={
+                aliasesError instanceof Error
+                  ? aliasesError.message
+                  : "An error occurred"
+              }
             />
           ) : (
             <div className="admin-table">

@@ -1,7 +1,14 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { MessageSquare, ArrowRight, Zap, Radio, Code2, Braces } from "lucide-react";
+import {
+  MessageSquare,
+  ArrowRight,
+  Zap,
+  Radio,
+  Code2,
+  Braces,
+} from "lucide-react";
 import { Section } from "@/components/docs/Section";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 import { TipBox } from "@/components/docs/TipBox";
@@ -12,12 +19,48 @@ import { getDocsBaseUrl } from "@/lib/docs-config";
 const BASE_URL = getDocsBaseUrl();
 
 const SSE_EVENTS = [
-  { event: "message_start", desc: "Sent first. Contains the message ID, model, and input usage.", color: "text-indigo-200", bg: "bg-indigo-500/[0.06]", border: "border-indigo-500/15" },
-  { event: "content_block_start", desc: "Signals the start of a content block (text or tool_use).", color: "text-sky-200", bg: "bg-sky-500/[0.06]", border: "border-sky-500/15" },
-  { event: "content_block_delta", desc: "Incremental content delta. Contains partial text or tool input JSON.", color: "text-emerald-200", bg: "bg-emerald-500/[0.06]", border: "border-emerald-500/15" },
-  { event: "content_block_stop", desc: "Marks the end of a content block.", color: "text-violet-200", bg: "bg-violet-500/[0.06]", border: "border-violet-500/15" },
-  { event: "message_delta", desc: "Contains stop_reason and output token usage for the message.", color: "text-amber-200", bg: "bg-amber-500/[0.06]", border: "border-amber-500/15" },
-  { event: "message_stop", desc: "Final event. Signals the message is complete.", color: "text-rose-200", bg: "bg-rose-500/[0.06]", border: "border-rose-500/15" },
+  {
+    event: "message_start",
+    desc: "Sent first. Contains the message ID, model, and input usage.",
+    color: "text-indigo-200",
+    bg: "bg-indigo-500/[0.06]",
+    border: "border-indigo-500/15",
+  },
+  {
+    event: "content_block_start",
+    desc: "Signals the start of a content block (text or tool_use).",
+    color: "text-sky-200",
+    bg: "bg-sky-500/[0.06]",
+    border: "border-sky-500/15",
+  },
+  {
+    event: "content_block_delta",
+    desc: "Incremental content delta. Contains partial text or tool input JSON.",
+    color: "text-emerald-200",
+    bg: "bg-emerald-500/[0.06]",
+    border: "border-emerald-500/15",
+  },
+  {
+    event: "content_block_stop",
+    desc: "Marks the end of a content block.",
+    color: "text-violet-200",
+    bg: "bg-violet-500/[0.06]",
+    border: "border-violet-500/15",
+  },
+  {
+    event: "message_delta",
+    desc: "Contains stop_reason and output token usage for the message.",
+    color: "text-amber-200",
+    bg: "bg-amber-500/[0.06]",
+    border: "border-amber-500/15",
+  },
+  {
+    event: "message_stop",
+    desc: "Final event. Signals the message is complete.",
+    color: "text-rose-200",
+    bg: "bg-rose-500/[0.06]",
+    border: "border-rose-500/15",
+  },
 ];
 
 export default function AnthropicPage() {
@@ -76,7 +119,8 @@ export default function AnthropicPage() {
             <code className="px-1.5 py-0.5 rounded-md bg-violet-500/[0.08] text-violet-200/95 font-mono text-[13px] border border-violet-500/[0.12]">
               ANTHROPIC_BASE_URL
             </code>{" "}
-            environment variable and use your Yapapa API key as the Anthropic API key.
+            environment variable and use your Yapapa API key as the Anthropic
+            API key.
           </p>
           <CodeBlock
             examples={{
@@ -136,9 +180,15 @@ client := anthropic.NewClient(
             Streaming with Anthropic SSE events
           </h3>
           <p className="text-sm text-white/55 leading-[1.75] mb-5">
-            When <code className="px-1.5 py-0.5 rounded-md bg-violet-500/[0.08] text-violet-200/95 font-mono text-[13px] border border-violet-500/[0.12]">stream: true</code>{" "}
-            is set, the response uses Anthropic-native SSE events instead of the OpenAI{" "}
-            <code className="px-1.5 py-0.5 rounded-md bg-white/[0.04] text-white/70 font-mono text-[13px]">data:</code>{" "}
+            When{" "}
+            <code className="px-1.5 py-0.5 rounded-md bg-violet-500/[0.08] text-violet-200/95 font-mono text-[13px] border border-violet-500/[0.12]">
+              stream: true
+            </code>{" "}
+            is set, the response uses Anthropic-native SSE events instead of the
+            OpenAI{" "}
+            <code className="px-1.5 py-0.5 rounded-md bg-white/[0.04] text-white/70 font-mono text-[13px]">
+              data:
+            </code>{" "}
             format. Each event type carries different data:
           </p>
           <div className="space-y-2">
@@ -147,16 +197,22 @@ client := anthropic.NewClient(
                 key={evt.event}
                 className={`flex items-start gap-4 p-4 rounded-xl border ${evt.border} ${evt.bg}`}
               >
-                <code className={`text-[12px] font-mono font-semibold ${evt.color} whitespace-nowrap flex-shrink-0`}>
+                <code
+                  className={`text-[12px] font-mono font-semibold ${evt.color} whitespace-nowrap flex-shrink-0`}
+                >
                   {evt.event}
                 </code>
-                <p className="text-xs text-white/45 leading-[1.6]">{evt.desc}</p>
+                <p className="text-xs text-white/45 leading-[1.6]">
+                  {evt.desc}
+                </p>
               </div>
             ))}
           </div>
 
           <div className="mt-6">
-            <h4 className="text-white/95 font-semibold text-sm mb-3">Streaming example (Python)</h4>
+            <h4 className="text-white/95 font-semibold text-sm mb-3">
+              Streaming example (Python)
+            </h4>
             <CodeBlock
               language="python"
               code={`from anthropic import Anthropic
@@ -184,7 +240,10 @@ with client.messages.stream(
             System prompts
           </h3>
           <p className="text-sm text-white/55 leading-[1.75] mb-5">
-            The Anthropic Messages API uses a dedicated <code className="px-1.5 py-0.5 rounded-md bg-white/[0.04] text-white/70 font-mono text-[13px]">system</code>{" "}
+            The Anthropic Messages API uses a dedicated{" "}
+            <code className="px-1.5 py-0.5 rounded-md bg-white/[0.04] text-white/70 font-mono text-[13px]">
+              system
+            </code>{" "}
             parameter instead of a system-role message. The gateway handles this
             conversion automatically when routing to other providers.
           </p>
@@ -209,9 +268,12 @@ with client.messages.stream(
           </h3>
           <p className="text-sm text-white/55 leading-[1.75] mb-5">
             The Anthropic Messages endpoint supports tool use with the same{" "}
-            <code className="px-1.5 py-0.5 rounded-md bg-white/[0.04] text-white/70 font-mono text-[13px]">tools</code>{" "}
-            parameter as the native Anthropic API. Tool definitions use Anthropic&apos;s
-            schema format, and the gateway translates them for other providers when needed.
+            <code className="px-1.5 py-0.5 rounded-md bg-white/[0.04] text-white/70 font-mono text-[13px]">
+              tools
+            </code>{" "}
+            parameter as the native Anthropic API. Tool definitions use
+            Anthropic&apos;s schema format, and the gateway translates them for
+            other providers when needed.
           </p>
           <CodeBlock
             language="python"
@@ -273,18 +335,23 @@ if message.stop_reason == "tool_use":
                 key={note.title}
                 className="p-4 rounded-xl bg-white/[0.01] border border-white/[0.07] hover:border-violet-500/15 transition-all duration-200"
               >
-                <h4 className="text-white/90 font-semibold text-xs mb-1.5">{note.title}</h4>
-                <p className="text-xs text-white/40 leading-[1.6]">{note.desc}</p>
+                <h4 className="text-white/90 font-semibold text-xs mb-1.5">
+                  {note.title}
+                </h4>
+                <p className="text-xs text-white/40 leading-[1.6]">
+                  {note.desc}
+                </p>
               </div>
             ))}
           </div>
         </div>
 
         <TipBox variant="info">
-          The <code>/v1/messages</code> endpoint reuses the same auth, quota, guardrails,
-          caching, and billing pipeline as <code>/v1/chat/completions</code>.
-          You can mix both endpoints in the same application — the gateway handles
-          format translation transparently.
+          The <code>/v1/messages</code> endpoint reuses the same auth, quota,
+          guardrails, caching, and billing pipeline as{" "}
+          <code>/v1/chat/completions</code>. You can mix both endpoints in the
+          same application — the gateway handles format translation
+          transparently.
         </TipBox>
       </Section>
     </motion.div>

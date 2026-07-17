@@ -36,7 +36,9 @@ export default function AdminChangelogPage() {
       <AdminEmptyState
         icon={FileText}
         title="Failed to load changelog"
-        description={error instanceof Error ? error.message : "An error occurred"}
+        description={
+          error instanceof Error ? error.message : "An error occurred"
+        }
       />
     );
   }

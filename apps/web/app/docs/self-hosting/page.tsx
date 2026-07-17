@@ -24,7 +24,6 @@ export default function SelfHostingPage() {
         id="self-hosting"
         icon={Globe}
         title="Self-Hosting & Configuration"
-       
       >
         <p>
           When self-hosting Yapapa, you need to configure the base URL so that
@@ -36,9 +35,7 @@ export default function SelfHostingPage() {
         </p>
 
         <div className="mt-8">
-          <DocsSubhead>
-            Setting the Docs Base URL
-          </DocsSubhead>
+          <DocsSubhead>Setting the Docs Base URL</DocsSubhead>
           <p>
             There are two ways to change the base URL shown in all docs code
             examples:
@@ -96,9 +93,7 @@ docs_base_url = "https://api.yourdomain.com"`}
         </div>
 
         <div className="mt-10">
-          <DocsSubhead>
-            Fallback chain
-          </DocsSubhead>
+          <DocsSubhead>Fallback chain</DocsSubhead>
           <p className="mb-4">The base URL is resolved in this order:</p>
           <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] overflow-hidden">
             <div className="px-4 py-2.5 border-b border-white/[0.04]">
@@ -152,9 +147,7 @@ docs_base_url = "https://api.yourdomain.com"`}
         </div>
 
         <div className="mt-10">
-          <DocsSubhead>
-            Full deployment example
-          </DocsSubhead>
+          <DocsSubhead>Full deployment example</DocsSubhead>
           <CodeBlock
             examples={{
               curl: `# 1. Clone the repo
@@ -203,9 +196,7 @@ NEXT_PUBLIC_DOCS_BASE_URL=https://api.yourdomain.com`,
         </div>
 
         <div className="mt-10">
-          <DocsSubhead>
-            Docker Compose environment
-          </DocsSubhead>
+          <DocsSubhead>Docker Compose environment</DocsSubhead>
           <p className="text-sm text-white/50 mb-4">
             When deploying with Docker Compose, configure these environment
             variables for the backend service:
@@ -234,9 +225,7 @@ OPENAI_API_KEY=sk-...
         </div>
 
         <div className="mt-10">
-          <DocsSubhead>
-            Verifying the base URL
-          </DocsSubhead>
+          <DocsSubhead>Verifying the base URL</DocsSubhead>
           <p className="mb-4">
             After configuring, visit any docs page with code examples. The base
             URL in curl commands, fetch calls, and Python/Go examples should
@@ -253,9 +242,7 @@ curl https://api.yourdomain.com/api/chat ...`}
         </div>
 
         <div className="mt-8">
-          <DocsSubhead>
-            Post-deployment verification
-          </DocsSubhead>
+          <DocsSubhead>Post-deployment verification</DocsSubhead>
           <p className="text-sm text-white/50 mb-4">
             After deploying, run a quick smoke test to verify that everything is
             wired correctly:

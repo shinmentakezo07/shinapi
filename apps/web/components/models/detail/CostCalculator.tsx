@@ -44,8 +44,7 @@ export function CostCalculator({ model, accent }: CostCalculatorProps) {
     const t = Math.min(total, max);
     const out = Math.round(t * split);
     const inT = t - out;
-    const c =
-      (inT / 1_000_000) * inputPrice + (out / 1_000_000) * outputPrice;
+    const c = (inT / 1_000_000) * inputPrice + (out / 1_000_000) * outputPrice;
     return { inputTokens: inT, outputTokens: out, cost: c };
   }, [total, split, inputPrice, outputPrice, max]);
 
@@ -118,8 +117,12 @@ export function CostCalculator({ model, accent }: CostCalculatorProps) {
                 onClick={() => setTotal(chipTotal)}
                 className="px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold border transition-all cursor-pointer"
                 style={{
-                  backgroundColor: active ? `${accent}12` : "rgba(255,255,255,0.02)",
-                  borderColor: active ? `${accent}30` : "rgba(255,255,255,0.05)",
+                  backgroundColor: active
+                    ? `${accent}12`
+                    : "rgba(255,255,255,0.02)",
+                  borderColor: active
+                    ? `${accent}30`
+                    : "rgba(255,255,255,0.05)",
                   color: active ? "#fff" : "rgba(255,255,255,0.55)",
                 }}
               >
@@ -179,7 +182,9 @@ export function CostCalculator({ model, accent }: CostCalculatorProps) {
         {/* Hidden helper for keyboard users — show value as numeric input */}
         <div className="flex items-center justify-between mt-2 mb-4 font-mono text-[9px]">
           <span className="text-gray-600">0</span>
-          <span className="text-gray-500">{(total / 1000).toFixed(1)}K tokens</span>
+          <span className="text-gray-500">
+            {(total / 1000).toFixed(1)}K tokens
+          </span>
           <span className="text-gray-600">{(max / 1000).toFixed(0)}K</span>
         </div>
 
@@ -260,4 +265,3 @@ function Stat({
     </motion.div>
   );
 }
-

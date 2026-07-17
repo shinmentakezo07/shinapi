@@ -27,7 +27,13 @@ type ChangeType = "feature" | "improvement" | "fix" | "security" | "breaking";
 
 const changeTypeConfig: Record<
   ChangeType,
-  { label: string; color: string; bg: string; border: string; icon: typeof Rocket }
+  {
+    label: string;
+    color: string;
+    bg: string;
+    border: string;
+    icon: typeof Rocket;
+  }
 > = {
   feature: {
     label: "New",
@@ -254,7 +260,11 @@ const fadeUp = {
     opacity: 1,
     y: 0,
     filter: "blur(0px)",
-    transition: { delay: i * 0.04, duration: 0.5, ease: [0.22, 1, 0.36, 1] as const },
+    transition: {
+      delay: i * 0.04,
+      duration: 0.5,
+      ease: [0.22, 1, 0.36, 1] as const,
+    },
   }),
 };
 
@@ -274,7 +284,11 @@ export default function ChangelogPage() {
           italic="shipped"
           description="Every release, every fix, every breaking change. We ship often, document everything, and never silently move endpoints."
           icon={Sparkles}
-          primaryCta={{ label: "Subscribe to RSS", href: "/changelog/rss", icon: Rss }}
+          primaryCta={{
+            label: "Subscribe to RSS",
+            href: "/changelog/rss",
+            icon: Rss,
+          }}
           secondaryCta={{ label: "View Roadmap", href: "/roadmap" }}
           stats={[
             { value: "47", label: "Releases" },

@@ -221,7 +221,9 @@ export default function AdminUsersPage() {
         <AdminEmptyState
           icon={Users}
           title="Failed to load users"
-          description={error instanceof Error ? error.message : "An error occurred"}
+          description={
+            error instanceof Error ? error.message : "An error occurred"
+          }
         />
       ) : users.length === 0 ? (
         <AdminEmptyState

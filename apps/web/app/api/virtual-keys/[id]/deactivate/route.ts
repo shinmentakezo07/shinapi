@@ -9,5 +9,8 @@ export async function POST(
   const authError = await requireAuth(request);
   if (authError) return authError;
   const { id } = await params;
-  return proxyToBackend(request, `/api/virtual-keys/${encodeURIComponent(id)}/deactivate`);
+  return proxyToBackend(
+    request,
+    `/api/virtual-keys/${encodeURIComponent(id)}/deactivate`,
+  );
 }

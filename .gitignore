@@ -60,3 +60,8 @@ apps/backend/.env
 .vscode
 .idea
 *.swp
+
+# Agent / tooling artifacts (not part of DRA platform)
+.agents/
+.playwright-mcp/
+install-cpamp.sh

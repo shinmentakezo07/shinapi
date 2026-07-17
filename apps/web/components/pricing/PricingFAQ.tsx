@@ -241,7 +241,10 @@ export function PricingFAQ() {
       />
 
       {/* Atmosphere */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+      <div
+        className="absolute inset-0 pointer-events-none overflow-hidden"
+        aria-hidden="true"
+      >
         <div className="absolute top-1/4 left-1/5 w-[520px] h-[520px] bg-violet-600/[0.07] rounded-full blur-[120px] animate-glow-pulse" />
         <div
           className="absolute bottom-1/4 right-1/5 w-[420px] h-[420px] bg-fuchsia-600/[0.05] rounded-full blur-[110px] animate-glow-pulse"
@@ -305,7 +308,10 @@ export function PricingFAQ() {
             initial={{ opacity: 0, y: reduce ? 0 : 14 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: reduce ? 0 : 0.12, duration: reduce ? 0.1 : 0.45 }}
+            transition={{
+              delay: reduce ? 0 : 0.12,
+              duration: reduce ? 0.1 : 0.45,
+            }}
             className="md:text-right md:pb-1 space-y-2"
           >
             <p className="text-sm text-gray-500 max-w-xs md:ml-auto leading-relaxed">
@@ -323,7 +329,10 @@ export function PricingFAQ() {
           initial={{ opacity: 0, y: reduce ? 0 : 12 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ delay: reduce ? 0 : 0.15, duration: reduce ? 0.1 : 0.4 }}
+          transition={{
+            delay: reduce ? 0 : 0.15,
+            duration: reduce ? 0.1 : 0.4,
+          }}
           className="flex items-center gap-2 mb-10 flex-wrap"
           role="tablist"
           aria-label="FAQ categories"
@@ -406,7 +415,10 @@ export function PricingFAQ() {
             initial={{ opacity: 0, x: reduce ? 0 : 18 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: reduce ? 0 : 0.2, duration: reduce ? 0.1 : 0.5 }}
+            transition={{
+              delay: reduce ? 0 : 0.2,
+              duration: reduce ? 0.1 : 0.5,
+            }}
             className="lg:w-80 lg:shrink-0"
           >
             <div className="lg:sticky lg:top-8 space-y-4">
@@ -496,9 +508,7 @@ export function PricingFAQ() {
                       <p className="text-sm font-medium text-gray-200 group-hover:text-white transition-colors">
                         Gateway
                       </p>
-                      <p className="text-[11px] text-gray-600">
-                        How it works
-                      </p>
+                      <p className="text-[11px] text-gray-600">How it works</p>
                     </div>
                   </div>
                 </Link>

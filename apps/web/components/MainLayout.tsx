@@ -35,10 +35,18 @@ export function MainLayout({
         !isFullScreenRoute &&
         !isAdminRoute &&
         !isDocsRoute && (
-          <Header onMenuClick={() => setSidebarOpen(true)} user={user} sidebarOpen={sidebarOpen} />
+          <Header
+            onMenuClick={() => setSidebarOpen(true)}
+            user={user}
+            sidebarOpen={sidebarOpen}
+          />
         )}
 
-      <MobileSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} user={user} />
+      <MobileSidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        user={user}
+      />
 
       <div
         className={`flex ${isDashboardRoute || isAuthRoute || isFullScreenRoute || isDocsRoute ? "" : "pt-16 md:pt-20 pb-20 md:pb-0"}`}

@@ -1,7 +1,14 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowRight, Wrench, FileJson, Brain, Radio, Code2 } from "lucide-react";
+import {
+  ArrowRight,
+  Wrench,
+  FileJson,
+  Brain,
+  Radio,
+  Code2,
+} from "lucide-react";
 import type { OpenRouterModelData } from "@/types/model";
 import { getProviderTheme } from "@/lib/model-utils";
 
@@ -72,7 +79,10 @@ interface Capability {
   id: string;
   label: string;
   description: string;
-  Icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
+  Icon: React.ComponentType<{
+    className?: string;
+    style?: React.CSSProperties;
+  }>;
 }
 
 function deriveCapabilities(model: OpenRouterModelData): Capability[] {
@@ -119,7 +129,9 @@ function deriveCapabilities(model: OpenRouterModelData): Capability[] {
   }
   // Code execution heuristic — Claude, GPT-4, DeepSeek Coder
   if (
-    model.id.match(/claude|opus|gpt-4|deepseek.*coder|qwen.*coder|codestral/i) ||
+    model.id.match(
+      /claude|opus|gpt-4|deepseek.*coder|qwen.*coder|codestral/i,
+    ) ||
     params.includes("code_execution")
   ) {
     caps.push({
@@ -200,7 +212,11 @@ export function ArchitecturePanel({ model }: ArchitecturePanelProps) {
   const hasInstruct = !!arch?.instruct_type;
 
   const hasAnyContent =
-    hasInput || hasOutput || hasTokenizer || hasInstruct || capabilities.length > 0;
+    hasInput ||
+    hasOutput ||
+    hasTokenizer ||
+    hasInstruct ||
+    capabilities.length > 0;
   if (!hasAnyContent) return null;
 
   return (

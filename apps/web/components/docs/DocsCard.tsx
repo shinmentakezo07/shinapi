@@ -67,7 +67,8 @@ export const DocsIconTile = ({
 }) => {
   const dims =
     size === "sm" ? "w-9 h-9" : size === "lg" ? "w-12 h-12" : "w-10 h-10";
-  const iconSize = size === "sm" ? "w-4 h-4" : size === "lg" ? "w-5 h-5" : "w-[18px] h-[18px]";
+  const iconSize =
+    size === "sm" ? "w-4 h-4" : size === "lg" ? "w-5 h-5" : "w-[18px] h-[18px]";
   return (
     <div
       className={cn(
@@ -228,7 +229,9 @@ export const DocsGrid = ({
       : cols === 2
         ? "grid-cols-1 sm:grid-cols-2"
         : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
-  return <div className={cn("grid gap-3", colClass, className)}>{children}</div>;
+  return (
+    <div className={cn("grid gap-3", colClass, className)}>{children}</div>
+  );
 };
 
 /* Section sub-heading used inside docs content (replaces raw <h3>) */

@@ -16,10 +16,7 @@ export default function Loading() {
           count={6}
           className="!grid-cols-2 sm:!grid-cols-3 lg:!grid-cols-6"
         />
-        <SkeletonStats
-          count={4}
-          className="!grid-cols-2 lg:!grid-cols-4"
-        />
+        <SkeletonStats count={4} className="!grid-cols-2 lg:!grid-cols-4" />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <SkeletonChart height={340} />
           <SkeletonChart height={340} />

@@ -137,7 +137,10 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
       // Persist the backend JWT in a dedicated cookie so client-side SDK
       // requests can authenticate via cookie. We set it both on sign-in
       // (when user is present) and whenever the token is refreshed.
-      if (token.backendToken && (trigger === "signIn" || trigger === "signUp")) {
+      if (
+        token.backendToken &&
+        (trigger === "signIn" || trigger === "signUp")
+      ) {
         try {
           await setBackendTokenCookie(token.backendToken as string);
         } catch {

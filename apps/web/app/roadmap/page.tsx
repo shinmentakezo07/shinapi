@@ -75,7 +75,8 @@ const items: RoadmapItem[] = [
   // Shipped
   {
     title: "Webhooks v2 with DLQ",
-    description: "Exponential backoff, configurable retry counts, inspectable dead-letter queue.",
+    description:
+      "Exponential backoff, configurable retry counts, inspectable dead-letter queue.",
     status: "shipped",
     quarter: "Q2 2026",
     votes: 412,
@@ -84,7 +85,8 @@ const items: RoadmapItem[] = [
   },
   {
     title: "Anthropic Claude 4 streaming",
-    description: "Full SSE event streaming with tool-use deltas and usage accounting.",
+    description:
+      "Full SSE event streaming with tool-use deltas and usage accounting.",
     status: "shipped",
     quarter: "Q2 2026",
     votes: 287,
@@ -93,7 +95,8 @@ const items: RoadmapItem[] = [
   },
   {
     title: "Batch API async submissions",
-    description: "Submit thousands of requests as a single batch with webhook completion.",
+    description:
+      "Submit thousands of requests as a single batch with webhook completion.",
     status: "shipped",
     quarter: "Q2 2026",
     votes: 198,
@@ -102,7 +105,8 @@ const items: RoadmapItem[] = [
   },
   {
     title: "Prompt template versioning",
-    description: "Every prompt save creates a new version. Roll back at any time.",
+    description:
+      "Every prompt save creates a new version. Roll back at any time.",
     status: "shipped",
     quarter: "Q2 2026",
     votes: 156,
@@ -113,7 +117,8 @@ const items: RoadmapItem[] = [
   // In progress
   {
     title: "Function-calling router",
-    description: "Automatic tool selection and parallel function calling across providers.",
+    description:
+      "Automatic tool selection and parallel function calling across providers.",
     status: "in-progress",
     quarter: "Q2 2026",
     votes: 524,
@@ -122,7 +127,8 @@ const items: RoadmapItem[] = [
   },
   {
     title: "Custom model fine-tunes",
-    description: "Bring your own fine-tuned adapters and route to them via the same API.",
+    description:
+      "Bring your own fine-tuned adapters and route to them via the same API.",
     status: "in-progress",
     quarter: "Q3 2026",
     votes: 391,
@@ -131,7 +137,8 @@ const items: RoadmapItem[] = [
   },
   {
     title: "Real-time cost anomaly alerts",
-    description: "Webhook + email alerts when spend rate spikes or an org exceeds its threshold.",
+    description:
+      "Webhook + email alerts when spend rate spikes or an org exceeds its threshold.",
     status: "in-progress",
     quarter: "Q2 2026",
     votes: 273,
@@ -142,7 +149,8 @@ const items: RoadmapItem[] = [
   // Planned
   {
     title: "On-prem enterprise edition",
-    description: "Hardened offline build with signed bundle updates. Targets regulated industries.",
+    description:
+      "Hardened offline build with signed bundle updates. Targets regulated industries.",
     status: "planned",
     quarter: "Q3 2026",
     votes: 488,
@@ -151,7 +159,8 @@ const items: RoadmapItem[] = [
   },
   {
     title: "Multi-region active-active failover",
-    description: "us-east, us-west, eu, ap. Automatic geo-routing and zero-downtime region failover.",
+    description:
+      "us-east, us-west, eu, ap. Automatic geo-routing and zero-downtime region failover.",
     status: "planned",
     quarter: "Q3 2026",
     votes: 367,
@@ -160,7 +169,8 @@ const items: RoadmapItem[] = [
   },
   {
     title: "Native Anthropic tool-use protocol",
-    description: "First-class support for Anthropic's structured tool-use format with parallel calls.",
+    description:
+      "First-class support for Anthropic's structured tool-use format with parallel calls.",
     status: "planned",
     quarter: "Q3 2026",
     votes: 281,
@@ -169,7 +179,8 @@ const items: RoadmapItem[] = [
   },
   {
     title: "Audio transcription & TTS",
-    description: "Unified audio endpoint for Whisper, ElevenLabs, and our own streaming TTS.",
+    description:
+      "Unified audio endpoint for Whisper, ElevenLabs, and our own streaming TTS.",
     status: "planned",
     quarter: "Q4 2026",
     votes: 642,
@@ -180,7 +191,8 @@ const items: RoadmapItem[] = [
   // Exploring
   {
     title: "Vector database in the gateway",
-    description: "Managed pgvector-compatible store with RAG primitives and metadata filters.",
+    description:
+      "Managed pgvector-compatible store with RAG primitives and metadata filters.",
     status: "exploring",
     quarter: "Q4 2026",
     votes: 829,
@@ -189,7 +201,8 @@ const items: RoadmapItem[] = [
   },
   {
     title: "Browser-agent SDK",
-    description: "Drive a headless browser from a chat session. Screenshot, click, fill forms.",
+    description:
+      "Drive a headless browser from a chat session. Screenshot, click, fill forms.",
     status: "exploring",
     quarter: "Q4 2026",
     votes: 612,
@@ -198,7 +211,8 @@ const items: RoadmapItem[] = [
   },
   {
     title: "Self-serve SOC 2 audit portal",
-    description: "Customer-facing view of our controls, evidence, and live audit status.",
+    description:
+      "Customer-facing view of our controls, evidence, and live audit status.",
     status: "exploring",
     quarter: "Q4 2026",
     votes: 287,
@@ -219,11 +233,15 @@ export default function RoadmapPage() {
       <div className="max-w-[1080px] mx-auto px-6 sm:px-10">
         <PageHero
           eyebrow="Roadmap"
-          title="What we&apos;re building"
+          title="What we're building"
           italic="next"
           description="A public, honest look at what we've shipped, what we're working on, and what we're still figuring out. Vote on what matters to you — your input shapes the queue."
           icon={Rocket}
-          primaryCta={{ label: "Submit an idea", href: "/contact?topic=product", icon: Sparkles }}
+          primaryCta={{
+            label: "Submit an idea",
+            href: "/contact?topic=product",
+            icon: Sparkles,
+          }}
           secondaryCta={{ label: "View changelog", href: "/changelog" }}
           stats={[
             { value: "4", label: "Shipped Q2" },
@@ -235,27 +253,31 @@ export default function RoadmapPage() {
 
         {/* Legend */}
         <div className="flex flex-wrap items-center gap-2 mb-10">
-          {(["shipped", "in-progress", "planned", "exploring"] as Status[]).map((s) => {
-            const cfg = statusConfig[s];
-            return (
-              <div
-                key={s}
-                className={cn(
-                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-[10px] font-mono font-semibold uppercase tracking-[0.15em]",
-                  cfg.bg,
-                  cfg.border,
-                  cfg.color,
-                )}
-              >
-                <span className={cn("w-1.5 h-1.5 rounded-full", cfg.dot)} />
-                {cfg.label}
-              </div>
-            );
-          })}
+          {(["shipped", "in-progress", "planned", "exploring"] as Status[]).map(
+            (s) => {
+              const cfg = statusConfig[s];
+              return (
+                <div
+                  key={s}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-[10px] font-mono font-semibold uppercase tracking-[0.15em]",
+                    cfg.bg,
+                    cfg.border,
+                    cfg.color,
+                  )}
+                >
+                  <span className={cn("w-1.5 h-1.5 rounded-full", cfg.dot)} />
+                  {cfg.label}
+                </div>
+              );
+            },
+          )}
         </div>
 
         {quarterSections.map((section) => {
-          const quarterItems = items.filter((i) => section.statuses.includes(i.status));
+          const quarterItems = items.filter((i) =>
+            section.statuses.includes(i.status),
+          );
           if (quarterItems.length === 0) return null;
           return (
             <section key={section.quarter} className="mb-20 sm:mb-24">
@@ -281,7 +303,11 @@ export default function RoadmapPage() {
                       initial={{ opacity: 0, y: 12 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true, margin: "-50px" }}
-                      transition={{ duration: 0.5, delay: idx * 0.04, ease: [0.22, 1, 0.36, 1] }}
+                      transition={{
+                        duration: 0.5,
+                        delay: idx * 0.04,
+                        ease: [0.22, 1, 0.36, 1],
+                      }}
                       className="group relative p-5 rounded-2xl border border-white/[0.07] bg-gradient-to-br from-white/[0.025] to-transparent hover:border-indigo-500/25 transition-all duration-300"
                     >
                       <div className="flex items-start justify-between gap-3 mb-4">
@@ -293,7 +319,9 @@ export default function RoadmapPage() {
                             cfg.color,
                           )}
                         >
-                          <span className={cn("w-1.5 h-1.5 rounded-full", cfg.dot)} />
+                          <span
+                            className={cn("w-1.5 h-1.5 rounded-full", cfg.dot)}
+                          />
                           {cfg.label}
                         </div>
                         <div className="flex items-center gap-1.5 text-[10px] font-mono text-white/30">
@@ -358,7 +386,11 @@ export default function RoadmapPage() {
             <div>
               <h3 className="text-[24px] sm:text-[30px] font-semibold tracking-[-0.03em] text-white mb-3">
                 Have an idea we should"
-                <span className="font-display italic font-normal text-indigo-200/95"> build</span>?
+                <span className="font-display italic font-normal text-indigo-200/95">
+                  {" "}
+                  build
+                </span>
+                ?
               </h3>
               <p className="text-[14px] text-white/55 max-w-md leading-[1.7]">
                 We read every submission. The roadmap is shaped by your votes

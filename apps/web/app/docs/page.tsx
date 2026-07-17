@@ -37,7 +37,11 @@ import {
 } from "lucide-react";
 import type { NavItem } from "@/components/docs/types";
 import { cn } from "@/lib/utils";
-import { DocsRouteRow, DocsCard, DocsIconTile } from "@/components/docs/DocsCard";
+import {
+  DocsRouteRow,
+  DocsCard,
+  DocsIconTile,
+} from "@/components/docs/DocsCard";
 
 interface DocSection extends NavItem {
   desc: string;
@@ -245,7 +249,12 @@ const sections: DocSection[] = [
   },
 ];
 
-const categories = ["Getting Started", "Core Features", "Platform", "Reference"] as const;
+const categories = [
+  "Getting Started",
+  "Core Features",
+  "Platform",
+  "Reference",
+] as const;
 
 /* A short tagline per category that delivers the gateway vocabulary. */
 const categoryTaglines: Record<string, string> = {
@@ -309,7 +318,11 @@ const fadeUp = {
     opacity: 1,
     y: 0,
     filter: "blur(0px)",
-    transition: { delay: 0.08 + i * 0.04, duration: 0.5, ease: [0.22, 1, 0.36, 1] as const },
+    transition: {
+      delay: 0.08 + i * 0.04,
+      duration: 0.5,
+      ease: [0.22, 1, 0.36, 1] as const,
+    },
   }),
 };
 
@@ -390,12 +403,16 @@ function ProviderRouter() {
                 transition={{ duration: 14, repeat: Infinity, ease: "linear" }}
                 style={{ borderStyle: "dashed" }}
               />
-              <span className="font-mono text-xl text-indigo-200 relative z-10">⊙</span>
+              <span className="font-mono text-xl text-indigo-200 relative z-10">
+                ⊙
+              </span>
             </div>
             <span className="mt-2 text-[9px] font-mono uppercase tracking-[0.2em] text-indigo-200/70">
               gateway
             </span>
-            <span className="text-[9px] font-mono text-white/25 mt-0.5">10-stage route</span>
+            <span className="text-[9px] font-mono text-white/25 mt-0.5">
+              10-stage route
+            </span>
           </div>
 
           {/* PROVIDERS (right) */}
@@ -414,7 +431,9 @@ function ProviderRouter() {
                     aria-pressed={isActive}
                     className="docs-route group relative flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-lg border bg-white/[0.015] transition-all duration-200 cursor-pointer"
                     style={{
-                      borderColor: isActive ? "rgba(34,211,238,0.35)" : "rgba(255,255,255,0.06)",
+                      borderColor: isActive
+                        ? "rgba(34,211,238,0.35)"
+                        : "rgba(255,255,255,0.06)",
                       background: isActive
                         ? "linear-gradient(to right, rgba(34,211,238,0.08), rgba(34,211,238,0.01))"
                         : undefined,
@@ -423,13 +442,17 @@ function ProviderRouter() {
                     <span
                       className={cn(
                         "w-1.5 h-1.5 rounded-full flex-shrink-0 transition-all",
-                        isActive ? "bg-cyan-300 shadow-[0_0_8px_rgba(34,211,238,0.9)]" : "bg-white/20",
+                        isActive
+                          ? "bg-cyan-300 shadow-[0_0_8px_rgba(34,211,238,0.9)]"
+                          : "bg-white/20",
                       )}
                     />
                     <span
                       className={cn(
                         "font-mono text-[12px] tracking-[-0.01em] transition-colors",
-                        isActive ? "text-cyan-100" : "text-white/55 group-hover:text-white/85",
+                        isActive
+                          ? "text-cyan-100"
+                          : "text-white/55 group-hover:text-white/85",
                       )}
                     >
                       {p.label}
@@ -513,14 +536,20 @@ export default function DocsIndexPage() {
               Documentation
             </span>
             <div className="h-px w-12 bg-gradient-to-r from-white/[0.1] to-transparent" />
-            <span className="text-[10px] font-mono text-white/25 tracking-[0.2em]">v1.0</span>
+            <span className="text-[10px] font-mono text-white/25 tracking-[0.2em]">
+              v1.0
+            </span>
           </motion.div>
 
           {/* Title */}
           <motion.h1
             initial={{ opacity: 0, y: 20, filter: "blur(8px)" }}
             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            transition={{ delay: 0.15, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            transition={{
+              delay: 0.15,
+              duration: 0.7,
+              ease: [0.22, 1, 0.36, 1],
+            }}
             className="text-[2.5rem] sm:text-[3.4rem] lg:text-[4.5rem] font-semibold tracking-[-0.04em] leading-[0.96] mb-6"
           >
             <span className="text-white/95">One request,</span>{" "}
@@ -539,7 +568,8 @@ export default function DocsIndexPage() {
           >
             A universal LLM gateway: an OpenAI-compatible API that routes to
             100+ models, with credit-based billing, real-time analytics, and
-            full conversation control. This is the map of every route through it.
+            full conversation control. This is the map of every route through
+            it.
           </motion.p>
 
           {/* CTAs */}
@@ -652,12 +682,19 @@ export default function DocsIndexPage() {
               hidden: { opacity: 0 },
               visible: {
                 opacity: 1,
-                transition: { staggerChildren: 0.03, delayChildren: catIdx * 0.03 },
+                transition: {
+                  staggerChildren: 0.03,
+                  delayChildren: catIdx * 0.03,
+                },
               },
             }}
             className="relative mb-20 sm:mb-24 last:mb-8 scroll-mt-24"
           >
-            <CategoryHeader index={catIdx} category={category} count={catCount} />
+            <CategoryHeader
+              index={catIdx}
+              category={category}
+              count={catCount}
+            />
 
             {/* row list — hairline-separated, not boxed */}
             <div className="relative rounded-2xl border border-white/[0.05] bg-white/[0.012] overflow-hidden">
@@ -691,7 +728,9 @@ export default function DocsIndexPage() {
           </span>
           <h2 className="text-[18px] sm:text-[22px] font-semibold tracking-[-0.025em] text-white">
             More from{" "}
-            <span className="font-display italic font-normal text-indigo-200/95">Yapapa</span>
+            <span className="font-display italic font-normal text-indigo-200/95">
+              Yapapa
+            </span>
           </h2>
           <div className="h-px flex-1 bg-gradient-to-r from-indigo-500/15 via-white/[0.05] to-transparent" />
           <span className="text-[9px] font-mono text-white/30 tabular-nums tracking-[0.15em]">
@@ -717,7 +756,14 @@ export default function DocsIndexPage() {
                   className="group relative block p-5 cursor-pointer h-full"
                 >
                   <div className="relative flex items-start gap-3.5">
-                    <div className="pointer-events-none absolute -top-16 -right-16 w-40 h-40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700" style={{ background: "radial-gradient(circle, rgba(99,102,241,0.16), transparent 70%)", filter: "blur(36px)" }} />
+                    <div
+                      className="pointer-events-none absolute -top-16 -right-16 w-40 h-40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700"
+                      style={{
+                        background:
+                          "radial-gradient(circle, rgba(99,102,241,0.16), transparent 70%)",
+                        filter: "blur(36px)",
+                      }}
+                    />
                     <DocsIconTile icon={res.icon} />
                     <div className="min-w-0 flex-1">
                       <p className="text-[14px] font-semibold text-white/70 group-hover:text-white transition-colors tracking-[-0.01em] flex items-center gap-1.5">
@@ -751,7 +797,10 @@ export default function DocsIndexPage() {
         <div className="relative">
           <h3 className="text-[24px] sm:text-[30px] font-semibold tracking-[-0.03em] text-white mb-3">
             Ready to ship{" "}
-            <span className="font-display italic font-normal text-indigo-200/95">faster</span>?
+            <span className="font-display italic font-normal text-indigo-200/95">
+              faster
+            </span>
+            ?
           </h3>
           <p className="text-[14px] text-white/55 max-w-md leading-[1.7] mb-6">
             Open the playground to test prompts against any model in your

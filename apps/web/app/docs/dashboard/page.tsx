@@ -21,12 +21,7 @@ export default function DashboardPage() {
         visible: { transition: { staggerChildren: 0.06 } },
       }}
     >
-      <Section
-        id="dashboard"
-        icon={BarChart3}
-        title="Dashboard"
-       
-      >
+      <Section id="dashboard" icon={BarChart3} title="Dashboard">
         <p>
           The dashboard provides real-time visibility into your API usage,
           credit balance, and request history. All data is served through the

@@ -90,7 +90,9 @@ export default function AdminAnnouncementsPage() {
       <AdminEmptyState
         icon={Send}
         title="Failed to load announcements"
-        description={error instanceof Error ? error.message : "An error occurred"}
+        description={
+          error instanceof Error ? error.message : "An error occurred"
+        }
       />
     );
   }

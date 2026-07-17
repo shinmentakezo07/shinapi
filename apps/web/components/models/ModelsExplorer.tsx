@@ -12,9 +12,11 @@ import {
   Star,
   Brain,
   Activity,
+  SlidersHorizontal,
 } from "lucide-react";
 import { useState, useMemo, useDeferredValue } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { ModelCard } from "./ModelCard";
 import { getProviderLogo } from "@/lib/provider-logos";
 import type { OpenRouterModelData } from "@/types/model";
@@ -43,13 +45,13 @@ const providerConfig: Record<
 > = {
   openai: {
     icon: Sparkles,
-    color: "text-green-400",
-    gradient: "from-green-500/20 to-emerald-500/20",
+    color: "text-emerald-400",
+    gradient: "from-emerald-500/20 to-teal-500/20",
   },
   anthropic: {
     icon: Zap,
-    color: "text-orange-400",
-    gradient: "from-orange-500/20 to-amber-500/20",
+    color: "text-amber-400",
+    gradient: "from-amber-500/20 to-orange-500/20",
   },
   google: {
     icon: Star,
@@ -58,13 +60,13 @@ const providerConfig: Record<
   },
   moonshot: {
     icon: Brain,
-    color: "text-purple-400",
-    gradient: "from-purple-500/20 to-pink-500/20",
+    color: "text-violet-400",
+    gradient: "from-violet-500/20 to-fuchsia-500/20",
   },
   moonshotai: {
     icon: Brain,
-    color: "text-purple-400",
-    gradient: "from-purple-500/20 to-pink-500/20",
+    color: "text-violet-400",
+    gradient: "from-violet-500/20 to-fuchsia-500/20",
   },
   zhipu: {
     icon: Activity,
@@ -118,18 +120,18 @@ const providerConfig: Record<
   },
   qw: {
     icon: Brain,
-    color: "text-purple-400",
-    gradient: "from-purple-500/20 to-pink-500/20",
+    color: "text-violet-400",
+    gradient: "from-violet-500/20 to-fuchsia-500/20",
   },
   gpt: {
     icon: Sparkles,
-    color: "text-green-400",
-    gradient: "from-green-500/20 to-emerald-500/20",
+    color: "text-emerald-400",
+    gradient: "from-emerald-500/20 to-teal-500/20",
   },
   claude: {
     icon: Zap,
-    color: "text-orange-400",
-    gradient: "from-orange-500/20 to-amber-500/20",
+    color: "text-amber-400",
+    gradient: "from-amber-500/20 to-orange-500/20",
   },
   gemini: {
     icon: Star,
@@ -201,19 +203,18 @@ const providers = [
   "xAI",
 ];
 
-const providerIcons: Record<
-  string,
-  React.ComponentType<{ className?: string }>
-> = {
-  OpenAI: Sparkles,
-  Anthropic: Zap,
-  Google: Star,
-  Moonshot: Brain,
-  Meta: Cpu,
-  Mistral: Activity,
-  DeepSeek: Cpu,
-  xAI: Cpu,
+const providerLogoUrls: Record<string, string> = {
+  OpenAI: "/logos/openai.svg",
+  Anthropic: "/logos/anthropic.svg",
+  Google: "/logos/google.svg",
+  Moonshot: "/logos/moonshot.png",
+  Meta: "/logos/meta.svg",
+  Mistral: "/logos/mistral.svg",
+  DeepSeek: "/logos/deepseek.svg",
+  xAI: "/logos/xai.svg",
 };
+
+type SortMode = "popular" | "price-input" | "price-output" | "context";
 
 interface ModelsExplorerProps {
   /** Optional SSR/seed models; live catalog is preferred. */
@@ -224,6 +225,7 @@ export function ModelsExplorer({ initialModels }: ModelsExplorerProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProvider, setSelectedProvider] = useState("All");
+  const [sortMode, setSortMode] = useState<SortMode>("popular");
 
   const deferredQuery = useDeferredValue(searchQuery);
   const deferredProvider = useDeferredValue(selectedProvider);
@@ -283,7 +285,7 @@ export function ModelsExplorer({ initialModels }: ModelsExplorerProps) {
   }, [sourceModels]);
 
   const filteredModels = useMemo(() => {
-    return models.filter((model) => {
+    const result = models.filter((model) => {
       const q = deferredQuery.toLowerCase();
       const matchesSearch =
         model.name.toLowerCase().includes(q) ||
@@ -294,7 +296,28 @@ export function ModelsExplorer({ initialModels }: ModelsExplorerProps) {
         model.provider.toLowerCase().includes(deferredProvider.toLowerCase());
       return matchesSearch && matchesProvider;
     });
-  }, [models, deferredQuery, deferredProvider]);
+
+    return [...result].sort((a, b) => {
+      switch (sortMode) {
+        case "popular":
+          return (b.popular ? 1 : 0) - (a.popular ? 1 : 0);
+        case "price-input":
+          return (
+            parseFloat(a.inputPrice.slice(1)) -
+            parseFloat(b.inputPrice.slice(1))
+          );
+        case "price-output":
+          return (
+            parseFloat(a.outputPrice.slice(1)) -
+            parseFloat(b.outputPrice.slice(1))
+          );
+        case "context":
+          return parseInt(b.context) - parseInt(a.context);
+        default:
+          return 0;
+      }
+    });
+  }, [models, deferredQuery, deferredProvider, sortMode]);
 
   const featuredModels = useMemo(() => {
     return models.filter((m) => m.popular).slice(0, 3);
@@ -306,24 +329,31 @@ export function ModelsExplorer({ initialModels }: ModelsExplorerProps) {
     router.push(`/models/${encodeURIComponent(modelId)}`);
   };
 
+  const uniqueProviders = new Set(models.map((m) => m.provider)).size;
+
   return (
-    <section className="relative w-full pt-8 pb-24 md:pt-12 md:pb-32 px-4 bg-[#000000] overflow-hidden">
-      {/* Background */}
+    <section className="relative w-full pt-20 pb-24 md:pt-24 md:pb-32 px-4 bg-[#030303] overflow-hidden">
+      {/* Background atmosphere */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-500/5 rounded-full blur-[140px] animate-glow-pulse" />
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-indigo-500/[0.04] rounded-full blur-[140px]" />
+        <div className="absolute bottom-1/3 right-1/4 w-[500px] h-[500px] bg-cyan-500/[0.03] rounded-full blur-[140px]" />
         <div
-          className="absolute bottom-1/3 right-1/4 w-[500px] h-[500px] bg-violet-600/5 rounded-full blur-[140px] animate-glow-pulse"
-          style={{ animationDelay: "2s" }}
+          className="absolute inset-0 opacity-[0.015]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px)",
+            backgroundSize: "72px 72px",
+          }}
         />
-        <div className="absolute inset-0 bg-grid-pattern opacity-[0.03]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#000_80%)]" />
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto">
         {catalogLoading && !sourceModels.length && (
           <div className="flex flex-col items-center justify-center py-24 gap-3">
-            <div className="w-8 h-8 rounded-full border-2 border-blue-500/30 border-t-blue-400 animate-spin" />
-            <p className="text-sm text-gray-500 font-mono">Loading model catalog…</p>
+            <div className="w-8 h-8 rounded-full border-2 border-cyan-500/30 border-t-cyan-400 animate-spin" />
+            <p className="text-sm text-gray-500 font-mono">
+              Loading model catalog…
+            </p>
           </div>
         )}
         {catalogError && (
@@ -335,7 +365,7 @@ export function ModelsExplorer({ initialModels }: ModelsExplorerProps) {
             <button
               type="button"
               onClick={() => refetchCatalog()}
-              className="text-xs font-mono text-blue-400 hover:text-blue-300 underline"
+              className="text-xs font-mono text-cyan-400 hover:text-cyan-300 underline"
             >
               Retry
             </button>
@@ -343,146 +373,224 @@ export function ModelsExplorer({ initialModels }: ModelsExplorerProps) {
         )}
         {!catalogLoading && !catalogError && sourceModels.length === 0 && (
           <div className="mb-12 p-8 rounded-2xl border border-white/10 bg-white/[0.02] text-center">
-            <p className="text-white font-semibold mb-2">No models configured</p>
+            <p className="text-white font-semibold mb-2">
+              No models configured
+            </p>
             <p className="text-sm text-gray-400 max-w-md mx-auto">
-              An admin can add a provider (endpoint, API key, and model IDs) under
-              Admin → Providers. Models appear here and in the playground automatically.
+              An admin can add a provider (endpoint, API key, and model IDs)
+              under Admin → Providers. Models appear here and in the playground
+              automatically.
             </p>
           </div>
         )}
-        {/* Section Header */}
-        <div className="text-center mb-16">
+
+        {/* Page Header */}
+        <div className="text-center mb-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="inline-flex items-center gap-3 px-5 py-2.5 rounded-2xl border border-blue-500/20 bg-blue-500/5 text-blue-400 text-xs font-mono font-bold tracking-[0.2em] uppercase mb-8 backdrop-blur-md"
+            className="inline-flex items-center gap-3 mb-6"
           >
-            <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-            Browse Models
-            <div
-              className="w-2 h-2 rounded-full bg-violet-400 animate-pulse"
-              style={{ animationDelay: "0.5s" }}
-            />
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-60" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-400" />
+            </span>
+            <span className="text-[11px] font-mono font-bold tracking-[0.2em] uppercase text-gray-500">
+              Model Registry
+            </span>
           </motion.div>
 
-          <motion.h2
+          <motion.h1
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter text-white mb-6 leading-[0.95]"
+            className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-white mb-4 leading-[1.1]"
           >
             Every Model,{" "}
-            <span className="bg-gradient-to-r from-blue-400 via-violet-400 to-purple-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-cyan-300 via-indigo-300 to-violet-300 bg-clip-text text-transparent">
               One Bill
             </span>
-          </motion.h2>
+          </motion.h1>
 
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="text-lg text-gray-400 max-w-2xl mx-auto font-light"
+            className="text-base md:text-lg text-gray-400 max-w-2xl mx-auto font-light leading-relaxed"
           >
-            Search and filter through{" "}
+            Browse{" "}
             <span className="text-white font-medium">
               {sourceModels.length || "your"} AI model
               {sourceModels.length === 1 ? "" : "s"}
             </span>{" "}
-            from configured providers. Compare pricing, context windows, and
-            capabilities.
+            across {uniqueProviders} providers. Compare pricing, context
+            windows, and capabilities.
           </motion.p>
         </div>
 
-        {/* Search & Filters */}
+        {/* Sticky Control Rail */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ delay: 0.2 }}
-          className="mb-16 space-y-6"
+          transition={{ delay: 0.15 }}
+          className="sticky top-4 z-30 mb-12"
         >
-          {/* Search Bar */}
-          <div className="relative max-w-2xl mx-auto group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 via-violet-500/20 to-blue-500/20 rounded-2xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
-            <div className="relative flex items-center gap-4 px-5 py-4 rounded-2xl bg-[#0A0A0A]/80 backdrop-blur-xl border border-white/10 focus-within:border-blue-500/30 transition-all shadow-2xl">
-              <Search className="w-5 h-5 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
-              <input
-                type="text"
-                placeholder="Search by name, provider, or model ID..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 bg-transparent border-none outline-none text-white placeholder:text-gray-600 font-mono text-sm"
-              />
-              {(searchQuery || isSearchStale) && (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className={`px-3 py-1.5 text-xs font-mono font-bold rounded-lg border ${
-                    isSearchStale
-                      ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                      : "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                  }`}
-                >
-                  {isSearchStale ? "..." : filteredModels.length}
-                </motion.div>
-              )}
-            </div>
-          </div>
-
-          {/* Provider Filter Pills */}
-          <div className="flex flex-wrap justify-center gap-2">
-            {providers.map((provider) => {
-              const isActive = selectedProvider === provider;
-              const ProviderIcon = providerIcons[provider] || Cpu;
-              return (
-                <motion.button
-                  key={provider}
-                  onClick={() => setSelectedProvider(provider)}
-                  whileHover={{ scale: 1.05, y: -1 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`relative px-5 py-2.5 rounded-xl text-xs font-mono font-bold tracking-wider uppercase transition-all overflow-hidden ${
-                    isActive ? "text-black" : "text-gray-400 hover:text-white"
-                  }`}
-                >
-                  <div
-                    className={`absolute inset-0 transition-all duration-300 ${
-                      isActive
-                        ? "bg-gradient-to-r from-blue-500 via-violet-500 to-blue-500 bg-[length:200%_100%] animate-gradient"
-                        : "bg-white/5 hover:bg-white/10 border border-white/10"
-                    }`}
+          <div className="rounded-2xl border border-white/[0.07] bg-[#06060A]/95 backdrop-blur-xl p-4 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+            <div className="flex flex-col lg:flex-row gap-3">
+              {/* Search */}
+              <div className="relative flex-1 group">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-cyan-500/10 rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500 blur-md" />
+                <div className="relative flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] focus-within:border-cyan-500/25 transition-all">
+                  <Search className="w-4 h-4 text-gray-500 group-focus-within:text-cyan-400 transition-colors shrink-0" />
+                  <input
+                    type="text"
+                    placeholder="Search by name, provider, or model ID..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="flex-1 bg-transparent border-none outline-none text-white placeholder:text-gray-600 font-mono text-sm min-w-0"
                   />
-                  {isActive && (
-                    <div className="absolute inset-0 opacity-30 bg-gradient-to-r from-transparent via-white to-transparent -skew-x-12 translate-x-[-100%] animate-shimmer" />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="text-gray-500 hover:text-gray-300"
+                      aria-label="Clear search"
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 14 14"
+                        fill="none"
+                      >
+                        <path
+                          d="M3 3L11 11M11 3L3 11"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                    </button>
                   )}
-                  <span className="relative z-10 flex items-center gap-2">
-                    {isActive && <CheckCircle className="w-3.5 h-3.5" />}
-                    {provider}
-                  </span>
-                </motion.button>
-              );
-            })}
+                  {(searchQuery || isSearchStale) && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className={`px-2 py-0.5 text-xs font-mono font-bold rounded-md border shrink-0 ${
+                        isSearchStale
+                          ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                          : "bg-cyan-500/10 text-cyan-400 border-cyan-500/20"
+                      }`}
+                    >
+                      {isSearchStale ? "..." : filteredModels.length}
+                    </motion.div>
+                  )}
+                </div>
+              </div>
+
+              {/* Sort */}
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08]">
+                  <SlidersHorizontal className="w-4 h-4 text-gray-500" />
+                  <select
+                    value={sortMode}
+                    onChange={(e) => setSortMode(e.target.value as SortMode)}
+                    className="bg-transparent text-sm text-gray-300 font-mono outline-none cursor-pointer appearance-none pr-4"
+                    style={{
+                      backgroundImage:
+                        "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2371717a' stroke-width='1.5' fill='none'/%3E%3C/svg%3E\")",
+                      backgroundRepeat: "no-repeat",
+                      backgroundPosition: "right center",
+                    }}
+                  >
+                    <option value="popular" className="bg-[#111]">
+                      Sort: Popular
+                    </option>
+                    <option value="price-input" className="bg-[#111]">
+                      Sort: Input Price
+                    </option>
+                    <option value="price-output" className="bg-[#111]">
+                      Sort: Output Price
+                    </option>
+                    <option value="context" className="bg-[#111]">
+                      Sort: Context
+                    </option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Provider tabs */}
+            <div className="relative mt-3">
+              <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
+                {providers.map((provider) => {
+                  const isActive = selectedProvider === provider;
+                  const logoUrl =
+                    provider !== "All" ? providerLogoUrls[provider] : null;
+                  return (
+                    <button
+                      key={provider}
+                      onClick={() => setSelectedProvider(provider)}
+                      className={`relative flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-mono font-bold tracking-wider uppercase transition-all whitespace-nowrap ${
+                        isActive
+                          ? "text-black"
+                          : "text-gray-400 hover:text-white"
+                      }`}
+                    >
+                      {isActive && (
+                        <motion.div
+                          layoutId="provider-pill"
+                          className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-indigo-500 rounded-lg"
+                          transition={{
+                            type: "spring",
+                            bounce: 0.2,
+                            duration: 0.5,
+                          }}
+                        />
+                      )}
+                      <span className="relative z-10 flex items-center gap-2">
+                        {isActive && <CheckCircle className="w-3.5 h-3.5" />}
+                        {logoUrl && (
+                          <Image
+                            src={logoUrl}
+                            alt={`${provider} logo`}
+                            width={14}
+                            height={14}
+                            className="object-contain"
+                            unoptimized
+                          />
+                        )}
+                        {provider}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </motion.div>
 
-        {/* Featured Bento (only when no filters active) */}
+        {/* Featured Section */}
         <AnimatePresence>
           {!hasActiveFilters && featuredModels.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="mb-20"
+              className="mb-16"
             >
-              <div className="flex items-center gap-3 mb-8">
-                <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
                   <TrendingUp className="w-4 h-4" />
                 </div>
-                <h3 className="text-xl font-bold tracking-tight text-white">
-                  Featured Models
-                </h3>
-                <div className="flex-1 h-px bg-gradient-to-r from-white/10 to-transparent" />
+                <h2 className="text-base font-bold tracking-tight text-white">
+                  Signal Picks
+                </h2>
+                <span className="text-[10px] font-mono text-gray-600 uppercase tracking-wider bg-white/[0.03] px-2 py-0.5 rounded-md border border-white/[0.05]">
+                  Popular
+                </span>
+                <div className="flex-1 h-px bg-gradient-to-r from-white/[0.08] to-transparent" />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -501,17 +609,17 @@ export function ModelsExplorer({ initialModels }: ModelsExplorerProps) {
         </AnimatePresence>
 
         {/* All Models Grid */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-8">
+        <div>
+          <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-400">
+              <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
                 <Cpu className="w-4 h-4" />
               </div>
-              <h3 className="text-xl font-bold tracking-tight text-white">
+              <h2 className="text-base font-bold tracking-tight text-white">
                 {hasActiveFilters ? "Results" : "All Models"}
-              </h3>
+              </h2>
             </div>
-            <span className="text-xs font-mono text-gray-500">
+            <span className="text-xs font-mono text-gray-500 tabular-nums">
               {filteredModels.length} model
               {filteredModels.length !== 1 ? "s" : ""}
             </span>
@@ -534,10 +642,10 @@ export function ModelsExplorer({ initialModels }: ModelsExplorerProps) {
               animate={{ opacity: 1, y: 0 }}
               className="text-center py-24"
             >
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white/5 border border-white/10 mb-6">
-                <Search className="w-8 h-8 text-gray-600" />
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-white/[0.03] border border-white/[0.06] mb-6">
+                <Search className="w-6 h-6 text-gray-600" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">
+              <h3 className="text-lg font-bold text-white mb-2">
                 No models found
               </h3>
               <p className="text-gray-500 font-mono text-sm mb-8">
@@ -548,10 +656,10 @@ export function ModelsExplorer({ initialModels }: ModelsExplorerProps) {
                   setSearchQuery("");
                   setSelectedProvider("All");
                 }}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-sm font-mono transition-all"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/[0.08] hover:border-white/[0.15] rounded-xl text-sm font-mono transition-all"
               >
                 Clear Filters
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </motion.div>
           )}
@@ -563,26 +671,25 @@ export function ModelsExplorer({ initialModels }: ModelsExplorerProps) {
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
-            className="mt-20 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8"
+            className="mt-20 flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10"
           >
             {[
               { label: "Total Models", value: models.length },
+              { label: "Providers", value: uniqueProviders },
               {
-                label: "Providers",
-                value: new Set(models.map((m) => m.provider)).size,
-              },
-              {
-                label: "Popular Picks",
+                label: "Popular",
                 value: models.filter((m) => m.popular).length,
               },
             ].map((stat) => (
               <div
                 key={stat.label}
-                className="flex items-center gap-2 text-xs text-gray-500 font-mono"
+                className="flex items-center gap-2.5 text-xs text-gray-500 font-mono"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
-                {stat.label}:{" "}
-                <span className="text-white font-bold">{stat.value}</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 shadow-[0_0_6px_rgba(34,211,238,0.4)]" />
+                {stat.label}{" "}
+                <span className="text-white font-bold tabular-nums">
+                  {stat.value}
+                </span>
               </div>
             ))}
           </motion.div>

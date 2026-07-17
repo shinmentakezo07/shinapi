@@ -90,7 +90,9 @@ export default function AdminMessagesPage() {
       <AdminEmptyState
         icon={Send}
         title="Failed to load messages"
-        description={error instanceof Error ? error.message : "An error occurred"}
+        description={
+          error instanceof Error ? error.message : "An error occurred"
+        }
       />
     );
   }

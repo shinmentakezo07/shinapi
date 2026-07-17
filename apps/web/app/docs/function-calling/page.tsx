@@ -1,7 +1,14 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Wrench, Code2, Braces, ArrowRight, Zap, ListChecks } from "lucide-react";
+import {
+  Wrench,
+  Code2,
+  Braces,
+  ArrowRight,
+  Zap,
+  ListChecks,
+} from "lucide-react";
 import { Section } from "@/components/docs/Section";
 import { DocsSubhead } from "@/components/docs/DocsCard";
 import { CodeBlock } from "@/components/docs/CodeBlock";
@@ -55,8 +62,12 @@ export default function FunctionCallingPage() {
               <div className="w-9 h-9 rounded-xl bg-indigo-500/[0.08] border border-indigo-500/15 flex items-center justify-center mb-3">
                 <feature.icon className="w-4 h-4 text-indigo-200" />
               </div>
-              <h4 className="text-sm font-semibold text-white/85 mb-1">{feature.title}</h4>
-              <p className="text-xs text-white/40 leading-[1.6]">{feature.desc}</p>
+              <h4 className="text-sm font-semibold text-white/85 mb-1">
+                {feature.title}
+              </h4>
+              <p className="text-xs text-white/40 leading-[1.6]">
+                {feature.desc}
+              </p>
             </div>
           ))}
         </div>
@@ -68,8 +79,12 @@ export default function FunctionCallingPage() {
             OpenAI format
           </DocsSubhead>
           <p className="text-sm text-white/55 leading-[1.75] mb-5">
-            Use the <code className="px-1.5 py-0.5 rounded-md bg-white/[0.04] text-white/70 font-mono text-[13px]">tools</code>{" "}
-            parameter with the OpenAI-compatible endpoint. Define your functions and let the model decide when to call them.
+            Use the{" "}
+            <code className="px-1.5 py-0.5 rounded-md bg-white/[0.04] text-white/70 font-mono text-[13px]">
+              tools
+            </code>{" "}
+            parameter with the OpenAI-compatible endpoint. Define your functions
+            and let the model decide when to call them.
           </p>
           <CodeBlock
             language="python"
@@ -122,13 +137,11 @@ if choice["finish_reason"] == "tool_calls":
 
         {/* Returning tool results */}
         <div className="mt-14">
-          <DocsSubhead>
-            Returning tool results
-          </DocsSubhead>
+          <DocsSubhead>Returning tool results</DocsSubhead>
           <p className="text-sm text-white/55 leading-[1.75] mb-5">
-            After executing the function, pass the result back to the model by appending
-            a tool message to the conversation. The model will use the result to formulate
-            its final response.
+            After executing the function, pass the result back to the model by
+            appending a tool message to the conversation. The model will use the
+            result to formulate its final response.
           </p>
           <CodeBlock
             language="javascript"
@@ -177,8 +190,9 @@ console.log(data.choices[0].message.content);
             Anthropic format
           </DocsSubhead>
           <p className="text-sm text-white/55 leading-[1.75] mb-5">
-            The Anthropic Messages API uses a slightly different tool format. The gateway
-            handles translation between formats automatically when you route across providers.
+            The Anthropic Messages API uses a slightly different tool format.
+            The gateway handles translation between formats automatically when
+            you route across providers.
           </p>
           <CodeBlock
             language="python"
@@ -227,8 +241,11 @@ if message.stop_reason == "tool_use":
           </DocsSubhead>
           <p className="text-sm text-white/55 leading-[1.75] mb-5">
             Yapapa includes a built-in web search tool under{" "}
-            <code className="px-1.5 py-0.5 rounded-md bg-white/[0.04] text-white/70 font-mono text-[13px]">pkg/llm/tools/websearch/</code>.
-            Enable it in the request to let models search the web for up-to-date information.
+            <code className="px-1.5 py-0.5 rounded-md bg-white/[0.04] text-white/70 font-mono text-[13px]">
+              pkg/llm/tools/websearch/
+            </code>
+            . Enable it in the request to let models search the web for
+            up-to-date information.
           </p>
           <CodeBlock
             language="json"
@@ -257,9 +274,7 @@ if message.stop_reason == "tool_use":
 
         {/* Best practices */}
         <div className="mt-14">
-          <DocsSubhead>
-            Best practices
-          </DocsSubhead>
+          <DocsSubhead>Best practices</DocsSubhead>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {[
               {
@@ -283,17 +298,21 @@ if message.stop_reason == "tool_use":
                 key={practice.title}
                 className="p-4 rounded-xl bg-white/[0.01] border border-white/[0.07]"
               >
-                <h4 className="text-white/90 font-semibold text-xs mb-1.5">{practice.title}</h4>
-                <p className="text-xs text-white/40 leading-[1.6]">{practice.desc}</p>
+                <h4 className="text-white/90 font-semibold text-xs mb-1.5">
+                  {practice.title}
+                </h4>
+                <p className="text-xs text-white/40 leading-[1.6]">
+                  {practice.desc}
+                </p>
               </div>
             ))}
           </div>
         </div>
 
         <TipBox>
-          Tool calls are billed the same as regular chat completions — the input includes
-          the tool definitions and output includes the tool call JSON. Keep tool schemas
-          concise to minimize token usage.
+          Tool calls are billed the same as regular chat completions — the input
+          includes the tool definitions and output includes the tool call JSON.
+          Keep tool schemas concise to minimize token usage.
         </TipBox>
       </Section>
     </motion.div>

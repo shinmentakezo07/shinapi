@@ -55,9 +55,7 @@ export function MobileBottomNav() {
         </div>
         <span
           className={`text-[10px] font-medium tracking-wide transition-colors duration-200 ${
-            active
-              ? "text-cyan-400"
-              : "text-gray-500 group-hover:text-gray-300"
+            active ? "text-cyan-400" : "text-gray-500 group-hover:text-gray-300"
           }`}
         >
           {item.label}
@@ -67,7 +65,11 @@ export function MobileBottomNav() {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden" role="navigation" aria-label="Mobile navigation">
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
+      role="navigation"
+      aria-label="Mobile navigation"
+    >
       {/* Top edge glow line */}
       <div className="absolute -top-px left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#3b82f6]/30 to-transparent" />
 

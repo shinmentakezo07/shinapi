@@ -30,7 +30,10 @@ export default function Loading() {
             <Skeleton className="h-4 w-20" />
             <Skeleton className="h-3 w-16" />
           </div>
-          <SkeletonList rows={5} className="!bg-transparent !border-0 [&>*]:!bg-transparent [&>*]:!border-0" />
+          <SkeletonList
+            rows={5}
+            className="!bg-transparent !border-0 [&>*]:!bg-transparent [&>*]:!border-0"
+          />
         </div>
       </div>
     </div>

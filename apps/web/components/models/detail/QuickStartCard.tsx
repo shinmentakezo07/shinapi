@@ -2,13 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import {
-  Copy,
-  Check,
-  KeyRound,
-  Terminal,
-  ArrowRight,
-} from "lucide-react";
+import { Copy, Check, KeyRound, Terminal, ArrowRight } from "lucide-react";
 import type { OpenRouterModelData } from "@/types/model";
 import { getProviderTheme } from "@/lib/model-utils";
 
@@ -27,10 +21,10 @@ interface Snippet {
   code: string;
 }
 
-
-
 // Generate the snippets dynamically from the model
-function buildSnippets(model: OpenRouterModelData): Record<SnippetLang, Snippet> {
+function buildSnippets(
+  model: OpenRouterModelData,
+): Record<SnippetLang, Snippet> {
   const id = model.id;
   return {
     curl: {
@@ -139,7 +133,10 @@ function tintSnippet(
         let j = i + 1;
         while (j < line.length && line[j] !== q) j++;
         const end = j < line.length ? j + 1 : j;
-        lineTokens.push({ text: line.slice(i, end), cls: "text-emerald-300/85" });
+        lineTokens.push({
+          text: line.slice(i, end),
+          cls: "text-emerald-300/85",
+        });
         i = end;
         continue;
       }
@@ -190,7 +187,10 @@ export function QuickStartCard({ model }: QuickStartCardProps) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const renderedTokens = useMemo(() => tintSnippet(current.code, active), [current.code, active]);
+  const renderedTokens = useMemo(
+    () => tintSnippet(current.code, active),
+    [current.code, active],
+  );
 
   return (
     <motion.section
@@ -245,7 +245,7 @@ export function QuickStartCard({ model }: QuickStartCardProps) {
               <span className="w-2 h-2 rounded-full bg-yellow-500/30" />
               <span className="w-2 h-2 rounded-full bg-green-500/30" />
             </div>
-            {(Object.values(snippets)).map((s) => {
+            {Object.values(snippets).map((s) => {
               const isActive = active === s.lang;
               const Icon = s.lang === "curl" ? Terminal : LanguageIcon(s.lang);
               return (
@@ -274,7 +274,11 @@ export function QuickStartCard({ model }: QuickStartCardProps) {
                       layoutId="snippet-tab-marker"
                       className="absolute inset-x-2 bottom-0 h-px"
                       style={{ backgroundColor: accent }}
-                      transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 350,
+                        damping: 30,
+                      }}
                     />
                   )}
                 </button>
@@ -330,7 +334,9 @@ export function QuickStartCard({ model }: QuickStartCardProps) {
             >
               <code>
                 {renderedTokens.map((t, i) => (
-                  <span key={i} className={t.cls}>{t.text}</span>
+                  <span key={i} className={t.cls}>
+                    {t.text}
+                  </span>
                 ))}
               </code>
             </motion.pre>
@@ -403,4 +409,3 @@ function PythonIcon({ className }: { className?: string }) {
     </svg>
   );
 }
-

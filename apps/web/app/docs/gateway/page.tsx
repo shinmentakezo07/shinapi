@@ -117,14 +117,54 @@ const PIPELINE_STAGES = [
 ];
 
 const PROVIDERS = [
-  { name: "OpenAI", prefix: "openai/", sdk: "openai-go/v3", models: "GPT-4o, o3, o4-mini, GPT-4o-mini" },
-  { name: "Anthropic", prefix: "anthropic/", sdk: "anthropic-sdk-go", models: "Claude Sonnet 4, Claude 3.7 Sonnet, Claude 3 Opus" },
-  { name: "Google Gemini", prefix: "gemini/", sdk: "REST API", models: "Gemini 2.5 Pro, Gemini 2.0 Flash" },
-  { name: "Groq", prefix: "groq/", sdk: "openai-compat", models: "Llama 3, Mixtral, Gemma 2" },
-  { name: "NVIDIA NIM", prefix: "nvidia/", sdk: "REST API", models: "Nemotron, Llama 3.1 NIM" },
-  { name: "Mistral", prefix: "mistral/", sdk: "openai-compat", models: "Mistral Large, Mistral Small" },
-  { name: "DeepSeek", prefix: "deepseek/", sdk: "openai-compat", models: "DeepSeek V3, DeepSeek R1" },
-  { name: "Meta", prefix: "meta/", sdk: "via provider", models: "Llama 3.1, Llama 3.2" },
+  {
+    name: "OpenAI",
+    prefix: "openai/",
+    sdk: "openai-go/v3",
+    models: "GPT-4o, o3, o4-mini, GPT-4o-mini",
+  },
+  {
+    name: "Anthropic",
+    prefix: "anthropic/",
+    sdk: "anthropic-sdk-go",
+    models: "Claude Sonnet 4, Claude 3.7 Sonnet, Claude 3 Opus",
+  },
+  {
+    name: "Google Gemini",
+    prefix: "gemini/",
+    sdk: "REST API",
+    models: "Gemini 2.5 Pro, Gemini 2.0 Flash",
+  },
+  {
+    name: "Groq",
+    prefix: "groq/",
+    sdk: "openai-compat",
+    models: "Llama 3, Mixtral, Gemma 2",
+  },
+  {
+    name: "NVIDIA NIM",
+    prefix: "nvidia/",
+    sdk: "REST API",
+    models: "Nemotron, Llama 3.1 NIM",
+  },
+  {
+    name: "Mistral",
+    prefix: "mistral/",
+    sdk: "openai-compat",
+    models: "Mistral Large, Mistral Small",
+  },
+  {
+    name: "DeepSeek",
+    prefix: "deepseek/",
+    sdk: "openai-compat",
+    models: "DeepSeek V3, DeepSeek R1",
+  },
+  {
+    name: "Meta",
+    prefix: "meta/",
+    sdk: "via provider",
+    models: "Llama 3.1, Llama 3.2",
+  },
 ];
 
 export default function GatewayPage() {
@@ -154,14 +194,22 @@ export default function GatewayPage() {
                 key={stage.step}
                 className={`flex items-start gap-4 p-4 rounded-xl border ${stage.border} ${stage.bg} transition-all duration-200 hover:shadow-[0_4px_16px_-4px_rgba(0,0,0,0.3)]`}
               >
-                <div className={`flex-shrink-0 w-9 h-9 rounded-lg border ${stage.border} ${stage.bg} flex items-center justify-center`}>
-                  <span className="text-[10px] font-mono font-bold text-white/50">{stage.step}</span>
+                <div
+                  className={`flex-shrink-0 w-9 h-9 rounded-lg border ${stage.border} ${stage.bg} flex items-center justify-center`}
+                >
+                  <span className="text-[10px] font-mono font-bold text-white/50">
+                    {stage.step}
+                  </span>
                 </div>
-                <div className={`flex-shrink-0 w-9 h-9 rounded-xl border ${stage.border} ${stage.bg} flex items-center justify-center`}>
+                <div
+                  className={`flex-shrink-0 w-9 h-9 rounded-xl border ${stage.border} ${stage.bg} flex items-center justify-center`}
+                >
                   <stage.icon className={`w-4 h-4 ${stage.color}`} />
                 </div>
                 <div className="min-w-0">
-                  <h4 className={`text-[13px] font-semibold ${stage.color} mb-1`}>
+                  <h4
+                    className={`text-[13px] font-semibold ${stage.color} mb-1`}
+                  >
                     {stage.name}
                   </h4>
                   <p className="text-xs text-white/45 leading-[1.6]">
@@ -175,13 +223,12 @@ export default function GatewayPage() {
 
         {/* Provider registry */}
         <div className="mt-14">
-          <DocsSubhead>
-            Provider registry
-          </DocsSubhead>
+          <DocsSubhead>Provider registry</DocsSubhead>
           <p className="text-sm text-white/55 leading-[1.75] mb-5">
-            The gateway maintains a dynamic provider registry. Each provider has its own API key pool,
-            health status, and configuration. Providers are registered at startup and can be added or
-            updated at runtime through the admin API.
+            The gateway maintains a dynamic provider registry. Each provider has
+            its own API key pool, health status, and configuration. Providers
+            are registered at startup and can be added or updated at runtime
+            through the admin API.
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -203,13 +250,24 @@ export default function GatewayPage() {
               </thead>
               <tbody className="divide-y divide-white/[0.04]">
                 {PROVIDERS.map((p) => (
-                  <tr key={p.name} className="hover:bg-white/[0.01] transition-colors">
-                    <td className="py-3 px-4 text-white font-medium">{p.name}</td>
-                    <td className="py-3 px-4">
-                      <code className="text-indigo-200/80 font-mono text-xs">{p.prefix}</code>
+                  <tr
+                    key={p.name}
+                    className="hover:bg-white/[0.01] transition-colors"
+                  >
+                    <td className="py-3 px-4 text-white font-medium">
+                      {p.name}
                     </td>
-                    <td className="py-3 px-4 text-white/40 font-mono text-xs">{p.sdk}</td>
-                    <td className="py-3 px-4 text-white/30 text-xs">{p.models}</td>
+                    <td className="py-3 px-4">
+                      <code className="text-indigo-200/80 font-mono text-xs">
+                        {p.prefix}
+                      </code>
+                    </td>
+                    <td className="py-3 px-4 text-white/40 font-mono text-xs">
+                      {p.sdk}
+                    </td>
+                    <td className="py-3 px-4 text-white/30 text-xs">
+                      {p.models}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -219,12 +277,11 @@ export default function GatewayPage() {
 
         {/* Routing strategies */}
         <div className="mt-14">
-          <DocsSubhead>
-            Routing strategies
-          </DocsSubhead>
+          <DocsSubhead>Routing strategies</DocsSubhead>
           <p className="text-sm text-white/55 leading-[1.75] mb-5">
-            The router stage supports multiple strategies for mapping model requests to providers.
-            Configure routing groups via the admin settings or environment variables.
+            The router stage supports multiple strategies for mapping model
+            requests to providers. Configure routing groups via the admin
+            settings or environment variables.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {[
@@ -257,9 +314,13 @@ export default function GatewayPage() {
                   <div className="w-8 h-8 rounded-lg bg-indigo-500/[0.08] border border-indigo-500/15 flex items-center justify-center">
                     <strategy.icon className="w-4 h-4 text-indigo-200" />
                   </div>
-                  <h4 className="text-[13px] font-semibold text-white/85">{strategy.title}</h4>
+                  <h4 className="text-[13px] font-semibold text-white/85">
+                    {strategy.title}
+                  </h4>
                 </div>
-                <p className="text-xs text-white/40 leading-[1.6]">{strategy.desc}</p>
+                <p className="text-xs text-white/40 leading-[1.6]">
+                  {strategy.desc}
+                </p>
               </div>
             ))}
           </div>
@@ -272,10 +333,10 @@ export default function GatewayPage() {
             Circuit breaker
           </DocsSubhead>
           <p className="text-sm text-white/55 leading-[1.75] mb-5">
-            Each provider has an independent circuit breaker that tracks failure rates.
-            When a provider exceeds the failure threshold, the circuit opens and requests
-            are rerouted to fallback providers. The circuit automatically transitions
-            through three states:
+            Each provider has an independent circuit breaker that tracks failure
+            rates. When a provider exceeds the failure threshold, the circuit
+            opens and requests are rerouted to fallback providers. The circuit
+            automatically transitions through three states:
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {[
@@ -305,7 +366,9 @@ export default function GatewayPage() {
                 key={s.state}
                 className={`p-5 rounded-xl border ${s.border} ${s.bg}`}
               >
-                <h4 className={`text-[13px] font-semibold ${s.color} mb-2`}>{s.state}</h4>
+                <h4 className={`text-[13px] font-semibold ${s.color} mb-2`}>
+                  {s.state}
+                </h4>
                 <p className="text-xs text-white/45 leading-[1.6]">{s.desc}</p>
               </div>
             ))}
@@ -326,8 +389,9 @@ export default function GatewayPage() {
             Response caching
           </DocsSubhead>
           <p className="text-sm text-white/55 leading-[1.75] mb-5">
-            The cache stage reduces cost and latency by serving previously computed responses.
-            Two caching strategies are available, both backed by Redis when configured.
+            The cache stage reduces cost and latency by serving previously
+            computed responses. Two caching strategies are available, both
+            backed by Redis when configured.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {[
@@ -344,7 +408,9 @@ export default function GatewayPage() {
                 key={c.title}
                 className="p-5 rounded-xl border border-white/[0.07] bg-gradient-to-br from-white/[0.02] to-transparent"
               >
-                <h4 className="text-[13px] font-semibold text-sky-200 mb-2">{c.title}</h4>
+                <h4 className="text-[13px] font-semibold text-sky-200 mb-2">
+                  {c.title}
+                </h4>
                 <p className="text-xs text-white/45 leading-[1.6]">{c.desc}</p>
               </div>
             ))}
@@ -358,9 +424,10 @@ export default function GatewayPage() {
             Format translation
           </DocsSubhead>
           <p className="text-sm text-white/55 leading-[1.75] mb-5">
-            The translator stage converts between provider-specific formats so you can use
-            any model through a single API shape. It handles message mapping, tool schema
-            conversion, streaming protocol differences, and image content normalization.
+            The translator stage converts between provider-specific formats so
+            you can use any model through a single API shape. It handles message
+            mapping, tool schema conversion, streaming protocol differences, and
+            image content normalization.
           </p>
           <CodeBlock
             language="json"
@@ -379,11 +446,13 @@ export default function GatewayPage() {
 
         <TipBox variant="info">
           The pipeline is orchestrated by{" "}
-          <code className="text-indigo-200/80">pkg/llm/pipeline/pipeline.go</code>.
-          Each stage is a Go interface with a single{" "}
-          <code className="text-indigo-200/80">Process()</code> method.
-          You can add custom stages by implementing the interface and registering
-          it in the pipeline factory.
+          <code className="text-indigo-200/80">
+            pkg/llm/pipeline/pipeline.go
+          </code>
+          . Each stage is a Go interface with a single{" "}
+          <code className="text-indigo-200/80">Process()</code> method. You can
+          add custom stages by implementing the interface and registering it in
+          the pipeline factory.
         </TipBox>
       </Section>
     </motion.div>

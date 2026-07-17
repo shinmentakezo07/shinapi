@@ -7,7 +7,10 @@ export default function Loading() {
     <div className="min-h-screen pt-6 pb-12 px-4 sm:px-6 lg:px-8 bg-[#050505]">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div aria-hidden="true" className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div
+          aria-hidden="true"
+          className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+        >
           <div className="flex items-center gap-3">
             <Skeleton className="h-10 w-10 rounded-lg" />
             <div className="space-y-2">

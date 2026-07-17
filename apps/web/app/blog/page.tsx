@@ -35,7 +35,8 @@ interface Post {
 const posts: Post[] = [
   {
     slug: "anthropic-claude-4-streaming",
-    title: "How we cut Claude 4 streaming latency by 40% with Anthropic's new event format",
+    title:
+      "How we cut Claude 4 streaming latency by 40% with Anthropic's new event format",
     excerpt:
       "A deep dive into the SSE implementation that powers our chat endpoint — including how we handle tool-use deltas, citations, and usage accounting without buffering.",
     category: "Engineering",
@@ -133,7 +134,11 @@ export default function BlogPage() {
           italic="gateway"
           description="Engineering deep dives, product decisions, and research from the team building the unified layer for every major LLM. We share what works, what doesn't, and why."
           icon={BookOpen}
-          primaryCta={{ label: "Subscribe via RSS", href: "/blog/rss", icon: Sparkles }}
+          primaryCta={{
+            label: "Subscribe via RSS",
+            href: "/blog/rss",
+            icon: Sparkles,
+          }}
           secondaryCta={{ label: "Engineering Changelog", href: "/changelog" }}
         />
 
@@ -196,7 +201,9 @@ export default function BlogPage() {
                     </div>
                     <div className="absolute bottom-3 left-3 right-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-black/50 backdrop-blur border border-white/[0.06]">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(74,222,128,0.6)]" />
-                      <span className="text-[10px] font-mono text-white/55">streaming &middot; live</span>
+                      <span className="text-[10px] font-mono text-white/55">
+                        streaming &middot; live
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -232,7 +239,11 @@ export default function BlogPage() {
                 initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
-                transition={{ duration: 0.5, delay: idx * 0.04, ease: [0.22, 1, 0.36, 1] }}
+                transition={{
+                  duration: 0.5,
+                  delay: idx * 0.04,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
               >
                 <Link
                   href={`/blog/${post.slug}`}

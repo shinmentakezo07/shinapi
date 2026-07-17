@@ -35,7 +35,12 @@ export const fadeIn = {
 
 export function AdminLoading({ rows = 5 }: { rows?: number }) {
   return (
-    <motion.div variants={stagger} initial="hidden" animate="visible" className="space-y-3">
+    <motion.div
+      variants={stagger}
+      initial="hidden"
+      animate="visible"
+      className="space-y-3"
+    >
       {Array.from({ length: rows }).map((_, i) => (
         <motion.div key={i} variants={fadeUp} className="admin-card p-4">
           <div className="flex items-center gap-4">
@@ -52,7 +57,13 @@ export function AdminLoading({ rows = 5 }: { rows?: number }) {
   );
 }
 
-export function AdminTableLoading({ rows = 6, cols = 5 }: { rows?: number; cols?: number }) {
+export function AdminTableLoading({
+  rows = 6,
+  cols = 5,
+}: {
+  rows?: number;
+  cols?: number;
+}) {
   return (
     <div className="admin-card overflow-hidden">
       <div className="p-4 border-b border-white/[0.02]">
@@ -63,7 +74,10 @@ export function AdminTableLoading({ rows = 6, cols = 5 }: { rows?: number; cols?
         </div>
       </div>
       {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="flex items-center gap-4 px-4 py-3.5 border-b border-white/[0.015] last:border-0">
+        <div
+          key={i}
+          className="flex items-center gap-4 px-4 py-3.5 border-b border-white/[0.015] last:border-0"
+        >
           <div className="admin-skeleton h-3 flex-1" />
           <div className="admin-skeleton h-3 w-24" />
           <div className="admin-skeleton h-5 w-16 rounded-md" />
@@ -180,7 +194,7 @@ export function AdminStat({
       variants={fadeUp}
       className={cn(
         "admin-card p-5 group relative overflow-hidden transition-all duration-200",
-        variant === "highlight" && "admin-stat-highlight"
+        variant === "highlight" && "admin-stat-highlight",
       )}
     >
       <div className="relative z-10">
@@ -195,10 +209,12 @@ export function AdminStat({
             {label}
           </span>
         </div>
-        <p className={cn(
-          "font-bold font-mono tracking-[-0.02em] leading-none text-[var(--admin-text)]",
-          variant === "highlight" ? "text-[28px]" : "text-[22px]"
-        )}>
+        <p
+          className={cn(
+            "font-bold font-mono tracking-[-0.02em] leading-none text-[var(--admin-text)]",
+            variant === "highlight" ? "text-[28px]" : "text-[22px]",
+          )}
+        >
           {value}
         </p>
         {sub && (
@@ -270,7 +286,7 @@ export function AdminTabNav({
               "admin-tab-btn flex items-center gap-2 rounded-[9px] px-4 py-2 text-[12px] font-medium transition-all duration-200",
               isActive
                 ? "admin-tab-active bg-blue-500/[0.06] text-blue-400 border border-blue-500/10"
-                : "text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] border border-transparent"
+                : "text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] border border-transparent",
             )}
           >
             {Icon && <Icon className="h-3.5 w-3.5" />}
@@ -281,7 +297,7 @@ export function AdminTabNav({
                   "rounded-[5px] px-1.5 py-[1px] text-[10px] font-semibold",
                   isActive
                     ? "bg-blue-500/10 text-blue-400"
-                    : "bg-white/[0.03] text-[var(--admin-text-dim)]"
+                    : "bg-white/[0.03] text-[var(--admin-text-dim)]",
                 )}
               >
                 {tab.count}
@@ -368,7 +384,7 @@ export function AdminStatusDot({
       className={cn(
         "inline-block rounded-full",
         sizes[size],
-        (status === "healthy" || status === "active") && "animate-pulse"
+        (status === "healthy" || status === "active") && "animate-pulse",
       )}
       style={{ backgroundColor: colors[status] || colors.inactive }}
     />

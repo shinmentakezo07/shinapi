@@ -47,7 +47,9 @@ describe("parseOpenAIEvent", () => {
         object: "chat.completion.chunk",
         created: 1000,
         model: "gpt-4o",
-        choices: [{ index: 0, delta: { content: "Hello" }, finish_reason: null }],
+        choices: [
+          { index: 0, delta: { content: "Hello" }, finish_reason: null },
+        ],
       }),
     };
     const events = parseOpenAIEvent(evt);
@@ -63,7 +65,9 @@ describe("parseOpenAIEvent", () => {
         object: "chat.completion.chunk",
         created: 1000,
         model: "gpt-4o",
-        choices: [{ index: 0, delta: { role: "assistant" }, finish_reason: null }],
+        choices: [
+          { index: 0, delta: { role: "assistant" }, finish_reason: null },
+        ],
       }),
     };
     const events = parseOpenAIEvent(evt);
@@ -149,7 +153,13 @@ describe("parseOpenAIEvent", () => {
         object: "chat.completion.chunk",
         created: 1000,
         model: "o1-preview",
-        choices: [{ index: 0, delta: { reasoning_content: "thinking..." }, finish_reason: null }],
+        choices: [
+          {
+            index: 0,
+            delta: { reasoning_content: "thinking..." },
+            finish_reason: null,
+          },
+        ],
       }),
     };
     const events = parseOpenAIEvent(evt);
@@ -213,7 +223,12 @@ describe("parseAnthropicEvent", () => {
       data: JSON.stringify({
         type: "content_block_start",
         index: 1,
-        content_block: { type: "tool_use", id: "tu_1", name: "get_weather", input: {} },
+        content_block: {
+          type: "tool_use",
+          id: "tu_1",
+          name: "get_weather",
+          input: {},
+        },
       }),
     };
     const events = parseAnthropicEvent(evt);
@@ -326,7 +341,10 @@ describe("StreamAccumulator", () => {
 
   it("accumulates tool calls", () => {
     const acc = new StreamAccumulator();
-    acc.addEvent({ type: "tool_call_start", toolCall: { id: "c1", name: "calc" } });
+    acc.addEvent({
+      type: "tool_call_start",
+      toolCall: { id: "c1", name: "calc" },
+    });
     acc.addEvent({ type: "tool_call_delta", toolCall: { arguments: '{"x":' } });
     acc.addEvent({ type: "tool_call_delta", toolCall: { arguments: "1}" } });
     const msg = acc.message();
@@ -350,7 +368,10 @@ describe("StreamAccumulator", () => {
 
   it("returns copy of tool calls", () => {
     const acc = new StreamAccumulator();
-    acc.addEvent({ type: "tool_call_start", toolCall: { id: "c1", name: "f" } });
+    acc.addEvent({
+      type: "tool_call_start",
+      toolCall: { id: "c1", name: "f" },
+    });
     const calls1 = acc.toolCalls;
     const calls2 = acc.toolCalls;
     expect(calls1).not.toBe(calls2); // different array references
@@ -361,13 +382,17 @@ describe("StreamAccumulator", () => {
 describe("detectFormat", () => {
   it("detects OpenAI format", () => {
     const events = [
-      { data: '{"object":"chat.completion.chunk","choices":[],"model":"gpt-4o"}' },
+      {
+        data: '{"object":"chat.completion.chunk","choices":[],"model":"gpt-4o"}',
+      },
     ];
     expect(detectFormat(events)).toBe("openai");
   });
 
   it("detects Anthropic format", () => {
-    const events = [{ event: "message_start", data: '{"type":"message_start"}' }];
+    const events = [
+      { event: "message_start", data: '{"type":"message_start"}' },
+    ];
     expect(detectFormat(events)).toBe("anthropic");
   });
 

@@ -1,6 +1,12 @@
 "use client";
 
-import { useActionState, useState, useEffect, useCallback, useMemo } from "react";
+import {
+  useActionState,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
 import { useFormStatus } from "react-dom";
 import {
   motion,
@@ -658,8 +664,7 @@ function ConfettiBurst({ active }: { active: boolean }) {
             height: p.shape === "bar" ? p.size * 1.6 : p.size,
             background: p.shape === "circle" ? "transparent" : p.color,
             borderRadius: p.shape === "circle" ? "50%" : 2,
-            border:
-              p.shape === "circle" ? `1.5px solid ${p.color}` : "none",
+            border: p.shape === "circle" ? `1.5px solid ${p.color}` : "none",
             boxShadow: `0 0 6px ${p.color}66`,
           }}
         />
@@ -872,8 +877,8 @@ function BrandingPanel() {
               transition={{ delay: 0.35, duration: 0.5 }}
               className="mt-4 text-gray-500 text-[15px] leading-relaxed max-w-md"
             >
-              Provision the first superadmin that owns every subsequent
-              admin account. This bootstrap is one-shot and superseded by{" "}
+              Provision the first superadmin that owns every subsequent admin
+              account. This bootstrap is one-shot and superseded by{" "}
               <span className="text-blue-400/80 font-medium">/admin/login</span>{" "}
               once the root row exists.
             </motion.p>
@@ -916,9 +921,7 @@ function BrandingPanel() {
           <div className="flex items-center gap-3">
             {["PROVISION", "AUDITED", "SUPERADMIN"].map((word, i) => (
               <span key={word} className="flex items-center gap-3">
-                {i > 0 && (
-                  <span className="w-1 h-1 rounded-full bg-gray-800" />
-                )}
+                {i > 0 && <span className="w-1 h-1 rounded-full bg-gray-800" />}
                 <span className="hover:text-gray-500 transition-colors cursor-default">
                   {word}
                 </span>
@@ -1036,7 +1039,6 @@ function SetupCard() {
 
         {/* Glass card outer — 32px radius */}
         <div className="glass-card rounded-[32px] p-1 relative overflow-hidden">
-
           {/* HUD corner brackets */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
             <div className="absolute top-6 left-6 w-10 h-10 border-l border-t border-white/[0.08] rounded-tl-lg" />
@@ -1146,9 +1148,7 @@ function SetupCard() {
                       isVisible={showPassword}
                       onToggleShow={() => setShowPassword(!showPassword)}
                       error={pwErr ? " " : undefined}
-                      bottomSlot={
-                        <PasswordStrengthMeter password={password} />
-                      }
+                      bottomSlot={<PasswordStrengthMeter password={password} />}
                     />
 
                     <InputField
@@ -1271,7 +1271,8 @@ function SetupCard() {
           <div className="pt-4 border-t border-white/[0.03]">
             <p className="text-center text-[10px] text-gray-700 font-mono tracking-[0.08em] flex items-center justify-center gap-1.5">
               <Terminal className="w-3 h-3 opacity-50" />
-              ONE-TIME BOOTSTRAP &bull; AUDIT LOGGED &bull; SUPERSEDED BY /admin/login
+              ONE-TIME BOOTSTRAP &bull; AUDIT LOGGED &bull; SUPERSEDED BY
+              /admin/login
             </p>
           </div>
         </div>

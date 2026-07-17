@@ -36,11 +36,17 @@ const methods = [
 
 const scopes = [
   { name: "read:models", desc: "List and inspect available models." },
-  { name: "write:chat", desc: "Send chat completions and streaming responses." },
+  {
+    name: "write:chat",
+    desc: "Send chat completions and streaming responses.",
+  },
   { name: "write:embeddings", desc: "Generate text embeddings for any model." },
   { name: "read:billing", desc: "View credit balance and per-model cost." },
   { name: "write:webhooks", desc: "Register and update webhook endpoints." },
-  { name: "admin:org", desc: "Manage organization members and roles (admin only)." },
+  {
+    name: "admin:org",
+    desc: "Manage organization members and roles (admin only).",
+  },
 ];
 
 const bestPractices = [
@@ -136,10 +142,10 @@ export default function AuthPage() {
           Scopes
         </h3>
         <p>
-          API keys can be scoped to the minimum set of permissions the
-          caller needs. Generate a key from the Dashboard and pick the scopes
-          you want. A read-only key cannot send chat completions, and a
-          billing-only key cannot touch webhooks.
+          API keys can be scoped to the minimum set of permissions the caller
+          needs. Generate a key from the Dashboard and pick the scopes you want.
+          A read-only key cannot send chat completions, and a billing-only key
+          cannot touch webhooks.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-5">
           {scopes.map((s) => (
@@ -162,8 +168,8 @@ export default function AuthPage() {
           Password reset
         </h3>
         <p>
-          Users can request a password reset email and complete the reset with
-          a token. The token is sent via email when SMTP is configured on the
+          Users can request a password reset email and complete the reset with a
+          token. The token is sent via email when SMTP is configured on the
           backend. Reset links expire after 1 hour.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
@@ -217,9 +223,9 @@ export default function AuthPage() {
         </div>
 
         <TipBox variant="warning">
-          Treat your API keys like database passwords. A leaked key can rack
-          up real spend in minutes — use the Dashboard&apos;s per-key spend
-          limit to bound the blast radius before rotating.
+          Treat your API keys like database passwords. A leaked key can rack up
+          real spend in minutes — use the Dashboard&apos;s per-key spend limit
+          to bound the blast radius before rotating.
         </TipBox>
       </Section>
     </motion.div>

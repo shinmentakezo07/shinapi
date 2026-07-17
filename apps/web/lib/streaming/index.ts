@@ -228,12 +228,18 @@ export function* parseSSE(text: string): Generator<SSEEvent> {
 // --- Format-specific parsers ---
 
 /** Determine stream format from the first SSE event. */
-export function detectFormat(events: Iterable<SSEEvent>): "openai" | "anthropic" | "internal" {
+export function detectFormat(
+  events: Iterable<SSEEvent>,
+): "openai" | "anthropic" | "internal" {
   for (const evt of events) {
     if (evt.event === "message_start" || evt.event === "content_block_start") {
       return "anthropic";
     }
-    if (evt.event === "chunk" || evt.event === "thinking" || evt.event === "finish") {
+    if (
+      evt.event === "chunk" ||
+      evt.event === "thinking" ||
+      evt.event === "finish"
+    ) {
       return "internal";
     }
     try {
@@ -372,7 +378,10 @@ export function parseAnthropicEvent(evt: SSEEvent): StreamEvent[] {
     case "message_delta": {
       const msgDelta = parsed as AnthropicMessageDelta;
       if (msgDelta.delta.stop_reason) {
-        events.push({ type: "finish", finishReason: msgDelta.delta.stop_reason });
+        events.push({
+          type: "finish",
+          finishReason: msgDelta.delta.stop_reason,
+        });
       }
       if (msgDelta.usage) {
         events.push({
@@ -380,7 +389,8 @@ export function parseAnthropicEvent(evt: SSEEvent): StreamEvent[] {
           usage: {
             promptTokens: msgDelta.usage.input_tokens ?? 0,
             completionTokens: msgDelta.usage.output_tokens,
-            totalTokens: (msgDelta.usage.input_tokens ?? 0) + msgDelta.usage.output_tokens,
+            totalTokens:
+              (msgDelta.usage.input_tokens ?? 0) + msgDelta.usage.output_tokens,
             thinkingTokens: msgDelta.usage.thinking_tokens,
           },
         });
@@ -420,7 +430,12 @@ export function parseInternalEvent(evt: SSEEvent): StreamEvent[] {
 
   switch (evt.event) {
     case "chunk": {
-      const chunk = parsed as { delta?: { content?: string; role?: string }; thinking?: string; finish_reason?: string; usage?: unknown };
+      const chunk = parsed as {
+        delta?: { content?: string; role?: string };
+        thinking?: string;
+        finish_reason?: string;
+        usage?: unknown;
+      };
       if (chunk.delta?.content) {
         events.push({ type: "content", content: chunk.delta.content });
       }
@@ -442,7 +457,10 @@ export function parseInternalEvent(evt: SSEEvent): StreamEvent[] {
     case "error":
       events.push({
         type: "error",
-        error: { code: parsed.code as string, message: parsed.message as string },
+        error: {
+          code: parsed.code as string,
+          message: parsed.message as string,
+        },
       });
       break;
   }
@@ -459,7 +477,8 @@ export function parseInternalEvent(evt: SSEEvent): StreamEvent[] {
 export class StreamAccumulator {
   private _content = "";
   private _thinking = "";
-  private _toolCalls: Array<{ id: string; name: string; arguments: string }> = [];
+  private _toolCalls: Array<{ id: string; name: string; arguments: string }> =
+    [];
   private _finishReason?: string;
   private _usage?: AccumulatedMessage["usage"];
 
@@ -636,7 +655,9 @@ export async function* streamText(
       yield event.content;
     }
     if (event.type === "error" && event.error) {
-      throw new Error(`Stream error: ${event.error.code} — ${event.error.message}`);
+      throw new Error(
+        `Stream error: ${event.error.code} — ${event.error.message}`,
+      );
     }
   }
 
@@ -660,7 +681,9 @@ export async function streamToMessage(
   for await (const event of consumeStream(response.body, options)) {
     acc.addEvent(event);
     if (event.type === "error" && event.error) {
-      throw new Error(`Stream error: ${event.error.code} — ${event.error.message}`);
+      throw new Error(
+        `Stream error: ${event.error.code} — ${event.error.message}`,
+      );
     }
   }
 

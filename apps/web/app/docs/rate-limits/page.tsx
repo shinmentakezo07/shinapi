@@ -17,12 +17,7 @@ export default function RateLimitsPage() {
         visible: { transition: { staggerChildren: 0.06 } },
       }}
     >
-      <Section
-        id="rate-limits"
-        icon={Shield}
-        title="Rate Limits"
-       
-      >
+      <Section id="rate-limits" icon={Shield} title="Rate Limits">
         <p>
           Rate limits protect the API from abuse and ensure fair usage. Limits
           are applied per-user based on API key or session, using a sliding
@@ -70,9 +65,7 @@ export default function RateLimitsPage() {
         </div>
 
         <div className="mt-8">
-          <DocsSubhead>
-            Rate limit headers
-          </DocsSubhead>
+          <DocsSubhead>Rate limit headers</DocsSubhead>
           <p className="text-sm text-white/50 mb-4">
             Every response includes headers that indicate your current rate
             limit status. These can be used to implement client-side rate
@@ -130,9 +123,7 @@ Retry-After: 2`}
         </div>
 
         <div className="mt-8">
-          <DocsSubhead>
-            Rate limited response (429)
-          </DocsSubhead>
+          <DocsSubhead>Rate limited response (429)</DocsSubhead>
           <CodeBlock
             language="json"
             code={`HTTP/1.1 429 Too Many Requests
@@ -151,9 +142,7 @@ Retry-After: 2
         </div>
 
         <div className="mt-8">
-          <DocsSubhead>
-            Endpoint-specific limits
-          </DocsSubhead>
+          <DocsSubhead>Endpoint-specific limits</DocsSubhead>
           <p className="text-sm text-white/50 mb-4">
             Different endpoint groups have different rate limits. Auth endpoints
             have stricter limits to prevent brute force attacks.

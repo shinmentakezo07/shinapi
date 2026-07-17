@@ -39,9 +39,7 @@ export default function EmbeddingsPage() {
         </div>
 
         <div className="mt-8">
-          <DocsSubhead>
-            Request
-          </DocsSubhead>
+          <DocsSubhead>Request</DocsSubhead>
           <CodeBlock
             examples={{
               curl: `curl ${BASE_URL}/api/embeddings \\
@@ -103,9 +101,7 @@ fmt.Printf("%+v\\n", embeddings)`,
         </div>
 
         <div className="mt-8">
-          <DocsSubhead>
-            Response format
-          </DocsSubhead>
+          <DocsSubhead>Response format</DocsSubhead>
           <CodeBlock
             language="json"
             code={`{
@@ -123,9 +119,7 @@ fmt.Printf("%+v\\n", embeddings)`,
         </div>
 
         <div className="mt-8">
-          <DocsSubhead>
-            OpenAI-compatible endpoint
-          </DocsSubhead>
+          <DocsSubhead>OpenAI-compatible endpoint</DocsSubhead>
           <p className="text-sm text-white/50 mb-4">
             For OpenAI SDK compatibility, use the{" "}
             <code className="px-1.5 py-0.5 rounded-md bg-white/[0.05] text-white/70 font-mono text-xs">
@@ -154,9 +148,7 @@ fmt.Printf("%+v\\n", embeddings)`,
         </div>
 
         <div className="mt-8">
-          <DocsSubhead>
-            Use cases
-          </DocsSubhead>
+          <DocsSubhead>Use cases</DocsSubhead>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="p-4 rounded-xl bg-white/[0.01] border border-white/[0.08] hover:border-white/[0.14] transition-colors duration-200">
               <h4 className="text-white/90 font-semibold text-xs mb-1.5">

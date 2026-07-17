@@ -94,13 +94,38 @@ const values = [
 ];
 
 const milestones = [
-  { year: "Q1 2025", title: "Founded", description: "Mira and Ade start Yapapa in a São Paulo coworking space." },
-  { year: "Q3 2025", title: "Closed beta", description: "50 design partners, 12M requests served in the first month." },
-  { year: "Q1 2026", title: "Public GA", description: "OpenAI-compatible API, 100+ models, credit-based billing." },
-  { year: "Q2 2026", title: "Anthropic + Claude 4", description: "Streaming, tool use, and vision all on the unified gateway." },
+  {
+    year: "Q1 2025",
+    title: "Founded",
+    description: "Mira and Ade start Yapapa in a São Paulo coworking space.",
+  },
+  {
+    year: "Q3 2025",
+    title: "Closed beta",
+    description: "50 design partners, 12M requests served in the first month.",
+  },
+  {
+    year: "Q1 2026",
+    title: "Public GA",
+    description: "OpenAI-compatible API, 100+ models, credit-based billing.",
+  },
+  {
+    year: "Q2 2026",
+    title: "Anthropic + Claude 4",
+    description: "Streaming, tool use, and vision all on the unified gateway.",
+  },
 ];
 
-const locations = ["San Francisco", "Berlin", "Lagos", "Bengaluru", "Tel Aviv", "Montevideo", "Tokyo", "Remote"];
+const locations = [
+  "San Francisco",
+  "Berlin",
+  "Lagos",
+  "Bengaluru",
+  "Tel Aviv",
+  "Montevideo",
+  "Tokyo",
+  "Remote",
+];
 
 const investors = [
   "Sequoia Scout",
@@ -149,9 +174,9 @@ export default function AboutPage() {
             </p>
             <p>
               We learned that reliability matters more than features. That
-              customers will forgive a missing endpoint if you explain why.
-              That transparent pricing is the only pricing that scales. The
-              Yapapa of today is the result of those lessons.
+              customers will forgive a missing endpoint if you explain why. That
+              transparent pricing is the only pricing that scales. The Yapapa of
+              today is the result of those lessons.
             </p>
             <p>
               We are still small, still focused, still building the boring
@@ -198,7 +223,11 @@ export default function AboutPage() {
                 initial={{ opacity: 0, x: -12 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
-                transition={{ duration: 0.5, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] }}
+                transition={{
+                  duration: 0.5,
+                  delay: i * 0.06,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
                 className="relative pb-8 last:pb-0"
               >
                 <div className="absolute -left-[20px] sm:-left-[24px] top-2 w-2 h-2 rounded-full bg-indigo-300 shadow-[0_0_8px_rgba(165,180,252,0.7)]" />
@@ -234,7 +263,11 @@ export default function AboutPage() {
                 initial={{ opacity: 0, y: 12 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
-                transition={{ duration: 0.5, delay: i * 0.04, ease: [0.22, 1, 0.36, 1] }}
+                transition={{
+                  duration: 0.5,
+                  delay: i * 0.04,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
                 className="group p-5 rounded-2xl border border-white/[0.06] bg-gradient-to-br from-white/[0.025] to-transparent hover:border-indigo-500/20 transition-all duration-300"
               >
                 <div className="flex items-start gap-3 mb-4">
@@ -296,10 +329,26 @@ export default function AboutPage() {
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
-              { title: "Senior Backend Engineer (Go)", location: "Remote / SF", team: "Engineering" },
-              { title: "ML Research Engineer", location: "Remote", team: "Research" },
-              { title: "Product Designer", location: "Remote / Berlin", team: "Design" },
-              { title: "Developer Advocate", location: "Remote", team: "Marketing" },
+              {
+                title: "Senior Backend Engineer (Go)",
+                location: "Remote / SF",
+                team: "Engineering",
+              },
+              {
+                title: "ML Research Engineer",
+                location: "Remote",
+                team: "Research",
+              },
+              {
+                title: "Product Designer",
+                location: "Remote / Berlin",
+                team: "Design",
+              },
+              {
+                title: "Developer Advocate",
+                location: "Remote",
+                team: "Marketing",
+              },
             ].map((role, i) => (
               <motion.div
                 key={role.title}

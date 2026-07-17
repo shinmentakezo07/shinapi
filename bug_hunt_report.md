@@ -8,11 +8,11 @@
 
 ## Summary
 
-| Severity | Count | Description |
-|----------|-------|-------------|
-| 🔴 **High** | 1 | `defer rows.Close()` inside `err == nil` block → resource leak on error |
-| 🟡 **Medium** | 2 | `return nil` swallows errors in SSRF validation; goroutine ignores error |
-| 🟢 **Low** | 1 | `go` keyword in `errgroup` is correct by design, but worth flagging |
+| Severity      | Count | Description                                                              |
+| ------------- | ----- | ------------------------------------------------------------------------ |
+| 🔴 **High**   | 1     | `defer rows.Close()` inside `err == nil` block → resource leak on error  |
+| 🟡 **Medium** | 2     | `return nil` swallows errors in SSRF validation; goroutine ignores error |
+| 🟢 **Low**    | 1     | `go` keyword in `errgroup` is correct by design, but worth flagging      |
 
 No other critical bugs found (no goroutine leaks, no `time.After` leaks outside tests, no missing `r.Body.Close()`, `json.NewDecoder` without `UseNumber()` is acceptable for the schema in this codebase).
 
@@ -40,6 +40,7 @@ if err == nil {
 ```
 
 ### Impact
+
 On `h.db.Query` error, `rows` is not closed. Depending on the driver/pool, this could hold connections.
 
 ### Fix
@@ -71,9 +72,11 @@ if err != nil {
 ```
 
 ### Impact
+
 If DNS fails (e.g., attacker uses a non-existent hostname to bypass the check), the function returns `nil` (no error), allowing the request to proceed. This could be exploited for SSRF via DNS rebinding or typosquatting on private IPs.
 
 ### Fix
+
 Return an error when DNS resolution fails, or at least log a warning and still validate the URL string:
 
 ```go
@@ -104,9 +107,11 @@ eg.Go(func() error {
 ```
 
 ### Impact
+
 The goroutine always returns `nil`, so `errgroup.Wait()` will never surface billing/log errors. If `LogAndDeduct` fails (e.g., DB down, race condition), the request still reports success to the user, but billing data is silently lost.
 
 ### Fix
+
 Return the error so `errgroup.Wait()` can propagate it, or handle it with a retry/fallback mechanism:
 
 ```go
@@ -122,7 +127,7 @@ eg.Go(func() error {
 })
 ```
 
-*(Note: The `errgroup` pattern means this was likely done intentionally so billing failure doesn't fail the chat request. This is a design decision, but it should still be documented or logged more prominently.)*
+_(Note: The `errgroup` pattern means this was likely done intentionally so billing failure doesn't fail the chat request. This is a design decision, but it should still be documented or logged more prominently.)_
 
 ---
 
@@ -138,10 +143,13 @@ _ = json.NewDecoder(r.Body).Decode(&req)
 ```
 
 ### Impact
+
 The quota middleware reads `r.Body` to extract `model` and estimate tokens. If the request body is consumed here, downstream handlers will see an empty body. However, `chi` may use `http.MaxBytesReader` or similar, and the actual handler also reads `r.Body` — this should be verified. If `r.Body` is not rewindable or not replaced with `io.NopCloser(bytes.NewReader(body))`, this is a bug.
 
 ### Fix
+
 Verify that the request body is read once and either:
+
 1. Replaced with a new `io.ReadCloser` (e.g., `r.Body = io.NopCloser(bytes.NewReader(body))`), or
 2. The quota middleware reads from a copy.
 
@@ -151,12 +159,12 @@ The `middleware/quota.go` and `middleware/transform.go` already do body replacem
 
 ## Appendix: Patterns Searched (All Clear)
 
-| Pattern | Files Found | Status |
-|---------|------------|--------|
-| `defer rows.Close()` missing | 81 instances, all correct | ✅ OK |
-| `time.After` in select (leak risk) | Only in tests | ✅ OK |
-| `json.NewDecoder` without `UseNumber` | Many, but schema uses strings/floats | ✅ Acceptable |
-| `r.Body` read without close/replacement | Middleware handles it | ✅ OK |
-| Goroutine leaks | None found | ✅ OK |
-| `context.WithTimeout` leaks | All have `defer cancel()` | ✅ OK |
-| `adminError()` leaking `err.Error()` | Already handled in file | ✅ OK |
+| Pattern                                 | Files Found                          | Status        |
+| --------------------------------------- | ------------------------------------ | ------------- |
+| `defer rows.Close()` missing            | 81 instances, all correct            | ✅ OK         |
+| `time.After` in select (leak risk)      | Only in tests                        | ✅ OK         |
+| `json.NewDecoder` without `UseNumber`   | Many, but schema uses strings/floats | ✅ Acceptable |
+| `r.Body` read without close/replacement | Middleware handles it                | ✅ OK         |
+| Goroutine leaks                         | None found                           | ✅ OK         |
+| `context.WithTimeout` leaks             | All have `defer cancel()`            | ✅ OK         |
+| `adminError()` leaking `err.Error()`    | Already handled in file              | ✅ OK         |

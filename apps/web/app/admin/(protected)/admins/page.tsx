@@ -29,7 +29,9 @@ export default function AdminAdminsPage() {
       <AdminEmptyState
         icon={Users}
         title="Failed to load admins"
-        description={error instanceof Error ? error.message : "An error occurred"}
+        description={
+          error instanceof Error ? error.message : "An error occurred"
+        }
       />
     );
   }

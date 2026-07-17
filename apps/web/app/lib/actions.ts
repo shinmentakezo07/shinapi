@@ -26,10 +26,16 @@ const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8080";
 
 const BootstrapSchema = z
   .object({
-    name: z.string().min(2, { message: "Name must be at least 2 characters long." }),
+    name: z
+      .string()
+      .min(2, { message: "Name must be at least 2 characters long." }),
     email: z.string().email({ message: "Please enter a valid email." }),
-    password: z.string().min(6, { message: "Password must be at least 6 characters long." }),
-    confirmPassword: z.string().min(6, { message: "Please confirm your password." }),
+    password: z
+      .string()
+      .min(6, { message: "Password must be at least 6 characters long." }),
+    confirmPassword: z
+      .string()
+      .min(6, { message: "Please confirm your password." }),
   })
   .refine((d) => d.password === d.confirmPassword, {
     message: "Passwords do not match",

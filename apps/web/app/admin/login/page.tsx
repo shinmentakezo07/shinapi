@@ -586,147 +586,147 @@ function LoginCard() {
             className="relative rounded-[28px] border border-white/[0.04] overflow-hidden"
             style={{ background: "rgba(10,10,10,0.97)" }}
           >
-          {/* Top accent bar */}
-          <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
+            {/* Top accent bar */}
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
 
-          {/* Card content */}
-          <div className="p-6 sm:p-8">
-            {/* Header */}
-            <div className="flex items-center gap-3.5 mb-1">
-              <div className="relative w-11 h-11 rounded-xl overflow-hidden ring-1 ring-white/[0.08] shadow-lg shadow-blue-500/20 flex-shrink-0 group-hover:shadow-blue-500/30 transition-shadow duration-500">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-violet-500/10" />
-                <img
-                  src="/admin-logo.jpg"
-                  alt="Yapapa"
-                  className="relative w-full h-full object-cover"
+            {/* Card content */}
+            <div className="p-6 sm:p-8">
+              {/* Header */}
+              <div className="flex items-center gap-3.5 mb-1">
+                <div className="relative w-11 h-11 rounded-xl overflow-hidden ring-1 ring-white/[0.08] shadow-lg shadow-blue-500/20 flex-shrink-0 group-hover:shadow-blue-500/30 transition-shadow duration-500">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-violet-500/10" />
+                  <img
+                    src="/admin-logo.jpg"
+                    alt="Yapapa"
+                    className="relative w-full h-full object-cover"
+                  />
+                </div>
+                <div>
+                  <h1 className="text-[18px] font-bold text-white tracking-tight leading-tight">
+                    Admin Console
+                  </h1>
+                  <motion.div
+                    initial={{ opacity: 0, x: -6 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.25, duration: 0.4 }}
+                    className="inline-flex items-center gap-1.5 mt-0.5 px-2.5 py-0.5 rounded-full border border-red-500/20 bg-red-500/[0.06]"
+                  >
+                    <div className="w-1 h-1 rounded-full bg-red-400 animate-pulse" />
+                    <span className="text-[9px] font-mono font-bold text-red-400/80 tracking-[0.12em] uppercase">
+                      Restricted Access
+                    </span>
+                  </motion.div>
+                </div>
+              </div>
+
+              <HorizontalDivider className="my-4" />
+
+              {/* Form */}
+              <form action={dispatch} className="space-y-4">
+                <InputField
+                  id="email"
+                  label="Email Address"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="admin@company.com"
+                  autoComplete="email"
+                  icon={Mail}
+                  autoFocus
+                  error={errorMessage ? " " : undefined}
                 />
-              </div>
-              <div>
-                <h1 className="text-[18px] font-bold text-white tracking-tight leading-tight">
-                  Admin Console
-                </h1>
+
+                <InputField
+                  id="password"
+                  label="Password"
+                  type="password"
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                  icon={Lock}
+                  showToggle
+                  isVisible={showPassword}
+                  onToggleShow={() => setShowPassword(!showPassword)}
+                  error={errorMessage ? " " : undefined}
+                />
+
+                {/* Error message */}
+                <AnimatePresence>
+                  {errorMessage && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                      animate={{ opacity: 1, height: "auto", marginTop: 16 }}
+                      exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="flex items-start gap-3 p-3.5 rounded-xl border border-red-500/[0.15]"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, rgba(239,68,68,0.06), rgba(239,68,68,0.02))",
+                      }}
+                      role="alert"
+                    >
+                      <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-red-400 text-[13px] font-medium">
+                          Authentication Failed
+                        </p>
+                        <p className="text-red-400/50 text-[12px] mt-0.5">
+                          {errorMessage}
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <div className="pt-2">
+                  <SubmitButton />
+                </div>
+
+                {/* Security indicator */}
                 <motion.div
-                  initial={{ opacity: 0, x: -6 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.25, duration: 0.4 }}
-                  className="inline-flex items-center gap-1.5 mt-0.5 px-2.5 py-0.5 rounded-full border border-red-500/20 bg-red-500/[0.06]"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5, duration: 0.4 }}
+                  className="flex items-center justify-center gap-3 mt-3"
                 >
-                  <div className="w-1 h-1 rounded-full bg-red-400 animate-pulse" />
-                  <span className="text-[9px] font-mono font-bold text-red-400/80 tracking-[0.12em] uppercase">
-                    Restricted Access
-                  </span>
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-emerald-500/10 bg-emerald-500/[0.03]">
+                    <div className="w-1 h-1 rounded-full bg-emerald-400" />
+                    <span className="text-[10px] font-mono text-emerald-400/60 tracking-[0.06em]">
+                      TLS 1.3
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-blue-500/10 bg-blue-500/[0.03]">
+                    <div className="w-1 h-1 rounded-full bg-blue-400" />
+                    <span className="text-[10px] font-mono text-blue-400/60 tracking-[0.06em]">
+                      AES-256
+                    </span>
+                  </div>
                 </motion.div>
-              </div>
+
+                {/* Keyboard shortcut hint */}
+                <p className="text-center text-[11px] text-gray-600 font-mono mt-3">
+                  <kbd className="px-1.5 py-0.5 rounded border border-white/[0.06] bg-white/[0.03] text-gray-500 text-[10px]">
+                    &#8984;
+                  </kbd>
+                  {" + "}
+                  <kbd className="px-1.5 py-0.5 rounded border border-white/[0.06] bg-white/[0.03] text-gray-500 text-[10px]">
+                    Enter
+                  </kbd>
+                  {" to submit"}
+                </p>
+              </form>
             </div>
 
-            <HorizontalDivider className="my-4" />
-
-            {/* Form */}
-            <form action={dispatch} className="space-y-4">
-              <InputField
-                id="email"
-                label="Email Address"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@company.com"
-                autoComplete="email"
-                icon={Mail}
-                autoFocus
-                error={errorMessage ? " " : undefined}
-              />
-
-              <InputField
-                id="password"
-                label="Password"
-                type="password"
-                placeholder="Enter your password"
-                autoComplete="current-password"
-                icon={Lock}
-                showToggle
-                isVisible={showPassword}
-                onToggleShow={() => setShowPassword(!showPassword)}
-                error={errorMessage ? " " : undefined}
-              />
-
-              {/* Error message */}
-              <AnimatePresence>
-                {errorMessage && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                    animate={{ opacity: 1, height: "auto", marginTop: 16 }}
-                    exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="flex items-start gap-3 p-3.5 rounded-xl border border-red-500/[0.15]"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, rgba(239,68,68,0.06), rgba(239,68,68,0.02))",
-                    }}
-                    role="alert"
-                  >
-                    <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-red-400 text-[13px] font-medium">
-                        Authentication Failed
-                      </p>
-                      <p className="text-red-400/50 text-[12px] mt-0.5">
-                        {errorMessage}
-                      </p>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <div className="pt-2">
-                <SubmitButton />
-              </div>
-
-              {/* Security indicator */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5, duration: 0.4 }}
-                className="flex items-center justify-center gap-3 mt-3"
-              >
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-emerald-500/10 bg-emerald-500/[0.03]">
-                  <div className="w-1 h-1 rounded-full bg-emerald-400" />
-                  <span className="text-[10px] font-mono text-emerald-400/60 tracking-[0.06em]">
-                    TLS 1.3
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-blue-500/10 bg-blue-500/[0.03]">
-                  <div className="w-1 h-1 rounded-full bg-blue-400" />
-                  <span className="text-[10px] font-mono text-blue-400/60 tracking-[0.06em]">
-                    AES-256
-                  </span>
-                </div>
-              </motion.div>
-
-              {/* Keyboard shortcut hint */}
-              <p className="text-center text-[11px] text-gray-600 font-mono mt-3">
-                <kbd className="px-1.5 py-0.5 rounded border border-white/[0.06] bg-white/[0.03] text-gray-500 text-[10px]">
-                  &#8984;
-                </kbd>
-                {" + "}
-                <kbd className="px-1.5 py-0.5 rounded border border-white/[0.06] bg-white/[0.03] text-gray-500 text-[10px]">
-                  Enter
-                </kbd>
-                {" to submit"}
-              </p>
-            </form>
+            {/* Bottom accent */}
+            <div
+              className="h-[2px]"
+              style={{
+                background:
+                  "linear-gradient(90deg, rgba(59,130,246,0.3), rgba(124,58,237,0.3), rgba(168,85,247,0.2))",
+              }}
+            />
           </div>
-
-          {/* Bottom accent */}
-          <div
-            className="h-[2px]"
-            style={{
-              background:
-                "linear-gradient(90deg, rgba(59,130,246,0.3), rgba(124,58,237,0.3), rgba(168,85,247,0.2))",
-            }}
-          />
         </div>
       </div>
-    </div>
 
       {/* Footer */}
       <div className="mt-5 space-y-3">

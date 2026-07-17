@@ -78,7 +78,6 @@ export default function AdminBillingPage() {
             </div>
           }
         >
-
           <form onSubmit={handleAdjust} className="space-y-4">
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               <div>

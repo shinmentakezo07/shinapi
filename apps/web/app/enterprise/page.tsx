@@ -123,8 +123,15 @@ export default function EnterprisePage() {
           italic="serious teams"
           description="Dedicated infrastructure, audit-grade compliance, and the support you need to run mission-critical AI workloads. Yapapa Enterprise is the layer trusted by finance, healthcare, defense, and Fortune 500 engineering teams."
           icon={Building2}
-          primaryCta={{ label: "Talk to Sales", href: "/contact?topic=enterprise", icon: PhoneCall }}
-          secondaryCta={{ label: "Read Security Whitepaper", href: "/docs/security" }}
+          primaryCta={{
+            label: "Talk to Sales",
+            href: "/contact?topic=enterprise",
+            icon: PhoneCall,
+          }}
+          secondaryCta={{
+            label: "Read Security Whitepaper",
+            href: "/docs/security",
+          }}
           stats={[
             { value: "99.99%", label: "SLA" },
             { value: "SOC 2", label: "Type II" },

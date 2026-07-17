@@ -22,18 +22,52 @@ import { SiteFooter } from "@/components/shared/SiteFooter";
 import { cn } from "@/lib/utils";
 
 const topics = [
-  { id: "sales", label: "Sales & pricing", icon: Building2, desc: "Volume plans, custom contracts, marketplace billing." },
-  { id: "support", label: "Technical support", icon: LifeBuoy, desc: "API issues, integration help, debugging." },
-  { id: "security", label: "Security disclosure", icon: Mail, desc: "Coordinated disclosure, BAA requests, audit logs." },
-  { id: "press", label: "Press & media", icon: Newspaper, desc: "Interviews, briefings, brand assets." },
-  { id: "partnerships", label: "Partnerships", icon: MessageSquare, desc: "Integrations, resellers, ecosystem." },
-  { id: "bug", label: "Bug report", icon: Bug, desc: "Reproducible bugs, regressions, hallucinations." },
+  {
+    id: "sales",
+    label: "Sales & pricing",
+    icon: Building2,
+    desc: "Volume plans, custom contracts, marketplace billing.",
+  },
+  {
+    id: "support",
+    label: "Technical support",
+    icon: LifeBuoy,
+    desc: "API issues, integration help, debugging.",
+  },
+  {
+    id: "security",
+    label: "Security disclosure",
+    icon: Mail,
+    desc: "Coordinated disclosure, BAA requests, audit logs.",
+  },
+  {
+    id: "press",
+    label: "Press & media",
+    icon: Newspaper,
+    desc: "Interviews, briefings, brand assets.",
+  },
+  {
+    id: "partnerships",
+    label: "Partnerships",
+    icon: MessageSquare,
+    desc: "Integrations, resellers, ecosystem.",
+  },
+  {
+    id: "bug",
+    label: "Bug report",
+    icon: Bug,
+    desc: "Reproducible bugs, regressions, hallucinations.",
+  },
 ];
 
 const offices = [
   { city: "San Francisco", addr: "548 Market St, Suite 91834", role: "HQ" },
   { city: "Berlin", addr: "Friedrichstraße 76, 10117", role: "EMEA" },
-  { city: "Lagos", addr: "1B Bishop Aboyade Cole, Victoria Island", role: "Engineering hub" },
+  {
+    city: "Lagos",
+    addr: "1B Bishop Aboyade Cole, Victoria Island",
+    role: "Engineering hub",
+  },
 ];
 
 export default function ContactPage() {
@@ -105,7 +139,9 @@ export default function ContactPage() {
                       >
                         {t.label}
                       </p>
-                      <p className="text-[12px] text-white/40 mt-0.5">{t.desc}</p>
+                      <p className="text-[12px] text-white/40 mt-0.5">
+                        {t.desc}
+                      </p>
                     </div>
                     {active && (
                       <div className="w-1.5 h-1.5 rounded-full bg-indigo-300 shadow-[0_0_8px_rgba(165,180,252,0.7)] mt-1.5 flex-shrink-0" />
@@ -149,12 +185,29 @@ export default function ContactPage() {
               ) : (
                 <div className="relative space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Field label="Full name" name="name" placeholder="Mira Vance" />
-                    <Field label="Work email" name="email" type="email" placeholder="mira@company.com" />
+                    <Field
+                      label="Full name"
+                      name="name"
+                      placeholder="Mira Vance"
+                    />
+                    <Field
+                      label="Work email"
+                      name="email"
+                      type="email"
+                      placeholder="mira@company.com"
+                    />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Field label="Company" name="company" placeholder="Acme Inc." />
-                    <Field label="Role" name="role" placeholder="Head of Engineering" />
+                    <Field
+                      label="Company"
+                      name="company"
+                      placeholder="Acme Inc."
+                    />
+                    <Field
+                      label="Role"
+                      name="role"
+                      placeholder="Head of Engineering"
+                    />
                   </div>
 
                   <div>
@@ -162,21 +215,23 @@ export default function ContactPage() {
                       Estimated monthly volume
                     </label>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {["< 1M tokens", "1-10M", "10-100M", "100M+"].map((v, i) => (
-                        <label
-                          key={v}
-                          className="cursor-pointer flex items-center justify-center gap-1.5 p-2.5 rounded-lg border border-white/[0.06] bg-white/[0.02] text-[12px] text-white/65 hover:border-indigo-500/25 hover:bg-indigo-500/[0.04] transition-all has-[:checked]:border-indigo-500/40 has-[:checked]:bg-indigo-500/[0.08] has-[:checked]:text-white"
-                        >
-                          <input
-                            type="radio"
-                            name="volume"
-                            value={v}
-                            defaultChecked={i === 1}
-                            className="sr-only"
-                          />
-                          {v}
-                        </label>
-                      ))}
+                      {["< 1M tokens", "1-10M", "10-100M", "100M+"].map(
+                        (v, i) => (
+                          <label
+                            key={v}
+                            className="cursor-pointer flex items-center justify-center gap-1.5 p-2.5 rounded-lg border border-white/[0.06] bg-white/[0.02] text-[12px] text-white/65 hover:border-indigo-500/25 hover:bg-indigo-500/[0.04] transition-all has-[:checked]:border-indigo-500/40 has-[:checked]:bg-indigo-500/[0.08] has-[:checked]:text-white"
+                          >
+                            <input
+                              type="radio"
+                              name="volume"
+                              value={v}
+                              defaultChecked={i === 1}
+                              className="sr-only"
+                            />
+                            {v}
+                          </label>
+                        ),
+                      )}
                     </div>
                   </div>
 
@@ -204,7 +259,10 @@ export default function ContactPage() {
                       className="text-[12px] text-white/45 leading-[1.6] cursor-pointer"
                     >
                       I agree to Yapapa&apos;s{" "}
-                      <Link href="/legal#privacy" className="text-indigo-200/80 hover:text-indigo-100">
+                      <Link
+                        href="/legal#privacy"
+                        className="text-indigo-200/80 hover:text-indigo-100"
+                      >
                         privacy policy
                       </Link>
                       . We never share contact details with third parties.

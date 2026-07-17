@@ -43,9 +43,7 @@ export function MetricCard({
       whileHover={{ y: -3, transition: { duration: 0.2 } }}
       className="group relative"
     >
-      <div
-        className="relative h-full flex flex-col justify-between p-5 rounded-2xl border border-white/[0.06] bg-[#0A0A0A] overflow-hidden hover:border-white/[0.12] transition-all duration-300"
-      >
+      <div className="relative h-full flex flex-col justify-between p-5 rounded-2xl border border-white/[0.06] bg-[#0A0A0A] overflow-hidden hover:border-white/[0.12] transition-all duration-300">
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
         <div className="flex items-start justify-between mb-4">
           <div

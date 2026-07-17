@@ -33,11 +33,7 @@ const styles = {
   },
 };
 
-export function StatusBadge({
-  status,
-  label,
-  size = "md",
-}: StatusBadgeProps) {
+export function StatusBadge({ status, label, size = "md" }: StatusBadgeProps) {
   const s = styles[status];
   const sizes = {
     sm: "text-[10px] px-2 py-0.5 gap-1.5",

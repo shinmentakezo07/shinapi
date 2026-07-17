@@ -36,14 +36,49 @@ const productLinks = [
 ];
 
 const resourcesLinks = [
-  { label: "Changelog", href: "/changelog", desc: "Every release, every fix", icon: FileText },
-  { label: "Blog", href: "/blog", desc: "Engineering deep dives", icon: Newspaper },
-  { label: "Status", href: "/status", desc: "Live system availability", icon: Activity },
-  { label: "Roadmap", href: "/roadmap", desc: "What we're building next", icon: Rocket },
-  { label: "About", href: "/about", desc: "Our team, story, investors", icon: Building2 },
-  { label: "Enterprise", href: "/enterprise", desc: "Dedicated, compliant, 24/7", icon: Sparkles },
+  {
+    label: "Changelog",
+    href: "/changelog",
+    desc: "Every release, every fix",
+    icon: FileText,
+  },
+  {
+    label: "Blog",
+    href: "/blog",
+    desc: "Engineering deep dives",
+    icon: Newspaper,
+  },
+  {
+    label: "Status",
+    href: "/status",
+    desc: "Live system availability",
+    icon: Activity,
+  },
+  {
+    label: "Roadmap",
+    href: "/roadmap",
+    desc: "What we're building next",
+    icon: Rocket,
+  },
+  {
+    label: "About",
+    href: "/about",
+    desc: "Our team, story, investors",
+    icon: Building2,
+  },
+  {
+    label: "Enterprise",
+    href: "/enterprise",
+    desc: "Dedicated, compliant, 24/7",
+    icon: Sparkles,
+  },
   { label: "Contact", href: "/contact", desc: "Talk to a human", icon: Mail },
-  { label: "Legal", href: "/legal", desc: "Terms, privacy, cookies", icon: Scale },
+  {
+    label: "Legal",
+    href: "/legal",
+    desc: "Terms, privacy, cookies",
+    icon: Scale,
+  },
 ];
 
 export function DocsNavbar({

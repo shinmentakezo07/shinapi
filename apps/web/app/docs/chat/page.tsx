@@ -206,7 +206,7 @@ export default function ChatPage() {
                 "bg-gradient-to-br from-white/[0.02] via-white/[0.01] to-transparent",
                 "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]",
                 "hover:border-indigo-500/20 hover:shadow-[0_8px_24px_-12px_rgba(99,102,241,0.2)]",
-                "transition-all duration-300"
+                "transition-all duration-300",
               )}
             >
               <div className="w-9 h-9 rounded-xl bg-indigo-500/[0.08] border border-indigo-500/15 flex items-center justify-center mb-3 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
@@ -215,9 +215,7 @@ export default function ChatPage() {
               <h4 className="text-sm font-semibold text-white/90 mb-1">
                 {f.label}
               </h4>
-              <p className="text-xs text-white/40 leading-relaxed">
-                {f.desc}
-              </p>
+              <p className="text-xs text-white/40 leading-relaxed">{f.desc}</p>
             </motion.div>
           ))}
         </div>
@@ -303,8 +301,8 @@ fmt.Printf("%+v\\n", result)`,
             <code className="px-1.5 py-0.5 rounded-md bg-indigo-500/[0.08] text-indigo-200/95 font-mono text-[13px] border border-indigo-500/[0.12]">
               stream: true
             </code>{" "}
-            in the request body to receive a Server-Sent Events stream. Each chunk
-            is a JSON object prefixed with{" "}
+            in the request body to receive a Server-Sent Events stream. Each
+            chunk is a JSON object prefixed with{" "}
             <code className="px-1.5 py-0.5 rounded-md bg-white/[0.04] text-white/70 font-mono text-[13px]">
               data:
             </code>
@@ -326,7 +324,7 @@ fmt.Printf("%+v\\n", result)`,
                     className={cn(
                       "w-2.5 h-2.5 rounded-full ring-1",
                       t.bg,
-                      t.ring
+                      t.ring,
                     )}
                   />
                 ))}
@@ -393,7 +391,8 @@ data: [DONE]`}
                     <code className="text-white/55 bg-white/[0.04] px-1 py-0.5 rounded text-[11px]">
                       data: [DONE]
                     </code>
-                    . The server closes the connection after sending this signal.
+                    . The server closes the connection after sending this
+                    signal.
                   </>
                 ),
               },
@@ -529,9 +528,10 @@ while (true) {
           </h3>
           <p className="text-sm text-white/55 leading-[1.75] mb-5">
             Yapapa also provides a fully OpenAI-compatible endpoint at{" "}
-            <code>/v1/chat/completions</code>. This endpoint accepts the standard
-            OpenAI request format and returns responses in OpenAI format, making
-            it a drop-in replacement for existing OpenAI integrations.
+            <code>/v1/chat/completions</code>. This endpoint accepts the
+            standard OpenAI request format and returns responses in OpenAI
+            format, making it a drop-in replacement for existing OpenAI
+            integrations.
           </p>
           <div className="rounded-2xl border border-emerald-500/15 bg-gradient-to-br from-emerald-500/[0.04] via-white/[0.01] to-transparent p-5 mb-5">
             <div className="flex items-center gap-3 mb-3">

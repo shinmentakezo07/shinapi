@@ -12,6 +12,7 @@ It explains **why** things are built the way they are, the concurrency and secur
 ## 1. Quota, Budget Enforcement & Credit Deduction — Race Condition Safety
 
 ### The Problem
+
 Multiple concurrent requests from the same user (or same API key) must not over-spend credits. A naive `SELECT balance, UPDATE balance` creates a classic TOCTOU (time-of-check to time-of-use) race.
 
 ### The Solution: Transactional Atomic Deduction + Advisory Budgets
@@ -36,6 +37,7 @@ func (r *CreditsRepo) DeductTx(ctx, tx, userID string, amount int) (bool, error)
 ```
 
 **Why this works**:
+
 - The `WHERE balance >= $2` turns the check into part of the atomic operation.
 - Only one transaction can succeed in deducting when balance is marginal.
 - All other concurrent transactions see either the old balance (and fail the WHERE) or the new one.
@@ -54,6 +56,7 @@ func (r *CreditsRepo) DeductTx(ctx, tx, userID string, amount int) (bool, error)
 **Important Invariant**: The `balance` column is the single source of truth for "can this request proceed?" Budget columns are for UX and alerting only.
 
 **Cache Invalidation**:
+
 - After any `DeductTx` or `UpsertTx`, the credits cache key for that user is explicitly deleted.
 - This prevents the 5-min cache from serving stale balance to subsequent requests.
 
@@ -71,6 +74,7 @@ WebhookService (internal/service/webhook.go)
 ```
 
 **Retry Schedule** (hard-coded in service):
+
 ```go
 var webhookRetryBackoff = []time.Duration{
     1 * time.Second,
@@ -113,6 +117,7 @@ const webhookMaxAttempts = 5
 - **Idempotency** is the caller's responsibility (no automatic dedup on retries).
 
 **Operational Visibility**:
+
 - `GET /api/webhooks/[id]/deliveries` (admin + owner) shows the full attempt history.
 - Failed deliveries with `attempts == 5` are the de-facto DLQ.
 
@@ -122,11 +127,11 @@ const webhookMaxAttempts = 5
 
 ### Three Layers of Enforcement
 
-| Layer | File | What it checks | Failure mode |
-|-------|------|----------------|--------------|
-| **Route** | `middleware/admin.go` + `require_auth.go` | `user.role == "admin"` | 403 |
-| **Permission** | `middleware/rbac.go` (via `RequirePermission(perm)`) | User has role that grants the permission string | 403 |
-| **Service** | `service/rbac.go` + repo | Same check (defense in depth) | Returns `AppError` |
+| Layer          | File                                                 | What it checks                                  | Failure mode       |
+| -------------- | ---------------------------------------------------- | ----------------------------------------------- | ------------------ |
+| **Route**      | `middleware/admin.go` + `require_auth.go`            | `user.role == "admin"`                          | 403                |
+| **Permission** | `middleware/rbac.go` (via `RequirePermission(perm)`) | User has role that grants the permission string | 403                |
+| **Service**    | `service/rbac.go` + repo                             | Same check (defense in depth)                   | Returns `AppError` |
 
 ### Permission Model
 
@@ -139,6 +144,7 @@ From migration `008_rbac.sql`:
 **Special case**: The very first admin who logs in (detected by `admin_users` table being empty) is auto-provisioned as `superadmin` with the single permission `"*"`.
 
 **Wildcard semantics**:
+
 - `"*"` grants everything.
 - Checked early in `HasPermission` — if user has any role with `"*"`, all checks pass.
 
@@ -154,6 +160,7 @@ r.Group(func(r chi.Router) {
 ```
 
 The `RequirePermission` middleware:
+
 1. Extracts user from context (must already be authenticated)
 2. Calls `rbacService.HasPermission(user.ID, "users", "read")`
 3. On false → 403 with generic message
@@ -202,6 +209,7 @@ registry.Register(provider)
 3. On circuit open, **all keys** for that provider are effectively black-holed for 30s.
 
 **Failure Attribution**:
+
 - The breaker counts **any** error from the provider (auth errors, rate limits, 5xx, network, etc.).
 - This is somewhat coarse — a single bad secondary key can open the circuit for the whole provider.
 - Mitigation: providers expose `Health()` which is called periodically by the watcher and can force-close circuits.
@@ -217,6 +225,7 @@ This is one of the most complex and subtle parts of the system.
 Anthropic's streaming format is fundamentally different from OpenAI's:
 
 **OpenAI SSE**:
+
 ```
 data: {"choices":[{"delta":{"content":"Hello"}}]}
 
@@ -226,6 +235,7 @@ data: [DONE]
 ```
 
 **Anthropic SSE**:
+
 ```
 event: message_start
 data: {"type":"message_start","message":{...}}
@@ -299,6 +309,7 @@ if key == nil {
 ```
 
 **Security Properties**:
+
 - Even if the entire `api_keys` table is dumped, attacker cannot use the keys without also knowing `AUTH_SECRET`.
 - The pepper (`AUTH_SECRET`) is the same secret used for JWTs — convenient but means JWT compromise = API key hash compromise (acceptable trade-off in this architecture).
 
@@ -334,10 +345,12 @@ func (h *Handler) ChatProxy(...) {
 ### The Trade-offs (Explicitly Accepted)
 
 **Pros**:
+
 - Excellent perceived performance.
 - Partial failure of side effects does not affect the user.
 
 **Cons & Mitigations**:
+
 - **Lost billing**: If the goroutine panics or the process crashes between response and deduction, user got free inference.
   - Mitigation: `suspicious_activities` table + daily reconciliation jobs + alerting on large negative `credit_transactions` gaps.
 - **Lost audit logs**: Same risk.
@@ -369,6 +382,7 @@ type RateLimiter struct {
 ### Redis Implementation
 
 Activated automatically when `REDIS_URL` is set. Uses:
+
 - `INCR` + `EXPIRE` with a composite key that encodes the window.
 
 Same interface (`RateLimiterInterface`), so handlers don't care.
@@ -391,6 +405,7 @@ func adminError(w http.ResponseWriter, err error) {
 ```
 
 **Rationale**:
+
 - Admin endpoints are extremely powerful.
 - Leaking stack traces, SQL errors, or internal IDs to an admin UI that might be screenshotted or logged is a data leak / reconnaissance vector.
 - Even "trusted" admins should not see raw error details in production.
@@ -411,6 +426,7 @@ type NotificationHub struct {
 ```
 
 **Flow**:
+
 1. Authenticated user hits `GET /api/notifications/stream` (with `Accept: text/event-stream`).
 2. Handler registers a buffered channel (size 10) under their `userID`.
 3. Hub runs a select loop:
@@ -419,6 +435,7 @@ type NotificationHub struct {
 4. On client disconnect or context cancel → remove channel, close it.
 
 **Why per-user fanout instead of global broadcast?**
+
 - Most notifications are user-specific (credit alerts, job completion, new shared key, etc.).
 - Avoids every connected admin receiving every user's events.
 
@@ -460,6 +477,7 @@ Introduced in migration `013_provider_plugins.sql`:
 Admins can register entirely new providers at runtime via `POST /api/admin/provider-plugins` without restarting the backend.
 
 **Plugin record**:
+
 - `name`, `base_url`, `auth_header_name`, `auth_header_value` (encrypted at rest)
 - `headers` (extra static headers as JSONB)
 - `enabled` flag

@@ -25,7 +25,8 @@ const sections = [
   { id: "acceptable-use", label: "Acceptable Use", icon: Scale },
 ];
 
-const tocContainer = "sticky top-24 self-start max-h-[calc(100vh-7rem)] overflow-y-auto pr-4";
+const tocContainer =
+  "sticky top-24 self-start max-h-[calc(100vh-7rem)] overflow-y-auto pr-4";
 
 export default function LegalPage() {
   return (
@@ -37,8 +38,15 @@ export default function LegalPage() {
           italic="print"
           description="Plain-language summaries of the legal terms that govern your use of Yapapa. We aim for transparency over legalese — but the official documents below are the source of truth."
           icon={Scale}
-          primaryCta={{ label: "Email legal team", href: "mailto:legal@yapapa.com", icon: Mail }}
-          secondaryCta={{ label: "Talk to security", href: "/contact?topic=security" }}
+          primaryCta={{
+            label: "Email legal team",
+            href: "mailto:legal@yapapa.com",
+            icon: Mail,
+          }}
+          secondaryCta={{
+            label: "Talk to security",
+            href: "/contact?topic=security",
+          }}
         />
 
         {/* Layout: sticky TOC + content */}
@@ -119,8 +127,8 @@ export default function LegalPage() {
               <LegalSubSection title="4. Service availability">
                 <p>
                   We target 99.99% uptime on Enterprise and 99.95% on Standard.
-                  SLA credits are issued automatically; see the SLA addendum
-                  for the exact calculation.
+                  SLA credits are issued automatically; see the SLA addendum for
+                  the exact calculation.
                 </p>
               </LegalSubSection>
               <LegalSubSection title="5. Termination">
@@ -150,22 +158,29 @@ export default function LegalPage() {
               />
               <p className="text-[15px] text-white/60 leading-[1.85] mb-6">
                 We collect the minimum data needed to run a reliable LLM
-                gateway. We never sell customer data, never train models on
-                your prompts, and never share API keys with anyone — including
-                our model providers.
+                gateway. We never sell customer data, never train models on your
+                prompts, and never share API keys with anyone — including our
+                model providers.
               </p>
               <LegalSubSection title="What we collect">
                 <ul className="list-disc pl-5 space-y-1.5 marker:text-indigo-300/60">
                   <li>Account info: name, email, billing details</li>
-                  <li>Usage metadata: request counts, tokens, latency, status codes</li>
-                  <li>Request payloads: stored only when you opt in to logging</li>
+                  <li>
+                    Usage metadata: request counts, tokens, latency, status
+                    codes
+                  </li>
+                  <li>
+                    Request payloads: stored only when you opt in to logging
+                  </li>
                   <li>Support conversations you initiate with us</li>
                 </ul>
               </LegalSubSection>
               <LegalSubSection title="What we never collect">
                 <ul className="list-disc pl-5 space-y-1.5 marker:text-rose-300/60">
                   <li>API keys in plaintext past the moment of creation</li>
-                  <li>Customer conversation content unless explicitly enabled</li>
+                  <li>
+                    Customer conversation content unless explicitly enabled
+                  </li>
                   <li>Personal data beyond what&apos;s listed above</li>
                 </ul>
               </LegalSubSection>
@@ -200,25 +215,51 @@ export default function LegalPage() {
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6">
                 {[
-                  { name: "session", purpose: "Authentication", duration: "Session", required: true },
-                  { name: "csrf", purpose: "Security", duration: "Session", required: true },
-                  { name: "prefs", purpose: "UI preferences", duration: "1 year", required: false },
-                  { name: "_analytics", purpose: "Aggregate usage", duration: "90 days", required: false },
+                  {
+                    name: "session",
+                    purpose: "Authentication",
+                    duration: "Session",
+                    required: true,
+                  },
+                  {
+                    name: "csrf",
+                    purpose: "Security",
+                    duration: "Session",
+                    required: true,
+                  },
+                  {
+                    name: "prefs",
+                    purpose: "UI preferences",
+                    duration: "1 year",
+                    required: false,
+                  },
+                  {
+                    name: "_analytics",
+                    purpose: "Aggregate usage",
+                    duration: "90 days",
+                    required: false,
+                  },
                 ].map((c) => (
                   <div
                     key={c.name}
                     className="p-4 rounded-xl border border-white/[0.06] bg-gradient-to-br from-white/[0.02] to-transparent"
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <code className="text-[12.5px] font-mono text-indigo-200/90">{c.name}</code>
+                      <code className="text-[12.5px] font-mono text-indigo-200/90">
+                        {c.name}
+                      </code>
                       {c.required && (
                         <span className="text-[9px] font-mono uppercase tracking-[0.15em] text-white/40 border border-white/[0.08] px-1.5 py-0.5 rounded">
                           Required
                         </span>
                       )}
                     </div>
-                    <p className="text-[12px] text-white/55 leading-[1.6]">{c.purpose}</p>
-                    <p className="text-[10.5px] font-mono text-white/30 mt-1.5">Duration: {c.duration}</p>
+                    <p className="text-[12px] text-white/55 leading-[1.6]">
+                      {c.purpose}
+                    </p>
+                    <p className="text-[10.5px] font-mono text-white/30 mt-1.5">
+                      Duration: {c.duration}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -254,9 +295,9 @@ export default function LegalPage() {
               </LegalSubSection>
               <LegalSubSection title="Security measures">
                 <p>
-                  Encryption in transit (TLS 1.3) and at rest (AES-256).
-                  Annual third-party penetration tests. SOC 2 Type II report
-                  available under NDA.
+                  Encryption in transit (TLS 1.3) and at rest (AES-256). Annual
+                  third-party penetration tests. SOC 2 Type II report available
+                  under NDA.
                 </p>
               </LegalSubSection>
             </section>
