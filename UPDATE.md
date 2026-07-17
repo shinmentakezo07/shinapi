@@ -6478,3 +6478,59 @@ const OUTPUT_STOPS = [1_000, 5_000, 50_000, 250_000, 500_000];
 - `accentColor` prop kept on CustomSlider for interface compatibility (callers unchanged) though it is no longer used internally now that input/output is derived from the label.
 - `tsc --noEmit` passes clean. Pure visual/UX enhancement — no data model, no SDK/mock-data involvement, so `wiring-verification.test.ts` invariants unaffected.
 - Did not run build (next build ignores TS errors anyway) nor smoke-test since only a presentational client component changed.
+
+## [61]. Fix admin create-provider crash: pgx []string codec rejected
+
+**Session**: `fix-admin-provider-capabilities-2026-07-17`
+**Date**: 2026-07-17 12:08
+
+### Why
+`POST /api/admin/providers` returned 500 ("An internal error occurred...") because pgx/v5's default type map has no codec for a bare Go `[]string` argument being written to a Postgres `TEXT[]` column. The repository passed `m.Capabilities` directly into the INSERT/UPDATE for `model_registry.capabilities` (column $10) and the driver errored with:
+
+```
+admin_create_provider_failed: store model 01-ai/yi-large: create model: sql: converting argument $10 type: unsupported type []string, a slice of string
+```
+
+The same write path applied to both `CreateModel` and `UpdateModel`. Wrapped the slice with `pgtype.FlatArray[string]` at the SQL boundary (zero allocation, just changes the codec reference) — the domain struct still uses `[]string` so reads and downstream code are unaffected.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/backend/internal/repository/admin_model_repo.go | L3-13 | modified (added `pgtype` import) |
+| apps/backend/internal/repository/admin_model_repo.go | L148 | modified (wrapped `m.Capabilities` in INSERT) |
+| apps/backend/internal/repository/admin_model_repo.go | L167 | modified (wrapped `m.Capabilities` in UPDATE) |
+
+### Before
+```go
+import (
+    "github.com/jackc/pgx/v5"
+)
+
+m.ID, m.ModelID, m.ProviderID, m.DisplayName, m.Description,
+m.ContextWindow, m.MaxOutput, m.InputPricePer1k, m.OutputPricePer1k,
+m.Capabilities, m.SupportsVision, m.SupportsTools, m.SupportsThinking, m.Status,
+m.ModelGroup, m.FallbackModels, m.CredentialName, m.RoutingWeight, m.IsWildcard)
+// UPDATE inside UpdateModel:
+m.InputPricePer1k, m.OutputPricePer1k, m.Capabilities,
+```
+
+### After
+```go
+import (
+    "github.com/jackc/pgx/v5"
+    "github.com/jackc/pgx/v5/pgtype"
+)
+
+m.ID, m.ModelID, m.ProviderID, m.DisplayName, m.Description,
+m.ContextWindow, m.MaxOutput, m.InputPricePer1k, m.OutputPricePer1k,
+pgtype.FlatArray[string](m.Capabilities), m.SupportsVision, m.SupportsTools, m.SupportsThinking, m.Status,
+m.ModelGroup, m.FallbackModels, m.CredentialName, m.RoutingWeight, m.IsWildcard)
+// UPDATE inside UpdateModel:
+m.InputPricePer1k, m.OutputPricePer1k, pgtype.FlatArray[string](m.Capabilities),
+```
+
+### Notes
+- `pgtype.FlatArray[string]` is a `[]string` alias that pgx/v5 already registers a `text[]` encoder for — no codec customization required.
+- Read paths (`Scan(..., &m.Capabilities, ...)`) are unchanged because pgx already scans `TEXT[]` into `[]string` natively.
+- `make vet` + `gofmt` clean. No other repos in this PR scope, but `TEXT[]` columns elsewhere (`tags`, `allowed_user_ids`, `permissions`, `targeted_user_ids`, `target_ids`, `allowed_models`, `allowed_ips`, `allowed_domains`, `channels`, `recipients`, `sections`, `events`) likely have the same write bug and should be swept in a follow-up session.
