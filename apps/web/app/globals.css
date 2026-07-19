@@ -410,6 +410,256 @@
   animation: scroll-bounce 2s ease-in-out infinite;
 }
 
+/* ── Hero: floating logos, drifting orbs, scrolling grid ── */
+@keyframes hero-float {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(12px, -18px) rotate(4deg);
+  }
+  50% {
+    transform: translate(-8px, -28px) rotate(-3deg);
+  }
+  75% {
+    transform: translate(-14px, -10px) rotate(2deg);
+  }
+}
+
+.hero-float {
+  animation: hero-float var(--float-dur, 12s) ease-in-out infinite;
+  animation-delay: var(--float-delay, 0s);
+  will-change: transform;
+}
+
+@keyframes hero-orb-drift-a {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(60px, -40px) scale(1.08);
+  }
+  66% {
+    transform: translate(-30px, 30px) scale(0.95);
+  }
+}
+
+@keyframes hero-orb-drift-b {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(-50px, 50px) scale(1.1);
+  }
+  66% {
+    transform: translate(40px, -20px) scale(0.92);
+  }
+}
+
+@keyframes hero-orb-drift-c {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(30px, -50px) scale(1.12);
+  }
+}
+
+.hero-orb-a {
+  animation: hero-orb-drift-a 18s ease-in-out infinite;
+  will-change: transform;
+}
+.hero-orb-b {
+  animation: hero-orb-drift-b 22s ease-in-out infinite;
+  will-change: transform;
+}
+.hero-orb-c {
+  animation: hero-orb-drift-c 16s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes hero-grid-scroll {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 80px;
+  }
+}
+
+.hero-grid-scroll {
+  animation: hero-grid-scroll 8s linear infinite;
+}
+
+/* Hero aurora sweep — wide soft light band crossing the top */
+@keyframes hero-aurora {
+  0% {
+    transform: translateX(-30%) skewX(-12deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.5;
+  }
+  80% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateX(130%) skewX(-12deg);
+    opacity: 0;
+  }
+}
+.hero-aurora {
+  animation: hero-aurora 9s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+/* Conic rotating beam behind the headline */
+@keyframes hero-conic-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.hero-conic-spin {
+  animation: hero-conic-spin 24s linear infinite;
+  will-change: transform;
+}
+
+/* Headline shimmer sweep */
+@keyframes hero-shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+.hero-shimmer {
+  background-size: 200% auto;
+  animation: hero-shimmer 6s linear infinite;
+}
+
+/* Provider marquee */
+@keyframes hero-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.hero-marquee {
+  animation: hero-marquee 30s linear infinite;
+  will-change: transform;
+}
+.hero-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Live badge dot ping */
+@keyframes hero-badge-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  75%, 100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+.hero-badge-ping {
+  animation: hero-badge-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Particle twinkle */
+@keyframes hero-twinkle {
+  0%, 100% {
+    opacity: 0.1;
+    transform: scale(0.6);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+}
+.hero-twinkle {
+  animation: hero-twinkle var(--twinkle-dur, 4s) ease-in-out infinite;
+  animation-delay: var(--twinkle-delay, 0s);
+  will-change: opacity, transform;
+}
+
+/* Scanline sweep across the terminal */
+@keyframes hero-scanline {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(420px);
+  }
+}
+.hero-scanline {
+  animation: hero-scanline 3.5s linear infinite;
+  will-change: transform;
+}
+
+/* Arrow nudge for CTA buttons (runs on hover via group-hover) */
+@keyframes hero-arrow-nudge {
+  0% {
+    transform: translateX(0);
+  }
+  40% {
+    transform: translateX(8px);
+  }
+  70% {
+    transform: translateX(3px);
+  }
+  100% {
+    transform: translateX(6px);
+  }
+}
+
+/* Click ripple expansion for buttons */
+@keyframes ripple-expand {
+  0% {
+    transform: scale(0);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* Secondary aurora band — phase-shifted cyan counterpart */
+.hero-aurora-b {
+  animation: hero-aurora 11s ease-in-out infinite;
+  animation-delay: -3s;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-float,
+  .hero-orb-a,
+  .hero-orb-b,
+  .hero-orb-c,
+  .hero-grid-scroll,
+  .hero-aurora,
+  .hero-conic-spin,
+  .hero-shimmer,
+  .hero-marquee,
+  .hero-twinkle,
+  .hero-scanline,
+  .hero-aurora-b {
+    animation: none;
+  }
+  .hero-badge-ping {
+    animation: none;
+    opacity: 0.4;
+  }
+}
+
 /* Global Hero Scrollbar */
 html {
   scrollbar-width: thin;

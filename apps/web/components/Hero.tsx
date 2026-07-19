@@ -323,27 +323,91 @@ const CyberButton = ({
   onClick?: () => void;
   primary?: boolean;
 }) => {
+  const [ripples, setRipples] = useState<
+    Array<{ id: number; x: number; y: number }>
+  >([]);
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  function handleClick(e: React.MouseEvent<HTMLButtonElement>) {
+    const rect = btnRef.current?.getBoundingClientRect();
+    if (rect) {
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const id = Date.now() + Math.random();
+      setRipples((prev) => [...prev, { id, x, y }]);
+      setTimeout(() => {
+        setRipples((prev) => prev.filter((r) => r.id !== id));
+      }, 500);
+    }
+    onClick?.();
+  }
+
   return (
     <button
-      onClick={onClick}
+      ref={btnRef}
+      onClick={handleClick}
       className={cn(
         "relative group px-8 py-4 rounded-2xl font-mono text-sm font-bold tracking-wider overflow-hidden",
         "transition-all duration-300 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
         primary
-          ? "bg-white text-black shadow-[0_20px_60px_-24px_rgba(255,255,255,0.85)] hover:bg-indigo-50"
-          : "border border-white/[0.10] bg-white/[0.045] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-md hover:border-white/25 hover:bg-white/[0.08]",
+          ? "bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500 text-white shadow-[0_20px_60px_-24px_rgba(168,85,247,0.85)] hover:from-indigo-400 hover:via-violet-400 hover:to-fuchsia-400"
+          : "border border-white/[0.10] bg-white/[0.045] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-md hover:border-indigo-300/40 hover:bg-white/[0.08]",
         className,
       )}
     >
+      {/* Idle ambient glow (primary only) */}
+      {primary && (
+        <span
+          aria-hidden="true"
+          className="absolute -inset-1 -z-10 rounded-2xl bg-gradient-to-r from-indigo-500/35 via-violet-500/35 to-fuchsia-500/35 blur-md"
+        />
+      )}
+
+      {/* Animated conic border (hover) */}
+      <span
+        aria-hidden="true"
+        className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+        style={{
+          padding: "1.5px",
+          background:
+            "conic-gradient(from 0deg, rgba(99,102,241,0.85), rgba(168,85,247,0.75), rgba(34,211,238,0.75), rgba(99,102,241,0.85))",
+          WebkitMask:
+            "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+          WebkitMaskComposite: "xor",
+          maskComposite: "exclude",
+          animation: "hero-conic-spin 6s linear infinite",
+        }}
+      />
+
       <div
         className={cn(
           "absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100",
           primary
-            ? "bg-[linear-gradient(110deg,transparent_20%,rgba(99,102,241,0.22)_45%,transparent_70%)]"
+            ? "bg-[linear-gradient(110deg,transparent_20%,rgba(255,255,255,0.35)_45%,transparent_70%)]"
             : "bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.14),transparent_55%)]",
         )}
       />
       <div className="absolute inset-y-0 left-0 w-1/2 -translate-x-full bg-gradient-to-r from-transparent via-white/35 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-[220%]" />
+
+      {/* Click ripples */}
+      {ripples.map((r) => (
+        <span
+          key={r.id}
+          aria-hidden="true"
+          className="absolute rounded-full pointer-events-none"
+          style={{
+            left: r.x - 10,
+            top: r.y - 10,
+            width: 20,
+            height: 20,
+            background: primary
+              ? "radial-gradient(circle, rgba(255,255,255,0.55) 0%, transparent 70%)"
+              : "radial-gradient(circle, rgba(167,139,250,0.55) 0%, transparent 70%)",
+            animation: "ripple-expand 450ms ease-out forwards",
+          }}
+        />
+      ))}
+
       <div className="relative z-10 flex items-center justify-center gap-2">
         {children}
       </div>
@@ -367,7 +431,7 @@ function TypewriterText({
     hidden: { opacity: 0 },
     visible: (i = 1) => ({
       opacity: 1,
-      transition: { staggerChildren: 0.03, delayChildren: delay },
+      transition: { staggerChildren: 0.022, delayChildren: delay },
     }),
   };
 
@@ -375,12 +439,12 @@ function TypewriterText({
     visible: {
       opacity: 1,
       y: 0,
-      transition: { type: "spring" as const, damping: 12, stiffness: 200 },
+      transition: { type: "spring" as const, damping: 18, stiffness: 240 },
     },
     hidden: {
       opacity: 0,
       y: 20,
-      transition: { type: "spring" as const, damping: 12, stiffness: 200 },
+      transition: { type: "spring" as const, damping: 18, stiffness: 240 },
     },
   };
 
@@ -395,7 +459,7 @@ function TypewriterText({
         <motion.span
           variants={child}
           key={index}
-          className="inline-block whitespace-pre"
+          className="inline-block whitespace-pre [filter:drop-shadow(0_0_14px_rgba(255,255,255,0.18))]"
         >
           {letter}
         </motion.span>
@@ -437,6 +501,7 @@ function InteractiveTerminal() {
   const [isTyping, setIsTyping] = useState(true);
   const [displayedCode, setDisplayedCode] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
+  const [hoveredTab, setHoveredTab] = useState<number | null>(null);
 
   useEffect(() => {
     setIsTyping(true);
@@ -462,14 +527,18 @@ function InteractiveTerminal() {
 
   return (
     <div className="relative group perspective-1000 w-full max-w-lg mx-auto lg:mr-0 lg:ml-auto z-20">
-      {/* Ambient Glow Behind */}
-      <div className="absolute -inset-10 bg-gradient-to-r from-blue-600/30 via-purple-600/30 to-pink-600/30 rounded-[40px] blur-3xl opacity-40 group-hover:opacity-60 transition duration-1000 animate-pulse-slow"></div>
+      {/* Ambient Glow — stacked layers */}
+      <div className="absolute -inset-16 bg-gradient-to-r from-indigo-600/45 via-violet-600/40 to-fuchsia-500/35 rounded-[40px] blur-[180px] opacity-50 group-hover:opacity-75 transition duration-1000 animate-pulse-slow pointer-events-none" />
+      <div className="absolute -inset-4 bg-[radial-gradient(ellipse_at_center,rgba(34,211,238,0.22),transparent_70%)] blur-[100px] opacity-70 pointer-events-none" />
+
+      {/* Glass shine sweep (hover only) */}
+      <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none bg-[linear-gradient(110deg,transparent_30%,rgba(255,255,255,0.10)_50%,transparent_70%)] translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
 
       <motion.div
         initial={{ rotateY: 15, rotateX: 5 }}
         whileHover={{ rotateY: 0, rotateX: 0 }}
         transition={{ type: "spring" as const, stiffness: 50 }}
-        className="relative h-[420px] flex flex-col bg-[#0A0A0A]/90 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden ring-1 ring-white/5 transform-style-3d group-hover:border-white/20"
+        className="relative h-[420px] flex flex-col bg-[#0A0A0A]/90 backdrop-blur-xl border border-indigo-400/15 rounded-xl shadow-[0_30px_80px_-30px_rgba(139,92,246,0.5)] overflow-hidden ring-1 ring-white/5 transform-style-3d group-hover:border-indigo-300/40"
       >
         {/* Top Bar */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-black/40">
@@ -485,25 +554,55 @@ function InteractiveTerminal() {
         </div>
 
         {/* Tab Bar */}
-        <div className="flex items-center px-2 bg-black/20 overflow-x-auto scrollbar-hide">
-          {codeSnippets.map((snippet, index) => (
-            <button
-              key={snippet.id}
-              onClick={() => setActiveTab(index)}
-              className={`flex items-center gap-2 px-4 py-2 text-xs font-mono transition-all relative ${
-                activeTab === index
-                  ? "text-white bg-white/5 border-t-2 border-primary"
-                  : "text-muted-foreground hover:text-white hover:bg-white/5 border-t-2 border-transparent"
-              }`}
-            >
-              <snippet.icon className="w-3 h-3" />
-              {snippet.name}
-            </button>
-          ))}
+        <div className="relative flex items-center px-2 bg-black/20 overflow-x-auto scrollbar-hide">
+          {codeSnippets.map((snippet, index) => {
+            const isActive = activeTab === index;
+            return (
+              <button
+                key={snippet.id}
+                onClick={() => setActiveTab(index)}
+                onMouseEnter={() => setHoveredTab(index)}
+                onMouseLeave={() => setHoveredTab(null)}
+                className={`relative flex items-center gap-2 px-4 py-2 text-xs font-mono transition-all duration-200 ${
+                  isActive
+                    ? "text-white bg-white/5"
+                    : "text-muted-foreground hover:text-white hover:bg-white/5"
+                }`}
+              >
+                <snippet.icon className="w-3 h-3" />
+                {snippet.name}
+                {isActive && (
+                  <motion.span
+                    layoutId="terminal-tab-underline"
+                    className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-indigo-400 via-violet-400 to-cyan-400 shadow-[0_0_8px_rgba(139,92,246,0.7)]"
+                    transition={{ type: "spring" as const, stiffness: 350, damping: 30 }}
+                  />
+                )}
+                {!isActive && hoveredTab === index && (
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="absolute bottom-0 left-2 right-2 h-[1px] bg-white/20"
+                  />
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {/* Code Area */}
         <div className="flex-1 p-6 font-mono text-sm leading-relaxed overflow-hidden relative bg-[#050505]">
+          {/* Scanline overlay */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 pointer-events-none opacity-[0.18] group-hover:opacity-[0.28] transition-opacity duration-300"
+            style={{
+              backgroundImage:
+                "repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(255,255,255,0.08) 2px, rgba(255,255,255,0.08) 3px)",
+              mixBlendMode: "screen",
+            }}
+          />
+
           {/* Line Numbers */}
           <div className="absolute left-0 top-6 bottom-0 w-12 flex flex-col items-end pr-4 text-white/10 select-none text-xs leading-relaxed border-r border-white/5 bg-white/[0.01]">
             {Array.from({ length: 20 }).map((_, i) => (
@@ -520,7 +619,7 @@ function InteractiveTerminal() {
                 <motion.span
                   animate={{ opacity: [0, 1, 0] }}
                   transition={{ repeat: Infinity, duration: 0.8 }}
-                  className="inline-block w-2 h-4 bg-primary align-middle ml-1 shadow-[0_0_10px_rgba(59,130,246,0.5)]"
+                  className="inline-block w-2 h-4 bg-gradient-to-b from-indigo-300 to-violet-400 align-middle ml-1 shadow-[0_0_10px_rgba(139,92,246,0.8)]"
                 />
               )}
             </pre>
@@ -541,7 +640,7 @@ function InteractiveTerminal() {
           </div>
           <div className="flex items-center gap-2">
             <div
-              className={`w-2 h-2 rounded-full ${isTyping ? "bg-yellow-500 animate-pulse" : "bg-green-500 shadow-[0_0_5px_#22c55e]"}`}
+              className={`w-2 h-2 rounded-full ${isTyping ? "bg-yellow-500 animate-pulse" : "bg-green-500 shadow-[0_0_8px_#22c55e,0_0_18px_rgba(34,197,94,0.5)]"}`}
             />
             {isTyping ? "BUILDING..." : "READY"}
           </div>
@@ -554,7 +653,7 @@ function InteractiveTerminal() {
               initial={{ scale: 0, y: 20, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0, opacity: 0 }}
-              className="absolute bottom-12 right-6 px-4 py-2 bg-green-900/80 border border-green-500/30 rounded backdrop-blur-md flex items-center gap-3 text-green-100 text-xs font-mono shadow-[0_0_20px_rgba(34,197,94,0.2)]"
+              className="absolute bottom-12 right-6 px-4 py-2 bg-green-900/80 border border-green-500/30 rounded backdrop-blur-md flex items-center gap-3 text-green-100 text-xs font-mono shadow-[0_0_30px_rgba(34,197,94,0.25)] ring-1 ring-green-500/20"
             >
               <div className="relative">
                 <div className="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-50"></div>
@@ -753,6 +852,17 @@ function FloatingLogos() {
 function HeroBackground() {
   const spotlightRef = useRef<HTMLDivElement>(null);
 
+  // Particle field — generated once, scroll-stable
+  const particles = Array.from({ length: 40 }, (_, i) => ({
+    id: i,
+    top: Math.random() * 100,
+    left: Math.random() * 100,
+    size: 1 + Math.random() * 1.5,
+    opacity: 0.25 + Math.random() * 0.5,
+    delay: Math.random() * 4,
+    duration: 3 + Math.random() * 3,
+  }));
+
   useEffect(() => {
     let rafId = 0;
     let pendingX = 0;
@@ -765,7 +875,7 @@ function HeroBackground() {
         rafId = 0;
         const el = spotlightRef.current;
         if (el)
-          el.style.background = `radial-gradient(820px circle at ${pendingX}px ${pendingY}px, rgba(99, 102, 241, 0.13), transparent 78%)`;
+          el.style.background = `radial-gradient(1100px circle at 320px ${pendingY}px rgba(167,139,250,0.10), ${pendingX}px ${pendingY}px rgba(99,102,241,0.18), transparent 78%)`;
       });
     }
     window.addEventListener("mousemove", handleMouseMove, { passive: true });
@@ -776,19 +886,76 @@ function HeroBackground() {
   }, []);
 
   return (
-    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none bg-[#050505]">
+    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none bg-[#04030a]">
       {/* Ambient gradient field */}
       <div
         aria-hidden="true"
-        className="absolute -top-40 left-[-10%] h-[34rem] w-[34rem] rounded-full bg-indigo-500/20 blur-[120px] hero-orb-a"
+        className="absolute -top-40 left-[-10%] h-[36rem] w-[36rem] rounded-full bg-indigo-500/35 blur-[160px] hero-orb-a"
       />
       <div
         aria-hidden="true"
-        className="absolute right-[-12%] top-1/4 h-[30rem] w-[30rem] rounded-full bg-violet-500/18 blur-[120px] hero-orb-b"
+        className="absolute right-[-12%] top-1/4 h-[32rem] w-[32rem] rounded-full bg-violet-600/32 blur-[150px] hero-orb-b"
       />
       <div
         aria-hidden="true"
-        className="absolute bottom-[-18%] left-1/3 h-[28rem] w-[28rem] rounded-full bg-cyan-400/12 blur-[110px] hero-orb-c"
+        className="absolute bottom-[-18%] left-1/3 h-[30rem] w-[30rem] rounded-full bg-cyan-400/28 blur-[140px] hero-orb-c"
+      />
+
+      {/* Particle field */}
+      <div aria-hidden="true" className="absolute inset-0">
+        {particles.map((p) => (
+          <span
+            key={p.id}
+            className="absolute rounded-full bg-white hero-twinkle"
+            style={
+              {
+                top: `${p.top}%`,
+                left: `${p.left}%`,
+                width: `${p.size}px`,
+                height: `${p.size}px`,
+                opacity: p.opacity,
+                "--twinkle-delay": `${p.delay}s`,
+                "--twinkle-dur": `${p.duration}s`,
+              } as CSSProperties
+            }
+          />
+        ))}
+      </div>
+
+      {/* Aurora sweep — primary wide band */}
+      <div
+        aria-hidden="true"
+        className="absolute -top-32 left-0 right-0 h-[600px] hero-aurora pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(90deg, transparent 0%, rgba(99,102,241,0.35) 30%, rgba(168,85,247,0.45) 50%, rgba(34,211,238,0.35) 70%, transparent 100%)",
+          filter: "blur(80px)",
+          mixBlendMode: "screen",
+          opacity: 0.7,
+        }}
+      />
+
+      {/* Aurora sweep — secondary cyan band, phase-shifted */}
+      <div
+        aria-hidden="true"
+        className="absolute top-1/3 left-0 right-0 h-[200px] hero-aurora-b pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(90deg, transparent 0%, rgba(34,211,238,0.30) 50%, transparent 100%)",
+          filter: "blur(60px)",
+          mixBlendMode: "screen",
+        }}
+      />
+
+      {/* Conic beam behind headline */}
+      <div
+        aria-hidden="true"
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] hero-conic-spin opacity-20 pointer-events-none"
+        style={{
+          background:
+            "conic-gradient(from 0deg, rgba(99,102,241,0.0) 0deg, rgba(99,102,241,0.4) 90deg, rgba(168,85,247,0.5) 180deg, rgba(34,211,238,0.4) 270deg, rgba(99,102,241,0.0) 360deg)",
+          filter: "blur(80px)",
+        }}
       />
 
       {/* Dimensional grid */}
@@ -800,10 +967,10 @@ function HeroBackground() {
       <div className="absolute inset-0 opacity-[0.055] mix-blend-screen [background-image:url('data:image/svg+xml,%3Csvg_viewBox=%220_0_256_256%22_xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter_id=%22noise%22%3E%3CfeTurbulence_type=%22fractalNoise%22_baseFrequency=%220.78%22_numOctaves=%224%22_stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect_width=%22100%25%22_height=%22100%25%22_filter=%22url(%23noise)%22_opacity=%220.7%22/%3E%3C/svg%3E')]" />
 
       {/* Dynamic Spotlights */}
-      <div ref={spotlightRef} className="absolute inset-0 opacity-60" />
+      <div ref={spotlightRef} className="absolute inset-0 opacity-70" />
 
       {/* Vignette */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_45%_42%,transparent_0%,rgba(0,0,0,0.38)_58%,#000_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_45%_42%,transparent_0%,rgba(0,0,0,0.42)_58%,#000_100%)]" />
 
       {/* Floating Icons */}
       <FloatingLogos />
@@ -935,7 +1102,7 @@ export function Hero() {
 
       <section
         ref={targetRef}
-        className="w-full min-h-screen flex items-center relative px-4 pt-20 overflow-hidden bg-[#050505]"
+        className="w-full min-h-screen flex items-center relative px-4 pt-20 overflow-hidden bg-[#04030a]"
       >
         <HeroBackground />
         <HUDOverlay />
@@ -982,7 +1149,7 @@ export function Hero() {
                     duration: 0.8,
                     ease: [0.16, 1, 0.3, 1],
                   }}
-                  className="inline-block bg-gradient-to-br from-white via-indigo-100 to-indigo-400 bg-clip-text text-5xl font-black text-transparent drop-shadow-[0_0_44px_rgba(99,102,241,0.22)] sm:text-6xl md:text-7xl lg:text-8xl"
+                  className="inline-block bg-gradient-to-r from-indigo-300 via-violet-300 to-cyan-300 bg-[length:200%_auto] bg-clip-text animate-[hero-shimmer_5s_linear_infinite] text-5xl font-black text-transparent [filter:drop-shadow(0_0_18px_rgba(139,92,246,0.5))_drop-shadow(0_0_36px_rgba(99,102,241,0.3))] sm:text-6xl md:text-7xl lg:text-8xl"
                 >
                   LLM GATEWAY
                 </motion.span>
@@ -1001,6 +1168,16 @@ export function Hero() {
                   initial={{ pathLength: 0, opacity: 0 }}
                   animate={{ pathLength: 1, opacity: 1 }}
                   transition={{ delay: 1.15, duration: 0.9, ease: "easeOut" }}
+                />
+                <motion.circle
+                  cx="222"
+                  cy="2"
+                  r="2.5"
+                  fill="currentColor"
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 1.95, duration: 0.35, ease: "easeOut" }}
+                  style={{ filter: "drop-shadow(0 0 6px rgba(139,92,246,0.9))" }}
                 />
               </svg>
             </div>
@@ -1062,7 +1239,8 @@ export function Hero() {
             >
               <Link href="/signup" className="w-full sm:w-auto">
                 <CyberButton primary className="w-full sm:w-auto">
-                  Get API Key <ArrowRight className="w-4 h-4" />
+                  Get API Key{" "}
+                  <ArrowRight className="w-4 h-4 transition-transform duration-500 group-hover:animate-[hero-arrow-nudge_0.5s_ease-out]" />
                 </CyberButton>
               </Link>
 

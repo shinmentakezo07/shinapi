@@ -7378,3 +7378,257 @@ r.Put("/api/admin/messages/{id}", appmiddleware.RequireAdmin(h.AdminUpdateMessag
   lite — the old draft referenced one that doesn't exist; corrected to match lite schema).
 - Quality gates: `go vet` clean, `go build ./...` clean, `go test` on
   service/handler/repository/db/router green, `smoke-test.sh` 25/25.
+
+## [64]. Playground UI polish — fenced-code markdown, regenerate + per-stop actions, template chips, accent rail
+
+**Session**: `playground-ui-polish-arena-2026-07-18`
+**Date**: 2026-07-18 18:05
+
+### Why
+
+The arena-style shell from entry [63] had finished cards and a clean composer, but the per-message AI response still rendered text as a single whitespace-pre-wrap blob, there was no copy/regenerate affordance on individual responses, no inline code separation, no template helpers, and the loading accent on the composer was binary. This entry introduces a private zero-dep fenced-code markdown renderer inside `ChatInterface.tsx`, a per-card regenerate button + inline stop action, refined user-bubble styling, a per-card context/pricing spec strip, a template-chips rail above the composer, and a soft gradient accent on the top border of the composer during generation.
+
+### Files Changed
+
+| File | Lines | Change Type |
+|------|-------|-------------|
+| apps/web/components/playground/ChatInterface.tsx | L1-1054 | rewritten (added MarkdownContent, fenced-code renderer, regenerate, stop, template chips, refined header strip & composer) |
+| apps/web/app/playground/page.tsx | L86, L240-340, L630-650 | modified (added lastUserPromptRef, sendMessage accepts overridePrompt + onlyModelId for per-model regenerate) |
+
+### Before
+
+```tsx
+// ChatInterface — flat whitespace-pre-wrap text, no inline code, no regenerate, no stop
+<p className="text-sm text-gray-200 leading-relaxed whitespace-pre-wrap break-words">
+  {content}
+  {isStreaming && <span className="animate-pulse" />}
+</p>
+// ...no copy all-button on message, no per-model regenerate, no template chips
+```
+
+```tsx
+// page.tsx — single sendMessage function, no per-model regen path
+const sendMessage = useCallback(async () => {
+  if (!inputMessage.trim() || selectedModels.length === 0 || isLoadingRef.current) return;
+  // ...always broadcasts to every selected model
+}, [inputMessage, selectedModels]);
+```
+
+### After
+
+```tsx
+// ChatInterface — MarkdownContent private component (zero-dep regex parser)
+function tokenize(text: string): MdToken[] {
+  const tokens: MdToken[] = [];
+  FENCE_RE.lastIndex = 0;
+  // splits ```lang\nbody``` fences from prose
+}
+
+function CodeBlock({ lang, body }) {
+  // sharp #08080a card, monospace body, language pill, per-block copy button
+}
+
+function MarkdownContent({ content, streaming }) {
+  // streaming caret only renders on the *last* token, so partial-code blocks show inline
+}
+
+// Per-card actions now always visible (not group-hover only):
+<button onClick={onRegenerate} title="Regenerate this response">
+  <RotateCcw />
+</button>
+{isStreaming && (
+  <button onClick={onStop} title="Stop generating this model">
+    <Square />
+  </button>
+)}
+
+// Composer templates rail (visible when textarea is empty AND there's a prior turn)
+<ComposerToolbar visible={showTemplates} onPick={setInputMessage} />
+```
+
+```tsx
+// page.tsx — sendMessage now accepts overridePrompt + onlyModelId (regenerate path)
+const lastUserPromptRef = useRef<string>("");
+const sendMessage = useCallback(async (overridePrompt?, onlyModelId?) => {
+  // regenerate: drop just the last AI message for onlyModelId, replay same prompt,
+  // re-target only that model instead of broadcasting to all
+  lastUserPromptRef.current = prompt;
+  ...
+}, [inputMessage, selectedModels]);
+
+<ChatInterface
+  onRegenerate={(modelId) => sendMessage(lastUserPromptRef.current, modelId)}
+  lastUserPrompt={lastUserPromptRef.current}
+/>
+```
+
+### Notes
+
+- `MarkdownContent` is a private helper inside `ChatInterface.tsx` — no new package added. It tokenizes ```fenced blocks``` and renders inline backticks as soft pills; partial streams correctly render only the last token's caret, leaving in-progress code blocks intact.
+- Regenerate rewinds only the targeted model's last assistant message (not the user's prompt) and re-issues the same prompt to just that model, leaving other models' answers in place.
+- Top-bar gradient accent on the composer (`leftAccent → rightAccent`) is opacity-toggled so it only appears while generating.
+- Header strip on each tile now shows `provider name chip` + `context pill` + `prompt price pill`; layout stays clean at narrow widths because stripe hides on `<md` / `<lg`.
+- `tsc --noEmit` clean, prettier formatted, existing tests (`tests/lib/playground-storage.test.ts` 13 ✅, `tests/components/playground/CodeSnippets.test.tsx` 10 ✅) still pass.
+
+## [69]. Hero "Layered Glow" — richer orbs/aurora/terminal/buttons, particle field, shimmer headline
+
+**Session**: `hero-layered-glow-2026-07-19`
+**Date**: 2026-07-19 04:55
+
+### Why
+
+The landing-page hero (`apps/web/components/Hero.tsx`) felt underwhelming beside the recent playground/dashboard redesigns. The three gradient orbs used pastel opacities (indigo-500/20, violet-500/18, cyan-400/12) and small 120px blurs, the headline text was a static gradient drop-shadow, the terminal halo was a single-layer blue→purple→pink glow, and the CTAs were default white pills with no idle presence or click feedback. We wanted a bold, vibrant hero that reads as "powered up" from frame one — without changing the visual concept (hacker aesthetic, floating language icons, scroll parallax, typewriter) — and without restructuring the 1,131-line monolith.
+
+Layered depth into every existing visual: 3× more orbs saturation + new particle field + secondary phase-shifted aurora band + conic beam behind headline + brighter mouse spotlight with violet inner core + stacked terminal halo (outer indigo→fuchsia + inner cyan radial) + scanline overlay + glass shine sweep on hover + Framer Motion `layoutId` tab underline + shimmer-gradient "LLM GATEWAY" with 5s sweep + drawn-in swoosh tip dot + CyberButton conic-gradient rotating border on hover + idle ambient glow on primary + click ripple at coordinates.
+
+### Files Changed
+
+| File                                    | Lines       | Change Type |
+| --------------------------------------- | ----------- | ----------- |
+| apps/web/components/Hero.tsx            | L314-455    | modified    |
+| apps/web/components/Hero.tsx            | L460-720    | modified    |
+| apps/web/components/Hero.tsx            | L870-1050   | modified    |
+| apps/web/components/Hero.tsx            | L1100-1290  | modified    |
+| apps/web/app/globals.css                | L593-655    | modified    |
+
+### Before
+
+```tsx
+// CyberButton — solid white pill, no idle glow, no click ripple, simple hover bg shift
+const CyberButton = ({ children, className, onClick, primary = false }: {...}) => {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "relative group px-8 py-4 rounded-2xl font-mono text-sm font-bold tracking-wider overflow-hidden",
+        "transition-all duration-300 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
+        primary
+          ? "bg-white text-black shadow-[0_20px_60px_-24px_rgba(255,255,255,0.85)] hover:bg-indigo-50"
+          : "border border-white/[0.10] bg-white/[0.045] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-md hover:border-white/25 hover:bg-white/[0.08]",
+        className,
+      )}
+    >
+      <div className={cn("absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100", primary
+        ? "bg-[linear-gradient(110deg,transparent_20%,rgba(99,102,241,0.22)_45%,transparent_70%)]"
+        : "bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.14),transparent_55%)]" )}/>
+      <div className="absolute inset-y-0 left-0 w-1/2 -translate-x-full bg-gradient-to-r from-transparent via-white/35 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-[220%]" />
+      <div className="relative z-10 flex items-center justify-center gap-2">{children}</div>
+    </button>
+  );
+};
+
+// InteractiveTerminal — single halo, generic cursor, static tab underlines
+<div className="absolute -inset-10 bg-gradient-to-r from-blue-600/30 via-purple-600/30 to-pink-600/30 rounded-[40px] blur-3xl opacity-40 group-hover:opacity-60 transition duration-1000 animate-pulse-slow"></div>
+// tab bar — hard border-t-2 swap on active
+className={`flex items-center gap-2 px-4 py-2 text-xs font-mono transition-all relative ${
+  activeTab === index
+    ? "text-white bg-white/5 border-t-2 border-primary"
+    : "text-muted-foreground hover:text-white hover:bg-white/5 border-t-2 border-transparent"
+}`}
+// cursor
+className="inline-block w-2 h-4 bg-primary align-middle ml-1 shadow-[0_0_10px_rgba(59,130,246,0.5)]"
+// HEADLINE — static gradient
+className="inline-block bg-gradient-to-br from-white via-indigo-100 to-indigo-400 bg-clip-text text-5xl font-black text-transparent drop-shadow-[0_0_44px_rgba(99,102,241,0.22)] sm:text-6xl md:text-7xl lg:text-8xl"
+// HeroBackground — 3 pastel orbs, no particles, single spotlight
+className="absolute -top-40 left-[-10%] h-[34rem] w-[34rem] rounded-full bg-indigo-500/20 blur-[120px] hero-orb-a"
+el.style.background = `radial-gradient(820px circle at ${pendingX}px ${pendingY}px, rgba(99, 102, 241, 0.13), transparent 78%)`;
+```
+
+### After
+
+```tsx
+// CyberButton — gradient indigo→violet→fuchsia primary with idle glow + animated conic border + click ripple + arrow nudge
+const CyberButton = ({ ... primary = false }: {...}) => {
+  const [ripples, setRipples] = useState<Array<{ id: number; x: number; y: number }>>([]);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  function handleClick(e: React.MouseEvent<HTMLButtonElement>) {
+    const rect = btnRef.current?.getBoundingClientRect();
+    if (rect) {
+      const x = e.clientX - rect.left, y = e.clientY - rect.top;
+      const id = Date.now() + Math.random();
+      setRipples((p) => [...p, { id, x, y }]);
+      setTimeout(() => setRipples((p) => p.filter((r) => r.id !== id)), 500);
+    }
+    onClick?.();
+  }
+  return (
+    <button ref={btnRef} onClick={handleClick} className={cn(
+      "relative group px-8 py-4 rounded-2xl font-mono text-sm font-bold tracking-wider overflow-hidden transition-all duration-300 hover:-translate-y-0.5 ...",
+      primary
+        ? "bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500 text-white shadow-[0_20px_60px_-24px_rgba(168,85,247,0.85)] hover:from-indigo-400 hover:via-violet-400 hover:to-fuchsia-400"
+        : "border border-white/[0.10] bg-white/[0.045] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-md hover:border-indigo-300/40 hover:bg-white/[0.08]",
+      className,
+    )}>
+      {primary && <span aria-hidden className="absolute -inset-1 -z-10 rounded-2xl bg-gradient-to-r from-indigo-500/35 via-violet-500/35 to-fuchsia-500/35 blur-md" />}
+      <span aria-hidden className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+        style={{ padding: "1.5px",
+          background: "conic-gradient(from 0deg, rgba(99,102,241,0.85), rgba(168,85,247,0.75), rgba(34,211,238,0.75), rgba(99,102,241,0.85))",
+          WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+          WebkitMaskComposite: "xor", maskComposite: "exclude",
+          animation: "hero-conic-spin 6s linear infinite" }} />
+      {/* shimmer + ripple layers retained, added per-click ripple spans */}
+      {ripples.map((r) => (<span key={r.id} aria-hidden className="absolute rounded-full pointer-events-none"
+        style={{ left: r.x - 10, top: r.y - 10, width: 20, height: 20,
+          background: primary ? "radial-gradient(circle, rgba(255,255,255,0.55) 0%, transparent 70%)" : "radial-gradient(circle, rgba(167,139,250,0.55) 0%, transparent 70%)",
+          animation: "ripple-expand 450ms ease-out forwards" }} />))}
+      <div className="relative z-10 flex items-center justify-center gap-2">{children}</div>
+    </button>
+  );
+};
+
+// InteractiveTerminal — stacked halo + scanline + glass shine + animated tab underline
+<div className="absolute -inset-16 bg-gradient-to-r from-indigo-600/45 via-violet-600/40 to-fuchsia-500/35 rounded-[40px] blur-[180px] opacity-50 group-hover:opacity-75 ... animate-pulse-slow pointer-events-none" />
+<div className="absolute -inset-4 bg-[radial-gradient(ellipse_at_center,rgba(34,211,238,0.22),transparent_70%)] blur-[100px] opacity-70 pointer-events-none" />
+// scanline overlay inside code area
+<div aria-hidden className="absolute inset-0 pointer-events-none opacity-[0.18] group-hover:opacity-[0.28] transition-opacity duration-300"
+  style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(255,255,255,0.08) 2px, rgba(255,255,255,0.08) 3px)", mixBlendMode: "screen" }} />
+// tab underline via layoutId
+<motion.span layoutId="terminal-tab-underline" className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-indigo-400 via-violet-400 to-cyan-400 shadow-[0_0_8px_rgba(139,92,246,0.7)]" transition={{ type: "spring", stiffness: 350, damping: 30 }} />
+// cursor — gradient + violet glow
+className="inline-block w-2 h-4 bg-gradient-to-b from-indigo-300 to-violet-400 align-middle ml-1 shadow-[0_0_10px_rgba(139,92,246,0.8)]"
+// HEADLINE — shimmer gradient + drop-shadow stack
+className="inline-block bg-gradient-to-r from-indigo-300 via-violet-300 to-cyan-300 bg-[length:200%_auto] bg-clip-text animate-[hero-shimmer_5s_linear_infinite] text-5xl font-black text-transparent [filter:drop-shadow(0_0_18px_rgba(139,92,246,0.5))_drop-shadow(0_0_36px_rgba(99,102,241,0.3))] sm:text-6xl md:text-7xl lg:text-8xl"
+// HEADLINE — drawn-in swoosh tip dot
+<motion.circle cx="222" cy="2" r="2.5" fill="currentColor"
+  initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }}
+  transition={{ delay: 1.95, duration: 0.35, ease: "easeOut" }}
+  style={{ filter: "drop-shadow(0 0 6px rgba(139,92,246,0.9))" }} />
+// HeroBackground — richer orbs, particle field, secondary aurora, conic beam, brighter dual-core spotlight
+className="absolute -top-40 left-[-10%] h-[36rem] w-[36rem] rounded-full bg-indigo-500/35 blur-[160px] hero-orb-a"
+className="absolute right-[-12%] top-1/4 h-[32rem] w-[32rem] rounded-full bg-violet-600/32 blur-[150px] hero-orb-b"
+className="absolute bottom-[-18%] left-1/3 h-[30rem] w-[30rem] rounded-full bg-cyan-400/28 blur-[140px] hero-orb-c"
+const particles = Array.from({ length: 40 }, (_, i) => ({ id: i, top: Math.random() * 100, left: Math.random() * 100, size: 1 + Math.random() * 1.5, opacity: 0.25 + Math.random() * 0.5, delay: Math.random() * 4, duration: 3 + Math.random() * 3 }));
+el.style.background = `radial-gradient(1100px circle at 320px ${pendingY}px rgba(167,139,250,0.10), ${pendingX}px ${pendingY}px rgba(99,102,241,0.18), transparent 78%)`;
+// secondary aurora + conic beam + section bg #04030a (was #050505)
+```
+
+```css
+/* globals.css — new keyframes + reduced-motion overrides */
+@keyframes hero-arrow-nudge {
+  0% { transform: translateX(0); }
+  40% { transform: translateX(8px); }
+  70% { transform: translateX(3px); }
+  100% { transform: translateX(6px); }
+}
+@keyframes ripple-expand {
+  0% { transform: scale(0); opacity: 0.6; }
+  100% { transform: scale(4); opacity: 0; }
+}
+.hero-aurora-b {
+  animation: hero-aurora 11s ease-in-out infinite;
+  animation-delay: -3s;
+  will-change: transform, opacity;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* ... existing hero selectors ... + .hero-aurora-b { animation: none; } */
+}
+```
+
+### Notes
+
+- `tsc --noEmit` clean, `eslint` clean, `bash scripts/smoke-test.sh` passes 25/25.
+- Browser tools (Playwright + Chrome DevTools MCP) locked in this sandbox — visual verification deferred to user/dev-time browser open.
+- The arrow-nudge animation runs on hover via `group-hover:animate-[...]` so it triggers on the entire button hover (not just the icon hover).
+- Click ripple coordinates are relative to button rect; CSS `position: absolute` with `left/top` placement; removed after 500ms via setTimeout to bound DOM growth under repeated clicks.
+- Particle count is a known perf knob — drop to 28 if Chromium DevTools perf overlay flags paint cost under reduced-motion off.
+- Spec: `docs/superpowers/specs/2026-07-19-hero-layered-glow-design.md`.
