@@ -7822,3 +7822,230 @@ function FloatingRouteCard({ label, model, region, ms, accent, className, delay 
 - `FloatingRouteCard`s are `hidden xl:block` so they only appear when there's room (the grid's right column may not be wide enough at `lg`); `pointer-events-none` keeps them decorative.
 - All new animation classes are added to the hero `prefers-reduced-motion: reduce` block so users with motion sensitivity get a static composition.
 - `ESLint` is not runnable in this sandbox (`next lint` errors on Next 16 canary path resolution); `tsc --noEmit` is the active type gate.
+
+## [64]. Hero section background to void black
+
+**Session**: `hero-void-black-2026-07-20`
+**Date**: 2026-07-20 12:00
+
+### Why
+The main hero section had a near-black tinted background (`#04030a`) influenced by the violet/cyan orb glows. The user requested a clean void-black canvas so the layered orbs and floating cards pop against pure `#000000`. The orbs and grid mask sit on top of the section, so swapping only the root background keeps every visual element intact while removing the residual indigo tint.
+
+### Files Changed
+
+| File                              | Lines    | Change Type |
+| --------------------------------- | -------- | ----------- |
+| apps/web/components/Hero.tsx      | L1240    | modified    |
+
+### Before
+
+```tsx
+// apps/web/components/Hero.tsx L1238-1242
+        ref={targetRef}
+        className="w-full min-h-screen flex items-center relative px-4 pt-20 overflow-hidden bg-[#04030a]"
+      >
+```
+
+### After
+
+```tsx
+// apps/web/components/Hero.tsx L1238-1242
+        ref={targetRef}
+        className="w-full min-h-screen flex items-center relative px-4 pt-20 overflow-hidden bg-black"
+      >
+```
+
+### Notes
+- `bg-black` resolves to `#000000` in Tailwind v4, matching the user's "void black" request.
+- No other styles changed: hero orbs, particle field, grid mask, and noise overlay still render on top of the section root.
+- `tsc --noEmit` is the active type gate in this sandbox.
+
+## [65]. Hero orb backdrop layer to void black
+
+**Session**: `hero-void-black-2026-07-20`
+**Date**: 2026-07-20 12:10
+
+### Why
+After flipping the hero `<section>` root to `bg-black`, the inner orb backdrop container (z-0, behind the violet/cyan glows, grid mask, and noise overlay) was still tinted `#04030a`. That residual indigo/violet tint leaked through the gaps between orbs and diluted the "void black" feel. Promoting this layer to pure `#000000` keeps the orb glows and grid mask visually unchanged while the negative space reads as true void black.
+
+### Files Changed
+
+| File                         | Lines | Change Type |
+| ---------------------------- | ----- | ----------- |
+| apps/web/components/Hero.tsx | L920  | modified    |
+
+### Before
+
+```tsx
+// apps/web/components/Hero.tsx L919-921
+  return (
+    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none bg-[#04030a]">
+      {/* Ambient gradient field */}
+```
+
+### After
+
+```tsx
+// apps/web/components/Hero.tsx L919-921
+  return (
+    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none bg-black">
+      {/* Ambient gradient field */}
+```
+
+### Notes
+- No orb intensity, blur, grid mask, or noise overlay values were touched. Only the canvas color beneath them changed.
+- `tsc --noEmit` is the active type gate in this sandbox.
+
+## [66]. Remove hero glowing rings (orbs + backdrop mesh)
+
+**Session**: `hero-void-black-2026-07-20`
+**Date**: 2026-07-20 12:25
+
+### Why
+After promoting the hero background to pure `#000000`, the three large blurred radial-gradient "rings" (`.hero-orb-a/b/c`, indigo/violet/cyan, mouse-parallax driven) plus the slow-breathing radial mesh were still creating glow that read as colored rings rather than the requested void canvas. The user explicitly asked to remove the "glowing rings". The aurora sweeps, conic beam, particle twinkle field, grid mask, noise overlay, dynamic spotlights, vignette, and `FloatingLogos` are kept so the hero still has subtle depth and parallax feedback.
+
+### Files Changed
+
+| File                         | Lines    | Change Type |
+| ---------------------------- | -------- | ----------- |
+| apps/web/components/Hero.tsx | L919-948 | modified    |
+
+### Before
+
+```tsx
+// apps/web/components/Hero.tsx L919-948 (orb layer prior)
+  return (
+    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none bg-black">
+      {/* Ambient gradient field */}
+      <div
+        ref={orbARef}
+        aria-hidden="true"
+        className="absolute -top-40 left-[-10%] h-[36rem] w-[36rem] rounded-full bg-indigo-500/35 blur-[160px] hero-orb-a transition-[translate] duration-300 ease-out"
+      />
+      <div
+        ref={orbBRef}
+        aria-hidden="true"
+        className="absolute right-[-12%] top-1/4 h-[32rem] w-[32rem] rounded-full bg-violet-600/32 blur-[150px] hero-orb-b transition-[translate] duration-300 ease-out"
+      />
+      <div
+        ref={orbCRef}
+        aria-hidden="true"
+        className="absolute bottom-[-18%] left-1/3 h-[30rem] w-[30rem] rounded-full bg-cyan-400/28 blur-[140px] hero-orb-c transition-[translate] duration-300 ease-out"
+      />
+
+      {/* Deep backdrop mesh — slow upward breathing of the field */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 hero-mesh-drift opacity-60"
+        style={{
+          background:
+            "radial-gradient(60% 50% at 30% 18%, rgba(30,27,75,0.55) 0%, transparent 70%), radial-gradient(50% 50% at 78% 65%, rgba(20,30,60,0.5) 0%, transparent 72%)",
+          mixBlendMode: "screen",
+        }}
+      />
+
+      {/* Particle field */}
+      <div aria-hidden="true" className="absolute inset-0">
+```
+
+### After
+
+```tsx
+// apps/web/components/Hero.tsx L919-921 (ambient + mesh removed, particle frame intact)
+  return (
+    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none bg-black">
+      {/* Particle field */}
+      <div aria-hidden="true" className="absolute inset-0">
+```
+
+### Notes
+- `aurora-a/b/c` sweeps, `conic-spin`, particle twinkle field, grid mask (`hero-grid-scroll`), noise overlay, dynamic spotlights, vignette, and `FloatingLogos` are intentionally preserved.
+- The `orbARef` / `orbBRef` / `orbCRef` and `spotlightRef` `useRef` declarations and the `useEffect` mouse-parallax handlers were left in place (harmless no-ops now); they can be cleaned up in a follow-up if you want them gone.
+- The `@keyframes` for `hero-orb-a/b/c` and `hero-mesh-drift` still live in `app/globals.css` but no longer match any elements, so they cost ~zero render time.
+- `tsc --noEmit` is the active type gate in this sandbox.
+
+## [67]. Strip all remaining glows from hero
+
+**Session**: `hero-void-black-2026-07-20`
+**Date**: 2026-07-20 12:40
+
+### Why
+The user escalated from "remove the glowing rings" to "remove all glowing things". Beyond the orbs, the hero still carried glow/halo treatments on its structural elements: aurora sweeps, conic beam behind the headline, particle twinkle field, dimensional grid, noise overlay, mouse spotlights, vignette, CTA gradient + ambient glow blob + animated conic border + glass shine sweep, CTA hover sweep, terminal ambient glows (indigo/violet/fuchsia + cyan halo + scanline overlay), tab-indicator cyan gradient, blinking cursor gradient, animated green status dots, BUILD SUCCESSFUL halo + ping ring, headline shimmer text + drop-shadows, badge pulse ring, provider-marquee indigo dot glow, scroll photon, scanner-card backdrops, status pill ping. All of these were removed so the hero now reads as pure void black with only clean interactive surfaces.
+
+### Files Changed
+
+| File                         | Lines     | Change Type |
+| ---------------------------- | --------- | ----------- |
+| apps/web/components/Hero.tsx | many      | modified    |
+
+### Before / After summary (selected anchors)
+
+```tsx
+// Hero.tsx — orb field (already cleared in [66]) followed by these layers:
+{/* Particle field */ ...   // REMOVED
+{/* Aurora sweep — primary wide band */ ...   // REMOVED
+{/* Aurora sweep — secondary cyan band */ ...   // REMOVED
+{/* Aurora sweep — tertiary deep-violet band */ ...   // REMOVED
+{/* Conic beam behind headline */ ...   // REMOVED
+{/* Dimensional grid */ ...   // REMOVED
+{/* Fine texture SVG noise */ ...   // REMOVED
+{/* Dynamic Spotlights */ ...   // REMOVED
+{/* Vignette */ ...   // REMOVED
+{/* FloatingLogos */ ...   // REMOVED
+
+// CTA: gradient body + ambient blob + animated conic border → solid white + black text
+primary
+  ? "bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500 ... shadow-[0_20px_60px_-24px_rgba(168,85,247,0.85)] ..."
+  : "backdrop-blur-md ... shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] ..."
+// primary: "bg-white text-black hover:bg-white/90"
+// secondary: drop backdrop-blur/shadow/hover:text-indigo, no glow
+{primary && <span className="absolute -inset-1 -z-10 ... bg-gradient-to-r ... blur-md" />}
+// and the conic border <span ... animation: "hero-conic-spin 6s linear infinite" /> → REMOVED
+
+// Terminal card: ambient glow stack + scanline + halo → flat dark card
+<div className="absolute -inset-16 ... blur-[180px] ... animate-pulse-slow" />
+<div className="absolute -inset-4 ... blur-[100px] opacity-70" />
+... shadow-[0_30px_80px_-30px_rgba(139,92,246,0.5)] ... ring-1 ring-white/5
+// background-image scanline SVG overlay → REMOVED
+{isActive && (
+  <motion.span ... className="... bg-gradient-to-r from-indigo-400 via-violet-400 to-cyan-400 shadow-[0_0_8px_rgba(139,92,246,0.7)]" />
+)}
+// → "<motion.span ... className=\"... bg-white\" />"
+// caret: "bg-gradient-to-b from-indigo-300 to-violet-400 ... shadow-[0_0_10px_rgba(139,92,246,0.8)]" → "bg-white"
+// status-dot: "bg-green-500 shadow-[0_0_8px_#22c55e,...]" + animate-pulse → "bg-green-500"
+// success badge: green-900/80 + green ring + ping-wrap + green halo shadow → solid bg-green-950 border-green-700 no ping
+
+// Headline: shimmer gradient text + dual drop-shadow → solid white
+"bg-gradient-to-r from-indigo-300 via-violet-300 to-cyan-300 ... animate-[hero-shimmer_5s_linear_infinite] ... [filter:drop-shadow(0_0_18px_rgba(139,92,246,0.5))_drop-shadow(0_0_36px_rgba(99,102,241,0.3))]"
+// → "text-white"
+
+// SVG underline track tint + endpoint dot drop-shadow
+"text-indigo-300/70" + "drop-shadow(0 0 6px rgba(139,92,246,0.9))" → "text-white/60", drop-shadow removed
+
+// Stat pills: pulse halo behind icon + inset shadow + backdrop-blur
+"shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-md ... <span absolute -m-1 rounded-full bg-indigo-400/30 hero-pulse-ring>" → solid border, no halo
+
+// Provider marquee pill: gradient dot + glow + indigo hover
+"<span ... bg-gradient-to-r from-indigo-400 to-cyan-400 shadow-[0_0_8px_rgba(99,102,241,0.7)]" /> + "hover:border-indigo-300/40" → "<span ... bg-white" /> + "hover:border-white/30"
+
+// Scroll photon: gradient rail + glowing traveling beam → flat white line
+"bg-gradient-to-b from-white/20 via-indigo-200/30 to-transparent" + "bg-gradient-to-b from-transparent via-indigo-200 to-transparent shadow-[0_0_10px_rgba(165,180,252,0.9)]" → "bg-white/20" + "bg-white"
+
+// Floating route cards + scanner chips: backdrop-blur/shadow-2xl + emerald tint + accent color dots
+"bg-[#0A0A0A]/85 backdrop-blur-xl shadow-[0_20px_50px_-20px_rgba(0,0,0,0.8)] hero-card-bob" + "<span ... text-emerald-300>" → "bg-[#0A0A0A] ..." + "text-emerald-400"
+// accent dots are kept as tiny solid circles (visual indicator without glow)
+
+// Top-right "updates" pill: animate-ping green halo + backdrop-blur + shadow-lg
+"bg-[#0A0A0A]/80 backdrop-blur-md ... shadow-lg ... <span animate-ping ...>" → "bg-[#0A0A0A] ..." (no ping)
+
+// TypewriterText letter drop-shadow
+"[filter:drop-shadow(0_0_14px_rgba(255,255,255,0.18))]" → removed
+```
+
+### Notes
+- Hero now reads as a true void-black canvas with greyscale interactive elements (white headline, white cards, white pills). No radial gradients, blur halos, drop-shadows, scanlines, twinkle particles, pulse rings, ping dots, or animated conic borders remain on the hero itself.
+- Two 1px decorative vertical hairline ticks on the outer shell wrapper are gradients too small to read as "glowing" (white-to-transparent fade, 1px wide, 96px tall, opacity 20%) and were left in place.
+- The video modal retains `bg-black/90 backdrop-blur-sm` + `shadow-2xl` + a play-button `animate-ping` ring; these belong to the modal overlay rather than the hero background and are not part of the user's request.
+- Orb-layer `FloatLogos` and `Spotlights` were removed in `[66]`; their `@keyframes` in `app/globals.css` are now orphaned but harmless (zero render cost).
+- The provider `hero-marquee` keyframes (left-to-right scrolling), the route-card `hero-card-bob` keyframes (vertical bob), and the CTA `hero-arrow-nudge` keyframes are *only* spatial animations, not glows, and were kept.
+- `tsc --noEmit` clean for `components/Hero.tsx`.

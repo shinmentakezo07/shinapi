@@ -348,37 +348,14 @@ const CyberButton = ({
       onClick={handleClick}
       className={cn(
         "relative group px-8 py-4 rounded-2xl font-mono text-sm font-bold tracking-wider overflow-hidden",
-        "transition-all duration-300 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
+        "transition-all duration-300 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
         primary
-          ? "bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500 text-white shadow-[0_20px_60px_-24px_rgba(168,85,247,0.85)] hover:from-indigo-400 hover:via-violet-400 hover:to-fuchsia-400"
-          : "border border-white/[0.10] bg-white/[0.045] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-md hover:border-indigo-300/40 hover:bg-white/[0.08]",
+          ? "bg-white text-black hover:bg-white/90"
+          : "border border-white/[0.10] bg-white/[0.045] text-white hover:border-white/30 hover:bg-white/[0.08]",
         className,
       )}
     >
-      {/* Idle ambient glow (primary only) */}
-      {primary && (
-        <span
-          aria-hidden="true"
-          className="absolute -inset-1 -z-10 rounded-2xl bg-gradient-to-r from-indigo-500/35 via-violet-500/35 to-fuchsia-500/35 blur-md"
-        />
-      )}
-
-      {/* Animated conic border (hover) */}
-      <span
-        aria-hidden="true"
-        className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-        style={{
-          padding: "1.5px",
-          background:
-            "conic-gradient(from 0deg, rgba(99,102,241,0.85), rgba(168,85,247,0.75), rgba(34,211,238,0.75), rgba(99,102,241,0.85))",
-          WebkitMask:
-            "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
-          WebkitMaskComposite: "xor",
-          maskComposite: "exclude",
-          animation: "hero-conic-spin 6s linear infinite",
-        }}
-      />
-
+      {/* Animated conic border (hover) — removed */}
       <div
         className={cn(
           "absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100",
@@ -387,7 +364,7 @@ const CyberButton = ({
             : "bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.14),transparent_55%)]",
         )}
       />
-      <div className="absolute inset-y-0 left-0 w-1/2 -translate-x-full bg-gradient-to-r from-transparent via-white/35 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-[220%]" />
+      <div className="absolute inset-y-0 left-0 w-1/2 -translate-x-full bg-white/20 transition-transform duration-700 ease-out group-hover:translate-x-[220%]" />
 
       {/* Click ripples */}
       {ripples.map((r) => (
@@ -459,7 +436,7 @@ function TypewriterText({
         <motion.span
           variants={child}
           key={index}
-          className="inline-block whitespace-pre [filter:drop-shadow(0_0_14px_rgba(255,255,255,0.18))]"
+          className="inline-block whitespace-pre"
         >
           {letter}
         </motion.span>
@@ -527,18 +504,14 @@ function InteractiveTerminal() {
 
   return (
     <div className="relative group perspective-1000 w-full max-w-lg mx-auto lg:mr-0 lg:ml-auto z-20">
-      {/* Ambient Glow — stacked layers */}
-      <div className="absolute -inset-16 bg-gradient-to-r from-indigo-600/45 via-violet-600/40 to-fuchsia-500/35 rounded-[40px] blur-[180px] opacity-50 group-hover:opacity-75 transition duration-1000 animate-pulse-slow pointer-events-none" />
-      <div className="absolute -inset-4 bg-[radial-gradient(ellipse_at_center,rgba(34,211,238,0.22),transparent_70%)] blur-[100px] opacity-70 pointer-events-none" />
-
       {/* Glass shine sweep (hover only) */}
-      <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none bg-[linear-gradient(110deg,transparent_30%,rgba(255,255,255,0.10)_50%,transparent_70%)] translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
+      <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none bg-[linear-gradient(110deg,transparent_30%,rgba(255,255,255,0.08)_50%,transparent_70%)] translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
 
       <motion.div
         initial={{ rotateY: 15, rotateX: 5 }}
         whileHover={{ rotateY: 0, rotateX: 0 }}
         transition={{ type: "spring" as const, stiffness: 50 }}
-        className="relative h-[420px] flex flex-col bg-[#0A0A0A]/90 backdrop-blur-xl border border-indigo-400/15 rounded-xl shadow-[0_30px_80px_-30px_rgba(139,92,246,0.5)] overflow-hidden ring-1 ring-white/5 transform-style-3d group-hover:border-indigo-300/40"
+        className="relative h-[420px] flex flex-col bg-[#0A0A0A] border border-white/10 rounded-xl overflow-hidden"
       >
         {/* Top Bar */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-black/40">
@@ -574,7 +547,7 @@ function InteractiveTerminal() {
                 {isActive && (
                   <motion.span
                     layoutId="terminal-tab-underline"
-                    className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-indigo-400 via-violet-400 to-cyan-400 shadow-[0_0_8px_rgba(139,92,246,0.7)]"
+                    className="absolute bottom-0 left-0 right-0 h-[2px] bg-white"
                     transition={{ type: "spring" as const, stiffness: 350, damping: 30 }}
                   />
                 )}
@@ -619,7 +592,7 @@ function InteractiveTerminal() {
                 <motion.span
                   animate={{ opacity: [0, 1, 0] }}
                   transition={{ repeat: Infinity, duration: 0.8 }}
-                  className="inline-block w-2 h-4 bg-gradient-to-b from-indigo-300 to-violet-400 align-middle ml-1 shadow-[0_0_10px_rgba(139,92,246,0.8)]"
+                  className="inline-block w-2 h-4 bg-white align-middle ml-1"
                 />
               )}
             </pre>
@@ -640,7 +613,7 @@ function InteractiveTerminal() {
           </div>
           <div className="flex items-center gap-2">
             <div
-              className={`w-2 h-2 rounded-full ${isTyping ? "bg-yellow-500 animate-pulse" : "bg-green-500 shadow-[0_0_8px_#22c55e,0_0_18px_rgba(34,197,94,0.5)]"}`}
+              className={`w-2 h-2 rounded-full ${isTyping ? "bg-yellow-500" : "bg-green-500"}`}
             />
             {isTyping ? "BUILDING..." : "READY"}
           </div>
@@ -653,11 +626,10 @@ function InteractiveTerminal() {
               initial={{ scale: 0, y: 20, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0, opacity: 0 }}
-              className="absolute bottom-12 right-6 px-4 py-2 bg-green-900/80 border border-green-500/30 rounded backdrop-blur-md flex items-center gap-3 text-green-100 text-xs font-mono shadow-[0_0_30px_rgba(34,197,94,0.25)] ring-1 ring-green-500/20"
+              className="absolute bottom-12 right-6 px-4 py-2 bg-green-950 border border-green-700 rounded flex items-center gap-3 text-green-200 text-xs font-mono"
             >
               <div className="relative">
-                <div className="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-50"></div>
-                <CheckCircle className="w-4 h-4 text-green-400 relative z-10" />
+                <CheckCircle className="w-4 h-4 text-green-400" />
               </div>
               <div className="flex flex-col">
                 <span className="font-bold">BUILD SUCCESSFUL</span>
@@ -674,7 +646,7 @@ function InteractiveTerminal() {
         transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
         className="absolute -top-6 -right-6 z-30 hidden md:block"
       >
-        <div className="bg-black/80 p-3 rounded border border-white/10 shadow-2xl backdrop-blur-md">
+        <div className="bg-black/80 p-3 rounded border border-white/10">
           <Activity className="w-5 h-5 text-blue-400" />
         </div>
       </motion.div>
@@ -689,7 +661,7 @@ function InteractiveTerminal() {
         }}
         className="absolute bottom-10 -left-6 z-30 hidden md:block"
       >
-        <div className="bg-black/80 p-3 rounded border border-white/10 shadow-2xl backdrop-blur-md">
+        <div className="bg-black/80 p-3 rounded border border-white/10">
           <Command className="w-5 h-5 text-pink-400" />
         </div>
       </motion.div>
@@ -917,121 +889,7 @@ function HeroBackground() {
   }, []);
 
   return (
-    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none bg-[#04030a]">
-      {/* Ambient gradient field */}
-      <div
-        ref={orbARef}
-        aria-hidden="true"
-        className="absolute -top-40 left-[-10%] h-[36rem] w-[36rem] rounded-full bg-indigo-500/35 blur-[160px] hero-orb-a transition-[translate] duration-300 ease-out"
-      />
-      <div
-        ref={orbBRef}
-        aria-hidden="true"
-        className="absolute right-[-12%] top-1/4 h-[32rem] w-[32rem] rounded-full bg-violet-600/32 blur-[150px] hero-orb-b transition-[translate] duration-300 ease-out"
-      />
-      <div
-        ref={orbCRef}
-        aria-hidden="true"
-        className="absolute bottom-[-18%] left-1/3 h-[30rem] w-[30rem] rounded-full bg-cyan-400/28 blur-[140px] hero-orb-c transition-[translate] duration-300 ease-out"
-      />
-
-      {/* Deep backdrop mesh — slow upward breathing of the field */}
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 hero-mesh-drift opacity-60"
-        style={{
-          background:
-            "radial-gradient(60% 50% at 30% 18%, rgba(30,27,75,0.55) 0%, transparent 70%), radial-gradient(50% 50% at 78% 65%, rgba(20,30,60,0.5) 0%, transparent 72%)",
-          mixBlendMode: "screen",
-        }}
-      />
-
-      {/* Particle field */}
-      <div aria-hidden="true" className="absolute inset-0">
-        {particles.map((p) => (
-          <span
-            key={p.id}
-            className="absolute rounded-full bg-white hero-twinkle"
-            style={
-              {
-                top: `${p.top}%`,
-                left: `${p.left}%`,
-                width: `${p.size}px`,
-                height: `${p.size}px`,
-                opacity: p.opacity,
-                "--twinkle-delay": `${p.delay}s`,
-                "--twinkle-dur": `${p.duration}s`,
-              } as CSSProperties
-            }
-          />
-        ))}
-      </div>
-
-      {/* Aurora sweep — primary wide band */}
-      <div
-        aria-hidden="true"
-        className="absolute -top-32 left-0 right-0 h-[600px] hero-aurora pointer-events-none"
-        style={{
-          background:
-            "linear-gradient(90deg, transparent 0%, rgba(99,102,241,0.35) 30%, rgba(168,85,247,0.45) 50%, rgba(34,211,238,0.35) 70%, transparent 100%)",
-          filter: "blur(80px)",
-          mixBlendMode: "screen",
-          opacity: 0.7,
-        }}
-      />
-
-      {/* Aurora sweep — secondary cyan band, phase-shifted */}
-      <div
-        aria-hidden="true"
-        className="absolute top-1/3 left-0 right-0 h-[200px] hero-aurora-b pointer-events-none"
-        style={{
-          background:
-            "linear-gradient(90deg, transparent 0%, rgba(34,211,238,0.30) 50%, transparent 100%)",
-          filter: "blur(60px)",
-          mixBlendMode: "screen",
-        }}
-      />
-
-      {/* Aurora sweep — tertiary deep-violet band crossing lower third */}
-      <div
-        aria-hidden="true"
-        className="absolute bottom-[14%] left-0 right-0 h-[260px] hero-aurora-c pointer-events-none"
-        style={{
-          background:
-            "linear-gradient(90deg, transparent 0%, rgba(139,92,246,0.28) 40%, rgba(99,102,241,0.22) 60%, transparent 100%)",
-          filter: "blur(70px)",
-          mixBlendMode: "screen",
-        }}
-      />
-
-      {/* Conic beam behind headline */}
-      <div
-        aria-hidden="true"
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] hero-conic-spin opacity-20 pointer-events-none"
-        style={{
-          background:
-            "conic-gradient(from 0deg, rgba(99,102,241,0.0) 0deg, rgba(99,102,241,0.4) 90deg, rgba(168,85,247,0.5) 180deg, rgba(34,211,238,0.4) 270deg, rgba(99,102,241,0.0) 360deg)",
-          filter: "blur(80px)",
-        }}
-      />
-
-      {/* Dimensional grid */}
-      <div className="absolute inset-0 perspective-1000">
-        <div className="absolute inset-0 bg-grid-pattern hero-grid-scroll opacity-[0.18] [mask-image:radial-gradient(ellipse_at_center,black_0%,transparent_72%)] transform-gpu rotate-x-12 scale-150 origin-top" />
-      </div>
-
-      {/* Fine texture */}
-      <div className="absolute inset-0 opacity-[0.055] mix-blend-screen [background-image:url('data:image/svg+xml,%3Csvg_viewBox=%220_0_256_256%22_xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter_id=%22noise%22%3E%3CfeTurbulence_type=%22fractalNoise%22_baseFrequency=%220.78%22_numOctaves=%224%22_stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect_width=%22100%25%22_height=%22100%25%22_filter=%22url(%23noise)%22_opacity=%220.7%22/%3E%3C/svg%3E')]" />
-
-      {/* Dynamic Spotlights */}
-      <div ref={spotlightRef} className="absolute inset-0 opacity-70" />
-
-      {/* Vignette */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_45%_42%,transparent_0%,rgba(0,0,0,0.42)_58%,#000_100%)]" />
-
-      {/* Floating Icons */}
-      <FloatingLogos />
-    </div>
+    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none bg-black" />
   );
 }
 
@@ -1127,10 +985,9 @@ function LiveTicker() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
-          className="px-3 py-1.5 rounded bg-[#0A0A0A]/80 backdrop-blur-md border border-white/10 flex items-center gap-2 text-xs font-mono text-muted-foreground shadow-lg"
+          className="px-3 py-1.5 rounded bg-[#0A0A0A] border border-white/10 flex items-center gap-2 text-xs font-mono text-muted-foreground"
         >
           <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
           </span>
           {updates[index]}
@@ -1162,9 +1019,9 @@ function ProviderMarquee() {
         {row.map((name, i) => (
           <span
             key={i}
-            className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-xs font-mono text-white/55 backdrop-blur-md transition-colors hover:border-indigo-300/40 hover:text-white"
+            className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-xs font-mono text-white/55 transition-colors hover:border-white/30 hover:text-white"
           >
-            <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-indigo-400 to-cyan-400 shadow-[0_0_8px_rgba(99,102,241,0.7)]" />
+            <span className="h-1.5 w-1.5 rounded-full bg-white" />
             {name}
           </span>
         ))}
@@ -1198,7 +1055,7 @@ function FloatingRouteCard({
       transition={{ delay: delay ?? 1.4, type: "spring", damping: 18, stiffness: 220 }}
       className={cn(
         "absolute z-30 hidden xl:block pointer-events-none",
-        "px-3.5 py-2.5 rounded-xl border border-white/10 bg-[#0A0A0A]/85 backdrop-blur-xl shadow-[0_20px_50px_-20px_rgba(0,0,0,0.8)]",
+        "px-3.5 py-2.5 rounded-xl border border-white/10 bg-[#0A0A0A]",
         "hero-card-bob",
         className,
       )}
@@ -1212,7 +1069,7 @@ function FloatingRouteCard({
       </div>
       <div className="mt-1.5 flex items-center justify-between text-[10px] font-mono text-white/45">
         <span>{region}</span>
-        <span className="text-emerald-300">{ms}</span>
+        <span className="text-emerald-400">{ms}</span>
       </div>
     </motion.div>
   );
@@ -1237,7 +1094,7 @@ export function Hero() {
 
       <section
         ref={targetRef}
-        className="w-full min-h-screen flex items-center relative px-4 pt-20 overflow-hidden bg-[#04030a]"
+        className="w-full min-h-screen flex items-center relative px-4 pt-20 overflow-hidden bg-black"
       >
         <HeroBackground />
         <HUDOverlay />
@@ -1261,7 +1118,7 @@ export function Hero() {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.2 }}
-              className="group inline-flex items-center gap-3 px-3 py-1.5 rounded bg-white/5 border border-white/10 backdrop-blur-sm hover:bg-white/10 transition-all cursor-default hover:border-primary/50"
+              className="group inline-flex items-center gap-3 px-3 py-1.5 rounded bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-default hover:border-white/30"
             >
               <div className="flex items-center gap-2 px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-mono font-bold">
                 <Sparkles className="w-3 h-3" />
@@ -1277,20 +1134,20 @@ export function Hero() {
               <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tighter leading-[0.9] text-white">
                 <TypewriterText text="Universal" delay={0.3} /> <br />
                 <motion.span
-                  initial={{ opacity: 0, y: 22, filter: "blur(8px)" }}
-                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                  initial={{ opacity: 0, y: 22 }}
+                  animate={{ opacity: 1, y: 0 }}
                   transition={{
                     delay: 0.85,
                     duration: 0.8,
                     ease: [0.16, 1, 0.3, 1],
                   }}
-                  className="inline-block bg-gradient-to-r from-indigo-300 via-violet-300 to-cyan-300 bg-[length:200%_auto] bg-clip-text animate-[hero-shimmer_5s_linear_infinite] text-5xl font-black text-transparent [filter:drop-shadow(0_0_18px_rgba(139,92,246,0.5))_drop-shadow(0_0_36px_rgba(99,102,241,0.3))] sm:text-6xl md:text-7xl lg:text-8xl"
+                  className="inline-block text-white text-5xl font-black sm:text-6xl md:text-7xl lg:text-8xl"
                 >
                   LLM GATEWAY
                 </motion.span>
               </h1>
               <svg
-                className="mx-auto h-3 w-56 text-indigo-300/70 lg:mx-0"
+                className="mx-auto h-3 w-56 text-white/60 lg:mx-0"
                 viewBox="0 0 224 12"
                 fill="none"
                 aria-hidden="true"
@@ -1312,7 +1169,6 @@ export function Hero() {
                   initial={{ opacity: 0, scale: 0 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 1.95, duration: 0.35, ease: "easeOut" }}
-                  style={{ filter: "drop-shadow(0 0 6px rgba(139,92,246,0.9))" }}
                 />
               </svg>
             </div>
@@ -1353,15 +1209,10 @@ export function Hero() {
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 1.38 + index * 0.08 }}
-                    className="group inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.035] px-3.5 py-2 text-xs font-mono text-white/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-md transition-all duration-300 hover:border-indigo-300/30 hover:bg-white/[0.06] hover:text-white"
+                    className="group inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.035] px-3.5 py-2 text-xs font-mono text-white/60 transition-all duration-300 hover:border-white/30 hover:bg-white/[0.06] hover:text-white"
                   >
                     <span className="relative inline-flex">
-                      <span
-                        aria-hidden="true"
-                        className="absolute inset-0 -m-1 rounded-full bg-indigo-400/30 hero-pulse-ring"
-                        style={{ animationDelay: `${0.4 + index * 0.35}s` }}
-                      />
-                      <Icon className="relative h-3.5 w-3.5 text-indigo-300 transition-transform duration-300 group-hover:scale-110" />
+                      <Icon className="relative h-3.5 w-3.5 text-white/80 transition-transform duration-300 group-hover:scale-110" />
                     </span>
                     <span className="font-semibold text-white/90">
                       {stat.value}
@@ -1469,10 +1320,10 @@ export function Hero() {
           <span className="text-[10px] font-mono uppercase tracking-widest">
             SCROLL_DOWN
           </span>
-          <div className="relative h-10 w-[1px] overflow-hidden bg-gradient-to-b from-white/20 via-indigo-200/30 to-transparent">
+          <div className="relative h-10 w-[1px] overflow-hidden bg-white/20">
             <span
               aria-hidden="true"
-              className="hero-photon absolute left-0 top-0 h-6 w-[1px] bg-gradient-to-b from-transparent via-indigo-200 to-transparent shadow-[0_0_10px_rgba(165,180,252,0.9)]"
+              className="absolute left-0 top-0 h-6 w-[1px] bg-white"
             />
           </div>
         </motion.div>
