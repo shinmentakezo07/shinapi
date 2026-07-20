@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ModelsExplorer } from "@/components/models/ModelsExplorer";
+import { ModelsRouteSkeleton } from "@/components/ui/skeleton";
 import { Suspense } from "react";
 
 export const metadata: Metadata = {
@@ -9,11 +10,7 @@ export const metadata: Metadata = {
 };
 
 function LoadingFallback() {
-  return (
-    <div className="flex flex-col items-center w-full min-h-[60vh] justify-center bg-[#030303]">
-      <div className="w-8 h-8 rounded-full border-2 border-cyan-500/30 border-t-cyan-400 animate-spin" />
-    </div>
-  );
+  return <ModelsRouteSkeleton />;
 }
 
 export default function ModelsPage() {

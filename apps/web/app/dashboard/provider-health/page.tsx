@@ -168,9 +168,20 @@ export default function ProviderHealthPage() {
               <AnimatePresence>
                 {(healthLoading || publicLoading) && (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-gray-500">
-                      <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2" />
-                      Loading provider health...
+                    <td colSpan={6} className="py-4">
+                      <div className="space-y-2.5">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <div
+                            key={i}
+                            aria-hidden="true"
+                            className="h-7 rounded bg-white/[0.05] animate-pulse motion-reduce:animate-none"
+                            style={{
+                              width: `${95 - i * 6}%`,
+                              animationDelay: `${i * 60}ms`,
+                            }}
+                          />
+                        ))}
+                      </div>
                     </td>
                   </tr>
                 )}

@@ -22,6 +22,7 @@ import { getProviderLogo } from "@/lib/provider-logos";
 import type { OpenRouterModelData } from "@/types/model";
 import { useModelCatalog } from "@/lib/api/hooks";
 import { mapCatalogToOpenRouter } from "@/lib/api/model-catalog";
+import { SkeletonGrid } from "@/components/ui/skeleton";
 
 interface Model {
   id: string;
@@ -350,11 +351,8 @@ export function ModelsExplorer({ initialModels }: ModelsExplorerProps) {
 
       <div className="relative z-10 max-w-7xl mx-auto">
         {catalogLoading && !sourceModels.length && (
-          <div className="flex flex-col items-center justify-center py-24 gap-3">
-            <div className="w-8 h-8 rounded-full border-2 border-cyan-500/30 border-t-cyan-400 animate-spin" />
-            <p className="text-sm text-gray-500 font-mono">
-              Loading model catalog…
-            </p>
+          <div className="py-12">
+            <SkeletonGrid count={9} />
           </div>
         )}
         {catalogError && (

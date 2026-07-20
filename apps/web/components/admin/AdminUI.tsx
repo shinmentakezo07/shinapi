@@ -88,17 +88,30 @@ export function AdminTableLoading({
 }
 
 export function AdminCenterLoading({ label = "Loading" }: { label?: string }) {
+  // Shape-matched skeleton replaces the previous centered spinner. The `label`
+  // prop is still honored as an aria-live announcement for screen readers.
   return (
-    <div className="flex items-center justify-center min-h-[400px]">
-      <div className="flex flex-col items-center gap-4">
-        <div className="relative w-8 h-8">
-          <div className="absolute inset-0 rounded-full border border-white/[0.04]" />
-          <div className="absolute inset-0 rounded-full border-t-blue-400/50 border-2 border-transparent animate-spin" />
-        </div>
-        <p className="text-[10px] font-mono tracking-[0.14em] uppercase text-[var(--admin-text-dim)]">
-          {label}
-        </p>
+    <div
+      role="status"
+      aria-busy="true"
+      aria-live="polite"
+      aria-label={label}
+      className="min-h-[400px] max-w-6xl mx-auto p-6 space-y-6"
+    >
+      <div aria-hidden="true" className="space-y-2">
+        <div className="admin-skeleton h-7 w-48" />
+        <div className="admin-skeleton h-3 w-64" />
       </div>
+      <div aria-hidden="true" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="admin-card p-6 space-y-3">
+            <div className="admin-skeleton h-2 w-20" />
+            <div className="admin-skeleton h-7 w-24" />
+            <div className="admin-skeleton h-3 w-16" />
+          </div>
+        ))}
+      </div>
+      <AdminTableLoading rows={5} cols={5} />
     </div>
   );
 }

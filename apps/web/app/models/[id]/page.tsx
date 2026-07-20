@@ -5,6 +5,7 @@ import { ModelDetailClient } from "@/components/models/detail/ModelDetailClient"
 import { getProviderId } from "@/lib/model-utils";
 import { useModelCatalog } from "@/lib/api/hooks";
 import { mapCatalogToOpenRouter } from "@/lib/api/model-catalog";
+import { CatalogRouteSkeleton } from "@/components/ui/skeleton";
 
 export default function ModelDetailPage({
   params,
@@ -25,8 +26,8 @@ export default function ModelDetailPage({
 
   if (isLoading && !model) {
     return (
-      <div className="min-h-screen bg-[#000000] flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-blue-500/30 border-t-blue-400 animate-spin" />
+      <div className="min-h-screen bg-[#000000]">
+        <CatalogRouteSkeleton rows={6} />
       </div>
     );
   }

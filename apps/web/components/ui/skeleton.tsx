@@ -561,3 +561,219 @@ export function SkeletonGrid({
     </SkeletonRoot>
   );
 }
+
+/* ─────────────────────── Generic Route Skeletons ───────────────────────
+ * Shape-matched route fallback for pages without a bespoke loading.tsx.
+ * All variants share the same dark canvas, animate-pulse + motion-reduce
+ * fallback, and aria-live so screen readers announce a transition.
+ */
+
+/** Marketing-style hero + 2-column pricing/body. */
+export function MarketingRouteSkeleton() {
+  const t = useTheme("default");
+  return (
+    <SkeletonRoot
+      theme="default"
+      className="mx-auto max-w-6xl px-4 sm:px-6 pt-24 pb-20 space-y-14"
+    >
+      {/* Hero */}
+      <div className="text-center space-y-5">
+        <Skeleton theme="default" className="h-4 w-32 mx-auto rounded-full" />
+        <Skeleton theme="default" className="h-14 sm:h-16 w-3/4 mx-auto rounded-lg" />
+        <Skeleton theme="default" className="h-14 sm:h-16 w-1/2 mx-auto rounded-lg" />
+        <Skeleton theme="default" className="h-5 w-2/3 mx-auto rounded" />
+        <div className="flex justify-center gap-3 pt-4">
+          <Skeleton theme="default" className="h-10 w-32 rounded-lg" />
+          <Skeleton theme="default" className="h-10 w-32 rounded-lg" />
+        </div>
+      </div>
+      {/* Three-column feature grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} theme="default" className="h-56 rounded-2xl" />
+        ))}
+      </div>
+      {/* Body section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <div className="space-y-3">
+          <Skeleton theme="default" className="h-8 w-48 rounded-lg" />
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} theme="default" className="h-3 rounded" style={{ width: `${100 - i * 8}%` }} />
+          ))}
+        </div>
+        <Skeleton theme="default" className="h-72 rounded-2xl" />
+      </div>
+    </SkeletonRoot>
+  );
+}
+
+/** Centered single-card form (login, signup, forgot-password, admin/login, admin/setup). */
+export function AuthRouteSkeleton() {
+  return (
+    <SkeletonRoot
+      theme="default"
+      className="min-h-screen flex items-center justify-center px-4"
+    >
+      <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#0A0A0A] p-8 sm:p-10 space-y-7">
+        <div className="space-y-2 text-center">
+          <Skeleton theme="default" className="h-10 w-10 mx-auto rounded-xl" />
+          <Skeleton theme="default" className="h-7 w-3/4 mx-auto rounded-lg" />
+          <Skeleton theme="default" className="h-4 w-2/3 mx-auto rounded" />
+        </div>
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="space-y-2">
+              <Skeleton theme="default" className="h-3 w-20 rounded" />
+              <Skeleton theme="default" className="h-11 w-full rounded-lg" />
+            </div>
+          ))}
+        </div>
+        <Skeleton theme="default" className="h-11 w-full rounded-lg" />
+        <Skeleton theme="default" className="h-3 w-1/2 mx-auto rounded" />
+      </div>
+    </SkeletonRoot>
+  );
+}
+
+/** Long-form doc page: title + paragraph + code block + table + repeat. */
+export function DocRouteSkeleton() {
+  return (
+    <SkeletonRoot
+      theme="default"
+      className="max-w-[800px] mx-auto px-6 sm:px-10 pt-[80px] pb-20 space-y-10"
+    >
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2">
+        <Skeleton theme="default" className="h-3 w-12 rounded" />
+        <Skeleton theme="default" className="h-3 w-3 rounded" />
+        <Skeleton theme="default" className="h-3 w-20 rounded" />
+      </div>
+      {/* Title + intro */}
+      <div className="space-y-4">
+        <Skeleton theme="default" className="h-10 sm:h-12 w-3/4 rounded-lg" />
+        <Skeleton theme="default" className="h-5 w-11/12 rounded" />
+        <Skeleton theme="default" className="h-5 w-9/12 rounded" />
+      </div>
+      {/* Section */}
+      <div className="space-y-4">
+        <Skeleton theme="default" className="h-7 w-1/2 rounded-lg" />
+        <div className="space-y-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} theme="default" className="h-3 rounded" style={{ width: `${100 - i * 7}%` }} />
+          ))}
+        </div>
+      </div>
+      {/* Code block */}
+      <Skeleton theme="default" className="h-56 rounded-2xl" />
+      {/* Table */}
+      <SkeletonTable theme="default" rows={4} cols={3} />
+      {/* Another paragraph + CTA */}
+      <div className="space-y-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} theme="default" className="h-3 rounded" style={{ width: `${100 - i * 10}%` }} />
+        ))}
+      </div>
+    </SkeletonRoot>
+  );
+}
+
+/** Catalog grid: page header + filter row + 3-column card grid. */
+export function CatalogRouteSkeleton({ rows = 6 }: { rows?: number }) {
+  return (
+    <SkeletonRoot
+      theme="default"
+      className="mx-auto max-w-7xl px-4 sm:px-6 pt-32 pb-20 space-y-10"
+    >
+      <div className="space-y-3">
+        <Skeleton theme="default" className="h-12 w-1/2 rounded-lg" />
+        <Skeleton theme="default" className="h-5 w-2/3 rounded" />
+      </div>
+      <div className="flex items-center gap-3">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} theme="default" className="h-9 w-24 rounded-full" />
+        ))}
+        <Skeleton theme="default" className="h-9 w-44 rounded-lg ml-auto" />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {Array.from({ length: rows }).map((_, i) => (
+          <SkeletonCard key={i} theme="default" />
+        ))}
+      </div>
+    </SkeletonRoot>
+  );
+}
+
+/** Two-pane shell: sidebar (already streamed by the docs layout) + main content
+ *  — used by /docs layout as a fallback when an inner page has no own loading. */
+export function DocPageSkeleton() {
+  return (
+    <SkeletonRoot
+      theme="default"
+      className="max-w-[800px] mx-auto px-6 sm:px-10 pt-[80px] pb-20 space-y-8"
+    >
+      <div className="flex items-center gap-2">
+        <Skeleton theme="default" className="h-3 w-12 rounded" />
+        <Skeleton theme="default" className="h-3 w-3 rounded" />
+        <Skeleton theme="default" className="h-3 w-24 rounded" />
+      </div>
+      <div className="space-y-4">
+        <Skeleton theme="default" className="h-12 w-2/3 rounded-lg" />
+        <Skeleton theme="default" className="h-5 w-3/4 rounded" />
+      </div>
+      <Skeleton theme="default" className="h-64 rounded-2xl" />
+      <div className="space-y-2">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} theme="default" className="h-3 rounded" style={{ width: `${100 - i * 9}%` }} />
+        ))}
+      </div>
+      <Skeleton theme="default" className="h-44 rounded-2xl" />
+    </SkeletonRoot>
+  );
+}
+
+/** Playground shell: split panes with skeletons for sidebar + main + composer. */
+export function PlaygroundRouteSkeleton() {
+  return (
+    <SkeletonRoot theme="default" className="h-screen flex bg-[#0a0a0b] text-white">
+      {/* Sidebar */}
+      <div className="w-72 border-r border-white/10 p-4 space-y-3 hidden md:block">
+        <Skeleton theme="default" className="h-8 w-32 rounded" />
+        <Skeleton theme="default" className="h-9 w-full rounded-lg" />
+        {Array.from({ length: 8 }).map((_, i) => (
+          <Skeleton key={i} theme="default" className="h-12 rounded-xl" />
+        ))}
+      </div>
+      {/* Main column */}
+      <div className="flex-1 flex flex-col">
+        <div className="border-b border-white/10 px-6 py-3 flex items-center gap-3">
+          <Skeleton theme="default" className="h-7 w-44 rounded" />
+          <Skeleton theme="default" className="h-7 w-24 rounded ml-auto" />
+        </div>
+        <div className="flex-1 overflow-hidden p-6 space-y-4">
+          <Skeleton theme="default" className="h-40 rounded-2xl" />
+          <Skeleton theme="default" className="h-40 rounded-2xl" />
+        </div>
+        {/* Composer */}
+        <div className="border-t border-white/10 p-4">
+          <Skeleton theme="default" className="h-16 rounded-xl" />
+        </div>
+      </div>
+    </SkeletonRoot>
+  );
+}
+
+/** Generic shell used by /models and similar grid+filter list pages. */
+export function ModelsRouteSkeleton() {
+  return <CatalogRouteSkeleton rows={9} />;
+}
+
+/** Admin route fallback beneath the protected layout (sidebar/topbar are streamed there). */
+export function AdminRouteSkeleton() {
+  return (
+    <SkeletonRoot theme="admin" className="space-y-5">
+      <SkeletonHeader theme="admin" hasAction />
+      <SkeletonStats count={4} theme="admin" />
+      <SkeletonTable rows={8} cols={5} theme="admin" />
+    </SkeletonRoot>
+  );
+}

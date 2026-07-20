@@ -592,9 +592,15 @@ export default function PlaygroundPage() {
           </div>
         )}
         {catalogLoading && allModels.length === 0 && (
-          <div className="flex items-center justify-center py-16 gap-3 text-gray-500 text-sm font-mono">
-            <div className="w-5 h-5 rounded-full border-2 border-white/20 border-t-white/80 animate-spin" />
-            Loading model catalog…
+          <div className="mx-4 sm:mx-6 py-10 space-y-3" aria-busy="true" aria-live="polite" aria-label="Loading model catalog">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                aria-hidden="true"
+                className="h-14 rounded-xl bg-white/[0.04] animate-pulse motion-reduce:animate-none"
+                style={{ width: `${95 - i * 5}%`, animationDelay: `${i * 80}ms` }}
+              />
+            ))}
           </div>
         )}
 

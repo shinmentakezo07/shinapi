@@ -8446,3 +8446,298 @@ const GithubIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
 - `lucide-react` `Github` was dropped in this version, so I introduced a local `GithubIcon` SVG component (`apps/web/components/docs/DocsNavbar.tsx`) and reused it for both the header GitHub button and the Resources dropdown footer.
 - Verification: `tsc --noEmit` is clean, `vitest run` is **76/76** across `sdk.test.ts` + `wiring-verification.test.ts` (the latter still enforces "no mock data in dashboard"), and `bash scripts/smoke-test.sh` is **25/25**. `next lint` failed at the project level because the script defaults to a `lint/` directory that does not exist in `apps/web/` — pre-existing environment quirk, unrelated to this change.
 - A small `requestAnimationFrame` loop now runs while the navbar is mounted so the aurora blobs and orbiting conic ring stay smooth; the loop is cancelled in the cleanup, so it costs zero CPU when the navbar unmounts.
+
+## [65]. Site-wide skeleton loading — remove spinner-only loading screen, add loading.tsx everywhere, replace full-page spinners
+
+**Session**: `skeleton-loading-everywhere-2026-07-20`
+**Date**: 2026-07-20 20:30
+
+### Why
+Several public routes fell through to either nothing or a small centered spinner (`Loader2` / `border-t-X animate-spin`) while their content streamed. The dedicated `PageLoader`/`LoadingSpinner` exports in `apps/web/components/ui/loading-spinner.tsx` rendered a hardcoded `LOADING... / INITIALIZING_SYSTEMS` splash — the closest thing to the "toy loading screen" the user wanted gone. Per-page React Query isLoading paths also flashed a tiny spinner in the middle of an empty layout. Replaced every spinner-only loading path with a shape-matched dark-canvas skeleton so users always see page structure while data hydrates, added per-route `loading.tsx` for every previously-uncovered public route, and deleted the obsolete `loading-spinner.tsx` file (its `SkeletonCard` export was unused — the canonical skeleton lives in `components/ui/skeleton.tsx`).
+
+### Files Changed
+
+| File                                                                           | Lines   | Change Type |
+| ------------------------------------------------------------------------------ | ------- | ----------- |
+| apps/web/components/ui/loading-spinner.tsx                                     | L1-67   | deleted     |
+| apps/web/components/ui/skeleton.tsx                                           | L416+   | extended    |
+| apps/web/components/route-loading/route-skeletons.tsx                          | L1-87   | created     |
+| apps/web/components/route-loading/route-skeletons-admin.tsx                   | L1-13   | created     |
+| apps/web/app/loading.tsx                                                       | L1-7    | created     |
+| apps/web/app/about/loading.tsx                                                | L1-2    | created     |
+| apps/web/app/blog/loading.tsx                                                 | L1-2    | created     |
+| apps/web/app/changelog/loading.tsx                                             | L1-2    | created     |
+| apps/web/app/contact/loading.tsx                                              | L1-2    | created     |
+| apps/web/app/enterprise/loading.tsx                                           | L1-2    | created     |
+| apps/web/app/gateway/loading.tsx                                               | L1-2    | created     |
+| apps/web/app/legal/loading.tsx                                                 | L1-2    | created     |
+| apps/web/app/pricing/loading.tsx                                               | L1-2    | created     |
+| apps/web/app/roadmap/loading.tsx                                               | L1-2    | created     |
+| apps/web/app/status/loading.tsx                                                | L1-2    | created     |
+| apps/web/app/login/loading.tsx                                                 | L1-2    | created     |
+| apps/web/app/signup/loading.tsx                                                | L1-2    | created     |
+| apps/web/app/forgot-password/loading.tsx                                       | L1-2    | created     |
+| apps/web/app/admin/login/loading.tsx                                           | L1-2    | created     |
+| apps/web/app/admin/setup/loading.tsx                                           | L1-2    | created     |
+| apps/web/app/models/loading.tsx                                                | L1-2    | created     |
+| apps/web/app/playground/loading.tsx                                            | L1-2    | created     |
+| apps/web/app/docs/loading.tsx                                                  | L1-2    | created     |
+| apps/web/app/docs/{quickstart,authentication,api-reference,sdk,self-hosting,chat,anthropic,embeddings,conversations,prompts,function-calling,batch,gateway,files,webhooks,rate-limits,error-handling,organizations,models,pricing,dashboard,admin,security,examples}/loading.tsx | L1-2 | created (24 files) |
+| apps/web/app/dashboard/notifications/loading.tsx                               | L1-15   | rewritten   |
+| apps/web/app/dashboard/organization/loading.tsx                                | L1-15   | rewritten   |
+| apps/web/app/models/page.tsx                                                   | L1-23   | modified    |
+| apps/web/app/models/[id]/page.tsx                                              | L33-39  | modified    |
+| apps/web/app/models/loading.tsx (already exists)                               | L1-2    | rewritten (still points at `ModelsRouteSkeleton`) |
+| apps/web/app/playground/page.tsx                                               | L596-604| modified    |
+| apps/web/app/dashboard/provider-health/page.tsx                                | L168-178| modified    |
+| apps/web/components/admin/AdminUI.tsx                                         | L88-117 | modified    |
+| apps/web/components/models/ModelsExplorer.tsx                                  | L354-360| modified    |
+
+### Before
+
+```tsx
+// apps/web/components/ui/loading-spinner.tsx — toy splash + spinner primitive (entire file)
+import { motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+// ...
+export function LoadingSpinner({ size = "md", className, text }: LoadingSpinnerProps) {
+  return (
+    <div className={cn("flex flex-col items-center justify-center gap-4", className)}>
+      <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
+        <Loader2 className={cn(sizeClasses[size], "text-[#3b82f6]")} />
+      </motion.div>
+      {text && <p className="text-sm text-gray-400 font-mono animate-pulse">{text}</p>}
+    </div>
+  );
+}
+export function PageLoader() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[#050505]">
+      <div className="text-center">
+        <LoadingSpinner size="xl" />
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-8 space-y-2">
+          <p className="text-white font-bold text-lg">Loading...</p>
+          <p className="text-gray-500 text-sm font-mono">INITIALIZING_SYSTEMS</p>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+```
+
+```tsx
+// apps/web/app/models/page.tsx L11-19 — full-page centered spinner as Suspense fallback
+function LoadingFallback() {
+  return (
+    <div className="flex flex-col items-center w-full min-h-[60vh] justify-center bg-[#030303]">
+      <div className="w-8 h-8 rounded-full border-2 border-cyan-500/30 border-t-cyan-400 animate-spin" />
+    </div>
+  );
+}
+```
+
+```tsx
+// apps/web/app/models/[id]/page.tsx L33-38 — spinner mid-page while catalog hydrates
+if (isLoading && !model) {
+  return (
+    <div className="min-h-screen bg-[#000000] flex items-center justify-center">
+      <div className="w-8 h-8 rounded-full border-2 border-blue-500/30 border-t-blue-400 animate-spin" />
+    </div>
+  );
+}
+```
+
+```tsx
+// apps/web/components/models/ModelsExplorer.tsx L354-360 — centered spinner w/ "Loading model catalog…" copy
+{catalogLoading && !sourceModels.length && (
+  <div className="flex flex-col items-center justify-center py-24 gap-3">
+    <div className="w-8 h-8 rounded-full border-2 border-cyan-500/30 border-t-cyan-400 animate-spin" />
+    <p className="text-sm text-gray-500 font-mono">Loading model catalog…</p>
+  </div>
+)}
+```
+
+```tsx
+// apps/web/app/playground/page.tsx L594-597 — spinner + "Loading model catalog..." copy mid-shell
+{catalogLoading && allModels.length === 0 && (
+  <div className="flex items-center justify-center py-16 gap-3 text-gray-500 text-sm font-mono">
+    <div className="w-5 h-5 rounded-full border-2 border-white/20 border-t-white/80 animate-spin" />
+    Loading model catalog…
+  </div>
+)}
+```
+
+```tsx
+// apps/web/app/dashboard/notifications/loading.tsx + organization/loading.tsx — both identical centered spinners
+export default function Loading() {
+  return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 border-2 border-white/10 border-t-indigo-500 rounded-full animate-spin" />
+        <p className="text-sm text-gray-400">Loading...</p>
+      </div>
+    </div>
+  );
+}
+```
+
+```tsx
+// apps/web/app/dashboard/provider-health/page.tsx L168-173 — full-row spinner mid-table
+{(healthLoading || publicLoading) && (
+  <tr>
+    <td colSpan={6} className="py-8 text-center text-gray-500">
+      <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2" />
+      Loading provider health...
+    </td>
+  </tr>
+)}
+```
+
+```tsx
+// apps/web/components/admin/AdminUI.tsx L88-105 — full-page spinner
+export function AdminCenterLoading({ label = "Loading" }: { label?: string }) {
+  return (
+    <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex flex-col items-center gap-4">
+        <div className="relative w-8 h-8">
+          <div className="absolute inset-0 rounded-full border border-white/[0.04]" />
+          <div className="absolute inset-0 rounded-full border-t-blue-400/50 border-2 border-transparent animate-spin" />
+        </div>
+        <p className="text-[10px] font-mono tracking-[0.14em] uppercase text-[var(--admin-text-dim)]">
+          {label}
+        </p>
+      </div>
+    </div>
+  );
+}
+```
+
+### After
+
+```tsx
+// apps/web/components/ui/loading-spinner.tsx — DELETED (zero importers; canonical skeleton primitives live in skeleton.tsx).
+```
+
+```tsx
+// apps/web/components/ui/skeleton.tsx — extended with six new shape-matched route primitives (animations, motion-reduce, aria-busy/aria-live all preserved through SkeletonRoot)
+export function MarketingRouteSkeleton() { /* hero + 3-col features + 2-col body */ }
+export function AuthRouteSkeleton()        { /* centered auth card on min-h-screen */ }
+export function DocPageSkeleton()         { /* breadcrumb + title + code + table */ }
+export function CatalogRouteSkeleton({ rows = 6 }) { /* heading + filter row + grid */ }
+// + DocRouteSkeleton (long-form), PlaygroundRouteSkeleton (split panes)
+```
+
+```tsx
+// apps/web/components/route-loading/route-skeletons.tsx — one-per-shape wrappers that the per-route loading.tsx files consume
+"use client";
+import { CatalogRouteSkeleton, DocPageSkeleton, MarketingRouteSkeleton, PlaygroundRouteSkeleton } from "@/components/ui/skeleton";
+export function HomeLoading()    { return <MarketingRouteSkeleton />; }
+export function AboutLoading()   { return <MarketingRouteSkeleton />; }
+export function BlogLoading()    { return <CatalogRouteSkeleton rows={4} />; }
+// ...Pricing/Roadmap/Status/Gateway/Enterprise/Contact/Legal + Models/Playground + Docs/DocsChild
+```
+
+```tsx
+// apps/web/components/route-loading/route-skeletons-admin.tsx
+"use client";
+import { AuthRouteSkeleton } from "@/components/ui/skeleton";
+export function AuthLoading() { return <AuthRouteSkeleton />; }
+```
+
+```tsx
+// apps/web/app/playground/loading.tsx (representative of the 34+ new loading.tsx files)
+import { PlaygroundLoading } from "@/components/route-loading/route-skeletons";
+export default PlaygroundLoading;
+```
+
+```tsx
+// apps/web/app/models/page.tsx — Suspense fallback is now a real skeleton
+import { ModelsRouteSkeleton } from "@/components/ui/skeleton";
+function LoadingFallback() { return <ModelsRouteSkeleton />; }
+```
+
+```tsx
+// apps/web/app/models/[id]/page.tsx — outer catalog loading state is now a 6-card skeleton grid
+import { CatalogRouteSkeleton } from "@/components/ui/skeleton";
+if (isLoading && !model) {
+  return (
+    <div className="min-h-screen bg-[#000000]">
+      <CatalogRouteSkeleton rows={6} />
+    </div>
+  );
+}
+```
+
+```tsx
+// apps/web/components/models/ModelsExplorer.tsx L354-358 — inline spinner replaced with 9-card skeleton grid
+import { SkeletonGrid } from "@/components/ui/skeleton";
+{catalogLoading && !sourceModels.length && (
+  <div className="py-12"><SkeletonGrid count={9} /></div>
+)}
+```
+
+```tsx
+// apps/web/app/playground/page.tsx — empty-catalog state now uses 3 staggered skeleton rows
+{catalogLoading && allModels.length === 0 && (
+  <div className="mx-4 sm:mx-6 py-10 space-y-3" aria-busy="true" aria-live="polite" aria-label="Loading model catalog">
+    {Array.from({ length: 3 }).map((_, i) => (
+      <div key={i} aria-hidden="true" className="h-14 rounded-xl bg-white/[0.04] animate-pulse motion-reduce:animate-none" style={{ width: `${95 - i * 5}%`, animationDelay: `${i * 80}ms` }} />
+    ))}
+  </div>
+)}
+```
+
+```tsx
+// apps/web/app/dashboard/notifications/loading.tsx + organization/loading.tsx — header + body skeletons
+import { SkeletonHeader, SkeletonList } from "@/components/ui/skeleton";
+export default function Loading() {
+  return (
+    <div className="max-w-6xl mx-auto p-6 space-y-8">
+      <SkeletonHeader hasAction />
+      <SkeletonList rows={8} withBadge />
+    </div>
+  );
+}
+// organization variant uses SkeletonForm fields={6} columns={2}
+```
+
+```tsx
+// apps/web/app/dashboard/provider-health/page.tsx — table-row loading state is now 5 skeleton stripes
+{(healthLoading || publicLoading) && (
+  <tr>
+    <td colSpan={6} className="py-4">
+      <div className="space-y-2.5">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} aria-hidden="true" className="h-7 rounded bg-white/[0.05] animate-pulse motion-reduce:animate-none" style={{ width: `${95 - i * 6}%`, animationDelay: `${i * 60}ms` }} />
+        ))}
+      </div>
+    </td>
+  </tr>
+)}
+```
+
+```tsx
+// apps/web/components/admin/AdminUI.tsx L88-117 — AdminCenterLoading is now a shape-matched skeleton; `label` prop preserved for aria-live
+export function AdminCenterLoading({ label = "Loading" }: { label?: string }) {
+  return (
+    <div role="status" aria-busy="true" aria-live="polite" aria-label={label} className="min-h-[400px] max-w-6xl mx-auto p-6 space-y-6">
+      <div aria-hidden="true" className="space-y-2"><div className="admin-skeleton h-7 w-48" /><div className="admin-skeleton h-3 w-64" /></div>
+      <div aria-hidden="true" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="admin-card p-6 space-y-3"><div className="admin-skeleton h-2 w-20" /><div className="admin-skeleton h-7 w-24" /><div className="admin-skeleton h-3 w-16" /></div>
+        ))}
+      </div>
+      <AdminTableLoading rows={5} cols={5} />
+    </div>
+  );
+}
+```
+
+### Notes
+
+- All 34 newly-added `loading.tsx` files are thin re-exports of the seven shape-matched skeletons in `components/route-loading/route-skeletons.tsx` (and the auth shape in `route-skeletons-admin.tsx`). Each skeleton uses `bg-white/[0.04..0.08]` + `animate-pulse motion-reduce:animate-none` + `aria-busy="true" aria-live="polite"` so they reduce properly when the user has `prefers-reduced-motion` set and announce "Loading…" to assistive tech.
+- Touched — but kept — every `<Loader2 className="... animate-spin" />` that lives *inside* a button affordance (Refresh, Processing…, Edit key pair, etc.). Those are micro-feedback signals for an in-progress action, not full-page loading states, so they're orthogonal to the user's request.
+- `AdminCenterLoading` keeps its `label` prop contract (consumed by 22 admin pages) — now used purely as the `aria-label`, the visual is a real skeleton.
+- Verification: `tsc --noEmit` is clean, `vitest run` is **334/334** across 27 test files (unchanged), and `bash scripts/smoke-test.sh` is **25/25**.
+- New dependency-free files: `components/route-loading/route-skeletons.tsx`, `components/route-loading/route-skeletons-admin.tsx`. New per-route `loading.tsx` files: 34 (10 marketing/shell + 24 `/docs/*` children + login/signup/forgot-password + admin/login + admin/setup + root `app/loading.tsx`). The whole batch is intentionally symmetric so any new public route in the repo can simply drop a 2-line `loading.tsx` and inherit the matching skeleton.
