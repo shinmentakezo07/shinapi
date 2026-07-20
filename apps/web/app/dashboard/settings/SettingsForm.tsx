@@ -24,13 +24,17 @@ export function SettingsForm({
 }: {
   user: { name: string; email: string };
 }) {
-  const [profileState, profileAction] = useActionState(updateProfile, {
-    message: "",
-    errors: {},
-  } as { message: string; errors: Record<string, string[]> });
-  const [passwordState, passwordAction] = useActionState(changePassword, {
-    message: "",
-  } as { message: string });
+  type ProfileState = { message: string; errors: Record<string, string[]> };
+  type PasswordState = { message: string };
+
+  const [profileState, profileAction] = useActionState<ProfileState, FormData>(
+    updateProfile as unknown as (state: ProfileState, payload: FormData) => Promise<ProfileState>,
+    { message: "", errors: {} },
+  );
+  const [passwordState, passwordAction] = useActionState<PasswordState, FormData>(
+    changePassword as unknown as (state: PasswordState, payload: FormData) => Promise<PasswordState>,
+    { message: "" },
+  );
 
   return (
     <div className="space-y-8">

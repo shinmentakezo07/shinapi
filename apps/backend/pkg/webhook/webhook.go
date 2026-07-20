@@ -212,6 +212,15 @@ func newPinnedHTTPClient(rawURL string) (*http.Client, error) {
 	if host == "" {
 		return nil, fmt.Errorf("missing hostname")
 	}
+
+	// Test-only bypass for httptest servers on loopback addresses.
+	if skipWebhookSSRFCheck {
+		return &http.Client{
+			Timeout:       30 * time.Second,
+			CheckRedirect: func(req *http.Request, via []*http.Request) error { return http.ErrUseLastResponse },
+		}, nil
+	}
+
 	ips, err := net.LookupIP(host)
 	if err != nil {
 		return nil, fmt.Errorf("cannot resolve hostname: %w", err)

@@ -116,7 +116,7 @@ func TestAuth_ValidCookie(t *testing.T) {
 	tokenStr, _ := token.SignedString([]byte(secret))
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.AddCookie(&http.Cookie{Name: "authjs.session-token", Value: tokenStr})
+	req.AddCookie(&http.Cookie{Name: "dra_backend_token", Value: tokenStr})
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 

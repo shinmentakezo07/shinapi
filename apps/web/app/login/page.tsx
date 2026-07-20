@@ -168,7 +168,7 @@ function Field({
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   error?: boolean;
-  inputRef?: React.Ref<HTMLInputElement>;
+  inputRef?: React.RefObject<HTMLInputElement | null>;
   icon: React.ComponentType<{ className?: string }>;
   trailing?: React.ReactNode;
 }) {

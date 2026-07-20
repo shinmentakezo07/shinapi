@@ -305,19 +305,19 @@ func isValidWebhookEvent(event string) bool {
 }
 
 type WebhookDelivery struct {
-	ID               string     `json:"id"`
-	WebhookID        string     `json:"webhookId"`
-	EventType        string     `json:"eventType"`
-	Payload          []byte     `json:"payload"`
-	IdempotencyKey   string     `json:"idempotencyKey,omitempty"`
-	StatusCode       *int       `json:"statusCode,omitempty"`
-	Error            string     `json:"error,omitempty"`
-	Attempts         int        `json:"attempts"`
-	MaxAttempts int        `json:"maxAttempts"`
-	Status      string     `json:"status"`
-	DeliveredAt *time.Time `json:"deliveredAt,omitempty"`
-	NextRetryAt *time.Time `json:"nextRetryAt,omitempty"`
-	CreatedAt   time.Time  `json:"createdAt"`
+	ID             string     `json:"id"`
+	WebhookID      string     `json:"webhookId"`
+	EventType      string     `json:"eventType"`
+	Payload        []byte     `json:"payload"`
+	IdempotencyKey string     `json:"idempotencyKey,omitempty"`
+	StatusCode     *int       `json:"statusCode,omitempty"`
+	Error          string     `json:"error,omitempty"`
+	Attempts       int        `json:"attempts"`
+	MaxAttempts    int        `json:"maxAttempts"`
+	Status         string     `json:"status"`
+	DeliveredAt    *time.Time `json:"deliveredAt,omitempty"`
+	NextRetryAt    *time.Time `json:"nextRetryAt,omitempty"`
+	CreatedAt      time.Time  `json:"createdAt"`
 }
 
 type WebhookDeliveryLog struct {

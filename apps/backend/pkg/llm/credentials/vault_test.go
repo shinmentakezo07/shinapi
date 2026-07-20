@@ -28,7 +28,11 @@ func (s *memoryStore) Save(c *Credential) error {
 func (s *memoryStore) GetByID(id string) (*Credential, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.data[id], nil
+	if c := s.data[id]; c != nil {
+		cc := *c
+		return &cc, nil
+	}
+	return nil, nil
 }
 
 func (s *memoryStore) GetByProvider(providerType string) ([]*Credential, error) {
@@ -37,7 +41,8 @@ func (s *memoryStore) GetByProvider(providerType string) ([]*Credential, error) 
 	var result []*Credential
 	for _, c := range s.data {
 		if c.ProviderType == providerType {
-			result = append(result, c)
+			cc := *c
+			result = append(result, &cc)
 		}
 	}
 	return result, nil
@@ -49,7 +54,8 @@ func (s *memoryStore) GetActiveByProvider(providerType string) ([]*Credential, e
 	var result []*Credential
 	for _, c := range s.data {
 		if c.ProviderType == providerType && c.IsActive {
-			result = append(result, c)
+			cc := *c
+			result = append(result, &cc)
 		}
 	}
 	return result, nil

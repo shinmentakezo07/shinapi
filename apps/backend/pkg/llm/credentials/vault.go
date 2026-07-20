@@ -120,7 +120,9 @@ func (v *Vault) Add(name, providerType, apiKey, apiBase string, priority int) (*
 		return nil, fmt.Errorf("save credential: %w", err)
 	}
 
-	v.addToCache(c.ProviderType, c)
+	// Cache a separated copy so callers cannot race with cached state.
+	cc := *c
+	v.addToCache(c.ProviderType, &cc)
 	return c, nil
 }
 
@@ -341,18 +343,23 @@ func (v *Vault) getActiveCredentials(providerType string) ([]*Credential, error)
 		return nil, err
 	}
 
+	// Create independent copies for the cache and for the caller so the
+	// store's pointers are never shared with the cache or returned directly.
+	cacheCopy := make([]*Credential, len(creds))
+	retCopy := make([]*Credential, len(creds))
+	for i, c := range creds {
+		cc1 := *c
+		cc2 := *c
+		cacheCopy[i] = &cc1
+		retCopy[i] = &cc2
+	}
+
 	v.mu.Lock()
-	v.cache[providerType] = creds
+	v.cache[providerType] = cacheCopy
 	v.cacheTime[providerType] = time.Now()
 	v.mu.Unlock()
 
-	// Return copies to avoid data races with concurrent health updates.
-	copy := make([]*Credential, len(creds))
-	for i, c := range creds {
-		cc := *c
-		copy[i] = &cc
-	}
-	return copy, nil
+	return retCopy, nil
 }
 
 func (v *Vault) selectBest(creds []*Credential) *Credential {

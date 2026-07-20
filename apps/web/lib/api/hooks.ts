@@ -1,5 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getSDK } from "./sdk";
+
+const sdk = getSDK();
+
 import type {
   APIKey,
   APILog,

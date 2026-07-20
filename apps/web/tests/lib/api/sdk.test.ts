@@ -684,8 +684,8 @@ describe("DraSDK", () => {
 
       const sdk = new DraSDK({ baseUrl: "http://localhost:3000" });
       const result = await sdk.listPrompts();
-      expect(result).toHaveLength(1);
-      expect(result[0].name).toBe("greeting");
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].name).toBe("greeting");
     });
 
     it("creates a prompt", async () => {

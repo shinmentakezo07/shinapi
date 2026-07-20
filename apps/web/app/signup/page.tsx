@@ -166,7 +166,7 @@ function Field({
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   error?: string[];
-  inputRef?: React.Ref<HTMLInputElement>;
+  inputRef?: React.RefObject<HTMLInputElement | null>;
   icon: React.ComponentType<{ className?: string }>;
   minLength?: number;
   trailing?: React.ReactNode;
@@ -424,7 +424,10 @@ function ProviderIcon({ provider }: { provider: "github" | "google" }) {
 
 export default function SignupPage() {
   const initialState: State = { message: null, errors: {} };
-  const [state, dispatch] = useActionState(signup, initialState);
+  const [state, dispatch] = useActionState(
+    signup as (state: State, payload: FormData) => Promise<State>,
+    initialState,
+  );
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
   const nameRef = useRef<HTMLInputElement>(null);

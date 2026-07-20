@@ -9,6 +9,7 @@ import { RateLimitError } from "./errors";
 interface RateLimitEntry {
   count: number;
   resetAt: number;
+  isAuthenticated: boolean;
 }
 
 const store = new Map<string, RateLimitEntry>();
@@ -44,6 +45,7 @@ export function checkRateLimit(
     store.set(identifier, {
       count: 1,
       resetAt: now + WINDOW_MS,
+      isAuthenticated,
     });
     return;
   }
@@ -57,11 +59,10 @@ export function checkRateLimit(
 
 export function getRateLimitInfo(
   identifier: string,
-  isAuthenticated = false,
 ): { remaining: number; resetAt: number } | null {
   const entry = store.get(identifier);
   if (!entry) return null;
-  const maxRequests = isAuthenticated
+  const maxRequests = entry.isAuthenticated
     ? MAX_REQUESTS_PER_WINDOW
     : MAX_ANONYMOUS_REQUESTS;
   return {

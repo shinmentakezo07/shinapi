@@ -278,6 +278,7 @@ export function ModelsExplorer({ initialModels }: ModelsExplorerProps) {
         color: config.color,
         gradient: config.gradient,
         logo,
+        description: model.description ?? undefined,
         popular: model.created > 1743465600,
         speed: (model.context_length ?? 0) > 500000 ? "Fast" : "Very Fast",
       };

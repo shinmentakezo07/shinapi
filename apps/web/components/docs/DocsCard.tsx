@@ -141,7 +141,7 @@ export const DocsRouteRow = ({
   href?: string;
   wire?: boolean;
 }) => {
-  const Tag = href ? Link : ("div" as const);
+  const Tag = (href ? Link : "div") as React.ElementType;
   return (
     <Tag
       {...(href ? { href } : {})}
@@ -314,7 +314,7 @@ export const DocsStagger = ({
     }}
     className={className}
   >
-    {children}
+    {children as any}
   </motion.div>
 );
 

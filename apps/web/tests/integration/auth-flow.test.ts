@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 describe("Auth flow integration", () => {
@@ -13,7 +13,7 @@ describe("Auth flow integration", () => {
 
   describe("OAuth backend token handling", () => {
     it("does not call the removed public backend OAuth mint endpoint", async () => {
-      const authPath = fileURLToPath(new URL("../../auth.ts", import.meta.url));
+      const authPath = resolve(__dirname, "../../auth.ts");
       const source = await readFile(authPath, "utf8");
 
       expect(source).not.toContain("/auth/oauth");

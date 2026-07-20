@@ -118,9 +118,11 @@ describe("Frontend-Backend Wiring Verification", () => {
       const content = fs.readFileSync(file, "utf-8");
       const relPath = path.relative(apiDir, file);
 
-      // Skip NextAuth and chat routes — they handle auth differently
+      // Skip NextAuth, chat, and intentionally public routes — they handle auth differently
       if (relPath.includes("auth/")) continue;
       if (relPath.includes("chat/")) continue;
+      if (relPath.includes("models/catalog/")) continue;
+      if (relPath.includes("setup/")) continue;
 
       const hasAuthCheck =
         content.includes("requireAuth") || content.includes("requireAdmin");

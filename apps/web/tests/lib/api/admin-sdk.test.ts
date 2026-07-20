@@ -131,7 +131,7 @@ describe("AdminSDK", () => {
       });
       const sdk = new AdminSDK();
       const result = await sdk.listUsers({ page: 2, limit: 10 });
-      expect(mockSDK.adminListUsers).toHaveBeenCalledWith(2, 10);
+      expect(mockSDK.adminListUsers).toHaveBeenCalledWith(2, 10, undefined, undefined);
     });
 
     it("handles undefined params", async () => {
@@ -144,7 +144,7 @@ describe("AdminSDK", () => {
       });
       const sdk = new AdminSDK();
       await sdk.listUsers();
-      expect(mockSDK.adminListUsers).toHaveBeenCalledWith(undefined, undefined);
+      expect(mockSDK.adminListUsers).toHaveBeenCalledWith(undefined, undefined, undefined, undefined);
     });
   });
 
