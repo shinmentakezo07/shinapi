@@ -7632,3 +7632,193 @@ el.style.background = `radial-gradient(1100px circle at 320px ${pendingY}px rgba
 - Click ripple coordinates are relative to button rect; CSS `position: absolute` with `left/top` placement; removed after 500ms via setTimeout to bound DOM growth under repeated clicks.
 - Particle count is a known perf knob — drop to 28 if Chromium DevTools perf overlay flags paint cost under reduced-motion off.
 - Spec: `docs/superpowers/specs/2026-07-19-hero-layered-glow-design.md`.
+
+## [70]. Hero "Depth + Live Routing" — mouse-parallax orbs, provider marquee, floating route cards, glowing stats, photon scroll
+
+**Session**: `hero-depth-live-routing-2026-07-20`
+**Date**: 2026-07-20 00:00
+
+### Why
+The previous "Layered Glow" hero (entry [69]) added richness but felt static: the orbs, aurora, and grid never reacted to the cursor, there was no visible sense of *live routing* despite the ticker text, the stat pills had no pulse, and the scroll indicator was a flat breathing bar. On a product whose pitch is "100+ models routed in real time", the hero should *show* routing activity and depth, not just colored fog. This pass layers mouse-driven parallax onto the three orbs for true 3D depth, adds a continuous provider-logo marquee to make the "100+ models" claim tangible, drops two floating "routing" cards next to the terminal so live activity is visible at a glance, wraps each stat icon in an indigo pulse ring so the metrics feel alive, and replaces the flat scroll bar with a photon traveling down a rail.
+
+### Files Changed
+
+| File                          | Lines      | Change Type |
+| ----------------------------- | ---------- | ----------- |
+| apps/web/app/globals.css      | L640-723   | modified    |
+| apps/web/app/globals.css      | L730-736   | modified    |
+| apps/web/components/Hero.tsx  | L853-858   | modified    |
+| apps/web/components/Hero.tsx  | L888-947   | modified    |
+| apps/web/components/Hero.tsx  | L992-1011  | modified    |
+| apps/web/components/Hero.tsx  | L1140-1223 | created     |
+| apps/web/components/Hero.tsx  | L1355-1368 | modified    |
+| apps/web/components/Hero.tsx  | L1415-1433 | modified    |
+| apps/web/components/Hero.tsx  | L1438-1462 | modified    |
+| apps/web/components/Hero.tsx  | L1469-1480 | modified    |
+
+### Before
+
+```css
+/* globals.css — single aurora-b, reduced-motion list without new classes */
+.hero-aurora-b {
+  animation: hero-aurora 11s ease-in-out infinite;
+  animation-delay: -3s;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-float, .hero-orb-a, /* ..., */ .hero-aurora-b { animation: none; }
+  .hero-badge-ping { animation: none; opacity: 0.4; }
+}
+```
+
+```tsx
+// Hero.tsx — HeroBackground orbs were static + no parallax + no tertiary aurora
+function HeroBackground() {
+  const spotlightRef = useRef<HTMLDivElement>(null);
+  // ... particles + mousemove spotlight only, no orb refs, no parallax effect
+  return (
+    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none bg-[#04030a]">
+      <div aria-hidden="true" className="... hero-orb-a" />
+      <div aria-hidden="true" className="... hero-orb-b" />
+      <div aria-hidden="true" className="... hero-orb-c" />
+      {/* only primary + secondary aurora, no mesh drift, no tertiary aurora */}
+```
+
+```tsx
+// Stats icon: static, no pulse ring
+<Icon className="h-3.5 w-3.5 text-indigo-300 transition-transform duration-300 group-hover:scale-110" />
+
+// No ProviderMarquee; tech stack block was the last element in the left column.
+// Right column held only <InteractiveTerminal /> with no floating route cards.
+
+// Scroll indicator: a flat breathing bar
+<motion.div
+  animate={{ height: [20, 40, 20], opacity: [0.2, 0.8, 0.2] }}
+  transition={{ repeat: Infinity, duration: 2 }}
+  className="w-[1px] bg-gradient-to-b from-white/50 via-indigo-200/50 to-transparent"
+/>
+```
+
+### After
+
+```css
+/* globals.css — new keyframes + utilities + reduced-motion additions */
+.hero-aurora-c {
+  animation: hero-aurora 14s ease-in-out infinite;
+  animation-delay: -6s;
+  will-change: transform, opacity;
+}
+@keyframes hero-mesh-drift { 0%,100% { transform: translate3d(0,0,0) scale(1); } 50% { transform: translate3d(0,-2%,0) scale(1.04); } }
+.hero-mesh-drift { animation: hero-mesh-drift 22s ease-in-out infinite; will-change: transform; }
+@keyframes hero-pulse-ring { 0% { transform: scale(0.9); opacity: 0.55; } 100% { transform: scale(1.6); opacity: 0; } }
+.hero-pulse-ring { animation: hero-pulse-ring 2.4s cubic-bezier(0,0,0.2,1) infinite; will-change: transform, opacity; }
+@keyframes hero-card-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+.hero-card-bob { animation: hero-card-bob 5s ease-in-out infinite; will-change: transform; }
+@keyframes hero-photon { 0% { transform: translateY(-100%); opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { transform: translateY(220%); opacity: 0; } }
+.hero-photon { animation: hero-photon 2.4s ease-in-out infinite; will-change: transform, opacity; }
+.hero-marquee-mask {
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 12%, black 88%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, black 12%, black 88%, transparent 100%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-..., .hero-aurora-b, .hero-aurora-c, .hero-mesh-drift, .hero-pulse-ring, .hero-card-bob, .hero-photon { animation: none; }
+  .hero-badge-ping { animation: none; opacity: 0.4; }
+}
+```
+
+```tsx
+// Hero.tsx — orbs now parallax with the cursor; refs + transition-[translate]; tertiary aurora + mesh drift
+function HeroBackground() {
+  const spotlightRef = useRef<HTMLDivElement>(null);
+  const orbARef = useRef<HTMLDivElement>(null);
+  const orbBRef = useRef<HTMLDivElement>(null);
+  const orbCRef = useRef<HTMLDivElement>(null);
+  // ...existing spotlight effect...
+  useEffect(() => {
+    // Mouse parallax — orbs drift slightly with the cursor for depth
+    function handleParallax({ clientX, clientY }: MouseEvent) {
+      const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+      const tx = (clientX - cx) / cx, ty = (clientY - cy) / cy;
+      // ...rAF-cooked translate writes: orbA +26/22, orbB -20/-18, orbC +16/+14
+    }
+    window.addEventListener("mousemove", handleParallax, { passive: true });
+    return () => window.removeEventListener("mousemove", handleParallax);
+  }, []);
+  return (
+    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none bg-[#04030a]">
+      <div ref={orbARef} className="... hero-orb-a transition-[translate] duration-300 ease-out" />
+      <div ref={orbBRef} className="... hero-orb-b transition-[translate] duration-300 ease-out" />
+      <div ref={orbCRef} className="... hero-orb-c transition-[translate] duration-300 ease-out" />
+      <div className="absolute inset-0 hero-mesh-drift opacity-60" style={{ background: "radial-gradient(...)" }} />
+      {/* primary + secondary + tertiary deep-violet aurora-b/-c */}
+```
+
+```tsx
+// New components: continuous provider-logo marquee + floating "live routing" card
+const PROVIDER_NAMES = ["OpenAI","Anthropic","Google","Groq","Mistral","Meta","NVIDIA NIM","Cohere","DeepSeek","xAI"];
+function ProviderMarquee() {
+  const row = [...PROVIDER_NAMES, ...PROVIDER_NAMES];
+  return (
+    <div className="relative w-full max-w-xl lg:max-w-none overflow-hidden hero-marquee-mask">
+      <div className="flex w-max hero-marquee gap-3">
+        {row.map((name, i) => (
+          <span key={i} className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-xs font-mono text-white/55 backdrop-blur-md hover:border-indigo-300/40 hover:text-white">
+            <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-indigo-400 to-cyan-400 shadow-[0_0_8px_rgba(99,102,241,0.7)]" />
+            {name}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+function FloatingRouteCard({ label, model, region, ms, accent, className, delay }) {
+  return (
+    <motion.div initial={{ opacity:0, y:16, scale:0.92 }} animate={{ opacity:1, y:0, scale:1 }}
+      transition={{ delay: delay ?? 1.4, type:"spring", damping:18, stiffness:220 }}
+      className={cn("absolute z-30 hidden xl:block pointer-events-none px-3.5 py-2.5 rounded-xl border border-white/10 bg-[#0A0A0A]/85 backdrop-blur-xl shadow-[0_20px_50px_-20px_rgba(0,0,0,0.8)] hero-card-bob", className)}>
+      <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-white/40">
+        <span className={cn("h-1.5 w-1.5 rounded-full", accent)} />{label}
+      </div>
+      <div className="mt-1 text-sm font-mono font-semibold text-white">{model}</div>
+      <div className="mt-1.5 flex items-center justify-between text-[10px] font-mono text-white/45">
+        <span>{region}</span><span className="text-emerald-300">{ms}</span>
+      </div>
+    </motion.div>
+  );
+}
+
+// Stats icon now wrapped in an expanding indigo pulse ring
+<span className="relative inline-flex">
+  <span aria-hidden="true" className="absolute inset-0 -m-1 rounded-full bg-indigo-400/30 hero-pulse-ring" style={{ animationDelay: `${0.4 + index * 0.35}s` }} />
+  <Icon className="relative h-3.5 w-3.5 text-indigo-300 transition-transform duration-300 group-hover:scale-110" />
+</span>
+
+// Provider marquee wired below the tech-stack block
+<motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:1.9 }} className="w-full pt-2">
+  <div className="mb-2 text-[10px] font-mono uppercase tracking-widest text-white/30">Routing 100+ models from</div>
+  <ProviderMarquee />
+</motion.div>
+
+// Right column now flanks the terminal with two floating route cards
+<motion.div className="relative hidden lg:block">
+  <InteractiveTerminal />
+  <FloatingRouteCard label="Routed" model="claude-opus-4" region="us-east-1" ms="14ms" accent="bg-indigo-400" className="-top-6 -left-10" delay={1.6} />
+  <FloatingRouteCard label="Stream" model="gpt-4o" region="eu-west-3" ms="847 tok/s" accent="bg-cyan-400" className="bottom-16 -right-8" delay={2.0} />
+</motion.div>
+
+// Scroll indicator: a photon traveling down a masked rail
+<div className="relative h-10 w-[1px] overflow-hidden bg-gradient-to-b from-white/20 via-indigo-200/30 to-transparent">
+  <span aria-hidden="true" className="hero-photon absolute left-0 top-0 h-6 w-[1px] bg-gradient-to-b from-transparent via-indigo-200 to-transparent shadow-[0_0_10px_rgba(165,180,252,0.9)]" />
+</div>
+```
+
+### Notes
+
+- `tsc --noEmit` clean for `components/Hero.tsx` and `app/globals.css`; the 10 pre-existing errors in unrelated files (SettingsForm, login, signup, providers, DocsCard, ModelsExplorer, sdk.test) predate this change and are deliberate (`next.config.ts` has `typescript.ignoreBuildErrors: true`).
+- `bash scripts/smoke-test.sh` passes 25/25; mock-data audit + SDK import audit still clean.
+- Mouse parallax uses `style.translate` (the CSS `translate` property) rather than `transform` so it does not clobber the keyframe `transform` animations on `.hero-orb-a/b/c`; a `transition-[translate] duration-300` smooths the motion in normal mode (and is irrelevant under reduced-motion since the orb animations are disabled anyway).
+- Provider marquee duplicates the list (`[...PROVIDER_NAMES, ...PROVIDER_NAMES]`) so the `-50%` `hero-marquee` translateX yields a seamless loop; `hero-marquee-mask` fades both edges.
+- `FloatingRouteCard`s are `hidden xl:block` so they only appear when there's room (the grid's right column may not be wide enough at `lg`); `pointer-events-none` keeps them decorative.
+- All new animation classes are added to the hero `prefers-reduced-motion: reduce` block so users with motion sensitivity get a static composition.
+- `ESLint` is not runnable in this sandbox (`next lint` errors on Next 16 canary path resolution); `tsc --noEmit` is the active type gate.

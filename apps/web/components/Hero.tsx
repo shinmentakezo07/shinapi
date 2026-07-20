@@ -851,6 +851,9 @@ function FloatingLogos() {
 // --- New Background Effect ---
 function HeroBackground() {
   const spotlightRef = useRef<HTMLDivElement>(null);
+  const orbARef = useRef<HTMLDivElement>(null);
+  const orbBRef = useRef<HTMLDivElement>(null);
+  const orbCRef = useRef<HTMLDivElement>(null);
 
   // Particle field — generated once, scroll-stable
   const particles = Array.from({ length: 40 }, (_, i) => ({
@@ -885,20 +888,62 @@ function HeroBackground() {
     };
   }, []);
 
+  // Mouse parallax — orbs drift slightly with the cursor for depth
+  useEffect(() => {
+    let rafId = 0;
+    let tx = 0;
+    let ty = 0;
+    function handleParallax({ clientX, clientY }: MouseEvent) {
+      const cx = window.innerWidth / 2;
+      const cy = window.innerHeight / 2;
+      tx = (clientX - cx) / cx;
+      ty = (clientY - cy) / cy;
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        if (orbARef.current)
+          orbARef.current.style.translate = `${tx * 26}px ${ty * 22}px`;
+        if (orbBRef.current)
+          orbBRef.current.style.translate = `${tx * -20}px ${ty * -18}px`;
+        if (orbCRef.current)
+          orbCRef.current.style.translate = `${tx * 16}px ${ty * 14}px`;
+      });
+    }
+    window.addEventListener("mousemove", handleParallax, { passive: true });
+    return () => {
+      window.removeEventListener("mousemove", handleParallax);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, []);
+
   return (
     <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none bg-[#04030a]">
       {/* Ambient gradient field */}
       <div
+        ref={orbARef}
         aria-hidden="true"
-        className="absolute -top-40 left-[-10%] h-[36rem] w-[36rem] rounded-full bg-indigo-500/35 blur-[160px] hero-orb-a"
+        className="absolute -top-40 left-[-10%] h-[36rem] w-[36rem] rounded-full bg-indigo-500/35 blur-[160px] hero-orb-a transition-[translate] duration-300 ease-out"
       />
       <div
+        ref={orbBRef}
         aria-hidden="true"
-        className="absolute right-[-12%] top-1/4 h-[32rem] w-[32rem] rounded-full bg-violet-600/32 blur-[150px] hero-orb-b"
+        className="absolute right-[-12%] top-1/4 h-[32rem] w-[32rem] rounded-full bg-violet-600/32 blur-[150px] hero-orb-b transition-[translate] duration-300 ease-out"
       />
       <div
+        ref={orbCRef}
         aria-hidden="true"
-        className="absolute bottom-[-18%] left-1/3 h-[30rem] w-[30rem] rounded-full bg-cyan-400/28 blur-[140px] hero-orb-c"
+        className="absolute bottom-[-18%] left-1/3 h-[30rem] w-[30rem] rounded-full bg-cyan-400/28 blur-[140px] hero-orb-c transition-[translate] duration-300 ease-out"
+      />
+
+      {/* Deep backdrop mesh — slow upward breathing of the field */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 hero-mesh-drift opacity-60"
+        style={{
+          background:
+            "radial-gradient(60% 50% at 30% 18%, rgba(30,27,75,0.55) 0%, transparent 70%), radial-gradient(50% 50% at 78% 65%, rgba(20,30,60,0.5) 0%, transparent 72%)",
+          mixBlendMode: "screen",
+        }}
       />
 
       {/* Particle field */}
@@ -943,6 +988,18 @@ function HeroBackground() {
           background:
             "linear-gradient(90deg, transparent 0%, rgba(34,211,238,0.30) 50%, transparent 100%)",
           filter: "blur(60px)",
+          mixBlendMode: "screen",
+        }}
+      />
+
+      {/* Aurora sweep — tertiary deep-violet band crossing lower third */}
+      <div
+        aria-hidden="true"
+        className="absolute bottom-[14%] left-0 right-0 h-[260px] hero-aurora-c pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(90deg, transparent 0%, rgba(139,92,246,0.28) 40%, rgba(99,102,241,0.22) 60%, transparent 100%)",
+          filter: "blur(70px)",
           mixBlendMode: "screen",
         }}
       />
@@ -1083,6 +1140,84 @@ function LiveTicker() {
   );
 }
 
+// --- Provider Marquee ---
+const PROVIDER_NAMES = [
+  "OpenAI",
+  "Anthropic",
+  "Google",
+  "Groq",
+  "Mistral",
+  "Meta",
+  "NVIDIA NIM",
+  "Cohere",
+  "DeepSeek",
+  "xAI",
+];
+
+function ProviderMarquee() {
+  const row = [...PROVIDER_NAMES, ...PROVIDER_NAMES];
+  return (
+    <div className="relative w-full max-w-xl lg:max-w-none overflow-hidden hero-marquee-mask">
+      <div className="flex w-max hero-marquee gap-3">
+        {row.map((name, i) => (
+          <span
+            key={i}
+            className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-xs font-mono text-white/55 backdrop-blur-md transition-colors hover:border-indigo-300/40 hover:text-white"
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-indigo-400 to-cyan-400 shadow-[0_0_8px_rgba(99,102,241,0.7)]" />
+            {name}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// --- Floating Route Card ---
+function FloatingRouteCard({
+  label,
+  model,
+  region,
+  ms,
+  accent,
+  className,
+  delay,
+}: {
+  label: string;
+  model: string;
+  region: string;
+  ms: string;
+  accent: string;
+  className?: string;
+  delay?: number;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16, scale: 0.92 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ delay: delay ?? 1.4, type: "spring", damping: 18, stiffness: 220 }}
+      className={cn(
+        "absolute z-30 hidden xl:block pointer-events-none",
+        "px-3.5 py-2.5 rounded-xl border border-white/10 bg-[#0A0A0A]/85 backdrop-blur-xl shadow-[0_20px_50px_-20px_rgba(0,0,0,0.8)]",
+        "hero-card-bob",
+        className,
+      )}
+    >
+      <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-white/40">
+        <span className={cn("h-1.5 w-1.5 rounded-full", accent)} />
+        {label}
+      </div>
+      <div className="mt-1 text-sm font-mono font-semibold text-white">
+        {model}
+      </div>
+      <div className="mt-1.5 flex items-center justify-between text-[10px] font-mono text-white/45">
+        <span>{region}</span>
+        <span className="text-emerald-300">{ms}</span>
+      </div>
+    </motion.div>
+  );
+}
+
 // === MAIN HERO COMPONENT ===
 export function Hero() {
   const targetRef = useRef(null);
@@ -1220,7 +1355,14 @@ export function Hero() {
                     transition={{ delay: 1.38 + index * 0.08 }}
                     className="group inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.035] px-3.5 py-2 text-xs font-mono text-white/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-md transition-all duration-300 hover:border-indigo-300/30 hover:bg-white/[0.06] hover:text-white"
                   >
-                    <Icon className="h-3.5 w-3.5 text-indigo-300 transition-transform duration-300 group-hover:scale-110" />
+                    <span className="relative inline-flex">
+                      <span
+                        aria-hidden="true"
+                        className="absolute inset-0 -m-1 rounded-full bg-indigo-400/30 hero-pulse-ring"
+                        style={{ animationDelay: `${0.4 + index * 0.35}s` }}
+                      />
+                      <Icon className="relative h-3.5 w-3.5 text-indigo-300 transition-transform duration-300 group-hover:scale-110" />
+                    </span>
                     <span className="font-semibold text-white/90">
                       {stat.value}
                     </span>
@@ -1273,6 +1415,19 @@ export function Hero() {
                 ))}
               </div>
             </motion.div>
+
+            {/* Provider marquee — continuous logo strip */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.9 }}
+              className="w-full pt-2"
+            >
+              <div className="mb-2 text-[10px] font-mono uppercase tracking-widest text-white/30">
+                Routing 100+ models from
+              </div>
+              <ProviderMarquee />
+            </motion.div>
           </motion.div>
 
           {/* Right Content (3D Graphic) */}
@@ -1283,6 +1438,24 @@ export function Hero() {
             className="relative hidden lg:block"
           >
             <InteractiveTerminal />
+            <FloatingRouteCard
+              label="Routed"
+              model="claude-opus-4"
+              region="us-east-1"
+              ms="14ms"
+              accent="bg-indigo-400"
+              className="-top-6 -left-10"
+              delay={1.6}
+            />
+            <FloatingRouteCard
+              label="Stream"
+              model="gpt-4o"
+              region="eu-west-3"
+              ms="847 tok/s"
+              accent="bg-cyan-400"
+              className="bottom-16 -right-8"
+              delay={2.0}
+            />
           </motion.div>
         </div>
 
@@ -1296,11 +1469,12 @@ export function Hero() {
           <span className="text-[10px] font-mono uppercase tracking-widest">
             SCROLL_DOWN
           </span>
-          <motion.div
-            animate={{ height: [20, 40, 20], opacity: [0.2, 0.8, 0.2] }}
-            transition={{ repeat: Infinity, duration: 2 }}
-            className="w-[1px] bg-gradient-to-b from-white/50 via-indigo-200/50 to-transparent"
-          />
+          <div className="relative h-10 w-[1px] overflow-hidden bg-gradient-to-b from-white/20 via-indigo-200/30 to-transparent">
+            <span
+              aria-hidden="true"
+              className="hero-photon absolute left-0 top-0 h-6 w-[1px] bg-gradient-to-b from-transparent via-indigo-200 to-transparent shadow-[0_0_10px_rgba(165,180,252,0.9)]"
+            />
+          </div>
         </motion.div>
       </section>
     </>

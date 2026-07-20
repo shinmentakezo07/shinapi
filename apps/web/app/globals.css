@@ -639,6 +639,85 @@
   will-change: transform, opacity;
 }
 
+/* Tertiary deep-violet aurora band crossing lower third */
+.hero-aurora-c {
+  animation: hero-aurora 14s ease-in-out infinite;
+  animation-delay: -6s;
+  will-change: transform, opacity;
+}
+
+/* Soft upward mesh drift for the backdrop field */
+@keyframes hero-mesh-drift {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -2%, 0) scale(1.04);
+  }
+}
+.hero-mesh-drift {
+  animation: hero-mesh-drift 22s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Stat pulse ring — thin expanding halo around hero metrics */
+@keyframes hero-pulse-ring {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+.hero-pulse-ring {
+  animation: hero-pulse-ring 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+  will-change: transform, opacity;
+}
+
+/* Floating route card bob */
+@keyframes hero-card-bob {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+.hero-card-bob {
+  animation: hero-card-bob 5s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Photon traveling down the scroll indicator rail */
+@keyframes hero-photon {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(220%);
+    opacity: 0;
+  }
+}
+.hero-photon {
+  animation: hero-photon 2.4s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+/* Provider marquee fade edges */
+.hero-marquee-mask {
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 12%, black 88%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, black 12%, black 88%, transparent 100%);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hero-float,
   .hero-orb-a,
@@ -651,7 +730,12 @@
   .hero-marquee,
   .hero-twinkle,
   .hero-scanline,
-  .hero-aurora-b {
+  .hero-aurora-b,
+  .hero-aurora-c,
+  .hero-mesh-drift,
+  .hero-pulse-ring,
+  .hero-card-bob,
+  .hero-photon {
     animation: none;
   }
   .hero-badge-ping {
