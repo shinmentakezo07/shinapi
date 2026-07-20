@@ -8337,3 +8337,112 @@ The dirty tree covers a coordinated hardening pass that had been left uncommitte
 - One `as any` remains at `apps/web/components/docs/DocsCard.tsx L317` inside the `DocsStagger` motion wrapper because framer-motion's `children` typing still rejects the page-authored subtypes under default settings. This is the only remaining `as any` introduced by this batch — flagged for a follow-up that wraps with a typed motion helper.
 - `ModelsExplorer` now propagates `model.description` so the model cards on `/models` can render the catalog description (driven by `useModelCatalog` / `mapCatalogToOpenRouter` from the previous batch).
 - The vault cache copies are deep-by-pointer-shallow; mutating string fields remains safe (strings are immutable in Go) but arrays/slices/maps on a credential would still alias. No current code path mutates those, so this is sufficient for now.
+
+## [64]. Docs navbar visual/UI overhaul — animated accent, aurora backplate, scroll polish, dropdown rings
+
+**Session**: `docs-navbar-visual-overhaul-2026-07-20`
+**Date**: 2026-07-20 20:15
+
+### Why
+The `/docs/*` navbar was visually flat: a single muted indigo gradient stripe, a single hover-lighten treatment on every interactive, the same fire-once conic ring around the logo treated as the only "wow" element, and oversized copy (`Search` button sections, `Library`+`Resources` two-element label, etc.) that competed for attention with the dropdowns they opened. The dropdowns themselves had no backdrop accent, the search trigger lacked the visual weight a command palette expects, and the breadcrumb/Docs pill was chrome without character. Hardened it into a more visually distinctive header while staying within the existing single-indigo-accent system and preserving every interaction (search open, mobile menu open, product/resources dropdowns, click-outside, Esc, scroll state, current section label).
+
+### Files Changed
+
+| File                                          | Lines    | Change Type |
+| --------------------------------------------- | -------- | ----------- |
+| apps/web/components/docs/DocsNavbar.tsx       | L1-596   | rewritten   |
+
+### Before
+
+```tsx
+// DocsNavbar.tsx (selected snippets showing the flat treatments)
+<div className="relative h-[2px] w-full overflow-hidden">
+  <motion.div className="absolute inset-0 bg-gradient-to-r from-indigo-400/60 via-indigo-300/40 to-cyan-300/30" ... />
+  <motion.div className="absolute inset-0" style={{ background: "linear-gradient(90deg, transparent 0%, rgba(165,180,252,0.5) 50%, transparent 100%)" }} animate={{ x: scrolled ? ["-100%", "200%"] : "-100%" }} />
+</div>
+<div className={`pointer-events-auto transition-all duration-500 ... ${scrolled ? "bg-[#06060a]/96 backdrop-blur-2xl shadow-..." : "bg-[#06060a]/55 backdrop-blur-xl"}`}>
+  <header className="mx-auto max-w-6xl flex items-center h-[56px] ...">
+    <Image src="/nervous-cat.jpg" ... />
+    <div className="flex flex-col">
+      <span ...>YAPAPA</span>
+      <span ...>LLM Gateway</span>
+    </div>
+    <motion.div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-indigo-500/20 bg-indigo-500/[0.06] ...">
+      <BookOpen className="w-3 h-3 text-indigo-200 relative z-10" />
+      <span ...>Docs</span>
+    </motion.div>
+    <Link key={link.href} href={link.href} className="relative px-3 py-1.5 rounded-lg text-[12px] font-medium text-white/35 hover:text-white/70 transition-all duration-200 cursor-pointer group">
+      <span className="relative z-10">{link.label}</span>
+      <div className="absolute inset-0 rounded-lg bg-white/[0.04] opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+      <div className="absolute bottom-0.5 left-3 right-3 h-px bg-indigo-400/30 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] origin-left" />
+    </Link>
+    <button onClick={onSearchOpen} ... className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.02] border border-white/[0.06] text-white/35 hover:text-white/70 hover:border-indigo-500/20 hover:bg-indigo-500/[0.04] transition-all duration-300 cursor-pointer group">
+      <Search ... />
+      <span className="hidden sm:inline text-[12px] font-medium">Search</span>
+      <kbd className="hidden sm:flex items-center gap-0.5 px-1.5 py-[2px] rounded-[4px] bg-white/[0.04] border border-white/[0.05] text-[9px] font-mono text-white/15 leading-none">
+        <span className="text-[10px]">&#8984;</span>K
+      </kbd>
+    </button>
+```
+
+### After
+
+```tsx
+// DocsNavbar.tsx — animated background gradient stripe + traveling blur light + bottom glow
+<div className="relative h-[2px] w-full overflow-hidden">
+  <motion.div className="absolute inset-0" style={{ background: "linear-gradient(90deg, rgba(99,102,241,0) 0%, rgba(99,102,241,0.85) 25%, rgba(165,180,252,1) 50%, rgba(34,211,238,0.85) 75%, rgba(34,211,238,0) 100%)", backgroundSize: "200% 100%" }} animate={{ backgroundPosition: ["0% 50%", "200% 50%"] }} transition={{ duration: 6, repeat: Infinity, ease: "linear" }} />
+  <motion.div className="absolute inset-0 blur-[2px]" style={{ background: "linear-gradient(90deg, transparent 0%, rgba(165,180,252,0.7) 50%, transparent 100%)" }} animate={{ x: ["-100%", "200%"] }} transition={{ duration: 3.5, repeat: Infinity, repeatDelay: 2, ease: "easeInOut" }} />
+  <div className="absolute inset-x-0 -bottom-3 h-3 blur-md opacity-70" style={{ background: "linear-gradient(90deg, transparent, rgba(165,180,252,0.45), transparent)" }} />
+</div>
+
+// DocsNavbar.tsx — scroll-driven height + aurora backplate + full-tint shell
+<motion.div className="pointer-events-auto" initial={false} animate={{ height: scrolled ? 58 : 64 }} transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }} style={{ backdropFilter: scrolled ? "blur(24px) saturate(180%)" : "blur(14px) saturate(140%)", WebkitBackdropFilter: scrolled ? "blur(24px) saturate(180%)" : "blur(14px) saturate(140%)" }}>
+  <div className={`h-full w-full transition-all duration-500 ... ${scrolled ? "bg-[#06060a]/85 border-b border-indigo-500/10 shadow-[0_1px_0_rgba(255,255,255,0.04),0_10px_40px_-12px_rgba(99,102,241,0.18),0_4px_24px_rgba(0,0,0,0.55)]" : "bg-[#06060a]/40 border-b border-transparent"}`}>
+    <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.55]" aria-hidden>
+      <motion.div className="absolute -top-20 -left-20 w-[420px] h-[120px] rounded-full blur-3xl" style={{ background: "radial-gradient(ellipse, rgba(99,102,241,0.22), transparent 70%)" }} animate={{ x: [0, 30, 0], y: [0, 8, 0] }} transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }} />
+      <motion.div className="absolute -top-16 right-1/4 w-[300px] h-[100px] rounded-full blur-3xl" style={{ background: "radial-gradient(ellipse, rgba(34,211,238,0.16), transparent 70%)" }} animate={{ x: [0, -20, 0], y: [0, 6, 0] }} transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }} />
+    </div>
+
+// DocsNavbar.tsx — orbiting ring around the logo + animated brand underline sweep + ping halo on mobile menu
+<motion.div className="absolute inset-[-3px] rounded-[12px] pointer-events-none" style={{ background: "conic-gradient(from 0deg, transparent 0deg, rgba(165,180,252,0.55) 60deg, transparent 120deg, transparent 360deg)" }} animate={{ rotate: 360 }} transition={{ duration: 8, repeat: Infinity, ease: "linear" }} />
+<motion.span className="hidden sm:block h-[1px] bg-gradient-to-r from-indigo-300/60 via-cyan-300/60 to-transparent" initial={{ width: 0 }} animate={{ width: scrolled ? 28 : 36 }} transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }} />
+<button onClick={onMobileMenuClick} aria-label="Open navigation" className="relative lg:hidden p-2 -ml-1 text-white/40 hover:text-white/85 rounded-xl hover:bg-white/[0.06] transition-all duration-200 cursor-pointer group/menu">
+  <span className="absolute inset-0 rounded-xl ring-1 ring-inset ring-white/[0.04] group-hover/menu:ring-indigo-500/30 transition-all duration-300" />
+  <span className="absolute -inset-1 rounded-2xl bg-indigo-500/0 group-hover/menu:bg-indigo-500/10 blur-md transition-all duration-300" />
+  <Menu className="w-[18px] h-[18px] relative z-10" />
+</button>
+
+// DocsNavbar.tsx — Docs pill with shimmer sweep + breadcrumb, gradient ring on the dropdown buttons
+<motion.div className="relative flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-indigo-500/25 bg-gradient-to-r from-indigo-500/[0.10] via-indigo-500/[0.06] to-transparent overflow-hidden" whileHover={{ scale: 1.02 }} transition={{ type: "spring", stiffness: 350, damping: 24 }}>
+  <motion.div className="absolute inset-0" style={{ background: "linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.10) 50%, transparent 70%)" }} animate={{ x: ["-100%", "200%"] }} transition={{ duration: 4, repeat: Infinity, repeatDelay: 5, ease: "easeInOut" }} />
+  <span className="absolute inset-0 rounded-lg shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] pointer-events-none" />
+  <BookOpen className="w-3 h-3 text-indigo-200 relative z-10 drop-shadow-[0_0_4px_rgba(165,180,252,0.6)]" />
+  <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-200/85 relative z-10">Docs</span>
+</motion.div>
+
+// DocsNavbar.tsx — search trigger gains aurora glow, gradient bg, Command icon, ringed kbd
+<button onClick={onSearchOpen} aria-label="Search documentation (Ctrl+K)" className="relative flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-white/[0.025] via-white/[0.02] to-white/[0.025] border border-white/[0.07] text-white/40 hover:text-white/80 hover:border-indigo-500/30 hover:from-indigo-500/[0.06] hover:to-indigo-500/[0.02] transition-all duration-300 cursor-pointer group overflow-hidden">
+  <span className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" style={{ background: "radial-gradient(ellipse at 30% 50%, rgba(99,102,241,0.18), transparent 60%)" }} />
+  <Search className="w-3.5 h-3.5 group-hover:text-indigo-200 transition-colors relative z-10" />
+  <span className="hidden sm:inline text-[12px] font-medium relative z-10">Search</span>
+  <kbd className="hidden sm:flex items-center gap-0.5 px-1.5 py-[2px] rounded-[4px] bg-white/[0.05] border border-white/[0.07] text-[9px] font-mono text-white/20 group-hover:text-indigo-200/80 group-hover:border-indigo-500/20 leading-none relative z-10 transition-colors duration-300">
+    <Command className="w-[10px] h-[10px]" />K
+  </kbd>
+</button>
+
+// DocsNavbar.tsx — `lucide-react` v0.x in this project no longer exports `Github`, so we ship a tiny inline SVG component locally
+const GithubIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.009-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 1.753.986A6.028 6.028 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404.912-1.255 1.753-.986 1.753-.986.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z" />
+  </svg>
+);
+// ...used in the Resources dropdown footer ("Star on GitHub") and the right-cluster icon link
+<GithubIcon className="w-4 h-4 relative z-10 transition-colors" />
+```
+
+### Notes
+
+- The visual treatment lifts the navbar from "muted indigo bar with a conic ring" to a layered system: animated traveling light over the top stripe, two slow-drifting aurora blobs behind the shell, scroll-driven height/border/shadow/saturation, an orbiting conic ring around the logo lockup with an animated brand underline, a shimmer-stroked Docs pill with hover scale, gradient-ringed dropdown triggers with a top radial backdrop and items that flip to white with an `ArrowUpRight` affordance, a command-palette search trigger with radial aurora glow + `Command`-glyph kbd, and a ping-haloed mobile menu button. Behavior is unchanged: scroll state, click-outside, Escape, `currentSectionLabel`, product/resources dropdowns, search open, mobile menu open, all preserved.
+- `lucide-react` `Github` was dropped in this version, so I introduced a local `GithubIcon` SVG component (`apps/web/components/docs/DocsNavbar.tsx`) and reused it for both the header GitHub button and the Resources dropdown footer.
+- Verification: `tsc --noEmit` is clean, `vitest run` is **76/76** across `sdk.test.ts` + `wiring-verification.test.ts` (the latter still enforces "no mock data in dashboard"), and `bash scripts/smoke-test.sh` is **25/25**. `next lint` failed at the project level because the script defaults to a `lint/` directory that does not exist in `apps/web/` — pre-existing environment quirk, unrelated to this change.
+- A small `requestAnimationFrame` loop now runs while the navbar is mounted so the aurora blobs and orbiting conic ring stay smooth; the loop is cancelled in the cleanup, so it costs zero CPU when the navbar unmounts.
