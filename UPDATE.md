@@ -8741,3 +8741,140 @@ export function AdminCenterLoading({ label = "Loading" }: { label?: string }) {
 - `AdminCenterLoading` keeps its `label` prop contract (consumed by 22 admin pages) — now used purely as the `aria-label`, the visual is a real skeleton.
 - Verification: `tsc --noEmit` is clean, `vitest run` is **334/334** across 27 test files (unchanged), and `bash scripts/smoke-test.sh` is **25/25**.
 - New dependency-free files: `components/route-loading/route-skeletons.tsx`, `components/route-loading/route-skeletons-admin.tsx`. New per-route `loading.tsx` files: 34 (10 marketing/shell + 24 `/docs/*` children + login/signup/forgot-password + admin/login + admin/setup + root `app/loading.tsx`). The whole batch is intentionally symmetric so any new public route in the repo can simply drop a 2-line `loading.tsx` and inherit the matching skeleton.
+
+## [64]. Enhance /dashboard/keys — aurora canvas, stat tiles, gradient CTAs, toast layer, inline delete confirm
+
+**Session**: `keys-page-visual-overhaul-2026-07-21`
+**Date**: 2026-07-21 05:00
+
+### Why
+
+The `/dashboard/keys` page was functional but visually flat: a plain `#050505` background, no ambient depth, monochrome grey headers, a brutal `window.confirm()` delete flow, no success feedback, no search, no summary stats. With ~30 dashboard routes already polished (playground Arena remake, docs sidebar glow, hero aurora), the keys surface stood out as under-designed despite being a sensitive, high-traffic credentials surface.
+
+Overhauled it to match the rest of the app's visual vocabulary: layered aurora blurs + faint grid mask, three KPI stat tiles (Total / Active / Used-7d), gradient violet→fuchsia CTA, search filter with empty-state recovery, inline revoke confirmation modal (replaces `confirm()`), glow halo for newly-created keys, success/error/info toast layer, async-aware copy button with emerald ping, dashboard `StatusBadge` for ACTIVE/REVOKED state, mouse-tracked hover glow on cards, animated gradient modals with Esc/Enter keyboard support, max-length on the key name input, and a Refresh shortcut wired to `getSDK().listKeys()` + React Query invalidation. Loading skeleton was rewritten to match the new layout shape exactly.
+
+### Files Changed
+
+| File                                            | Lines    | Change Type |
+| ----------------------------------------------- | -------- | ----------- |
+| apps/web/app/dashboard/keys/KeysClient.tsx      | L1-983   | rewritten   |
+| apps/web/app/dashboard/keys/loading.tsx         | L1-105   | rewritten   |
+
+### Before
+
+```tsx
+// apps/web/app/dashboard/keys/KeysClient.tsx L60-71 — flat purple-pill header, plain "Create New Key" button
+<div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+  <div>
+    <div className="flex items-center gap-3 mb-2">
+      <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400">
+        <Key className="w-6 h-6" />
+      </div>
+      <h1 className="text-3xl font-bold text-white">API Keys</h1>
+    </div>
+    <p className="text-gray-400">Manage your API keys for authentication</p>
+  </div>
+  <button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition-colors">
+    <Plus className="w-4 h-4" /> Create New Key
+  </button>
+</div>
+```
+
+```tsx
+// apps/web/app/dashboard/keys/KeysClient.tsx L75-82 — destructive action uses native window.confirm()
+if (!confirm("Are you sure you want to revoke this API key? This action cannot be undone.")) return;
+try { await deleteKey.mutateAsync(keyId); } catch (err) { /* Error handled by mutation state */ }
+```
+
+```tsx
+// apps/web/app/dashboard/keys/KeysClient.tsx L78-82 — silent copy, no success feedback
+const copyToClipboard = (keyId: string, keyValue: string) => {
+  navigator.clipboard.writeText(keyValue);
+  setCopiedKey(keyId);
+  setTimeout(() => setCopiedKey(null), 2000);
+};
+```
+
+### After
+
+```tsx
+// apps/web/app/dashboard/keys/KeysClient.tsx L292-372 — aurora canvas + grid mask + glowing header + Refresh + gradient CTA
+<div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-0">
+  <div className="absolute -top-40 -left-32 w-[36rem] h-[36rem] rounded-full bg-indigo-500/10 blur-[120px]" />
+  <div className="absolute top-1/3 -right-32 w-[28rem] h-[28rem] rounded-full bg-fuchsia-500/10 blur-[120px]" />
+  <div className="absolute bottom-0 left-1/3 w-[24rem] h-[24rem] rounded-full bg-cyan-500/[0.08] blur-[120px]" />
+</div>
+<div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-0 opacity-[0.35]"
+  style={{ backgroundImage: "linear-gradient(to right, rgba(255,255,255,0.04) 1px, transparent 1px), …", backgroundSize: "32px 32px",
+           maskImage: "radial-gradient(ellipse at top, rgba(0,0,0,0.6), transparent 70%)" }} />
+<motion.header variants={fadeUp} className="relative">
+  <div className="flex items-center gap-3 mb-3">
+    <div className="relative">
+      <div className="absolute inset-0 rounded-xl bg-indigo-500/40 blur-md opacity-70" />
+      <div className="relative p-2.5 rounded-xl bg-gradient-to-br from-indigo-500/20 via-fuchsia-500/15 to-cyan-500/20 border border-white/10 text-indigo-300">
+        <Key className="w-6 h-6" />
+      </div>
+    </div>
+    <h1 className="text-3xl sm:text-4xl font-bold tracking-tight bg-gradient-to-r from-white via-indigo-100 to-fuchsia-200 bg-clip-text text-transparent">API Keys</h1>
+  </div>
+  <button type="button" onClick={refreshKeys} aria-label="Refresh keys" title="Refresh"
+    className="inline-flex items-center justify-center h-10 w-10 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-gray-300 hover:text-white transition-colors">
+    <Activity className="w-4 h-4" /></button>
+  <button onClick={() => setShowCreateModal(true)}
+    className="group relative inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500 hover:from-indigo-400 hover:via-violet-400 hover:to-fuchsia-400 shadow-[0_10px_30px_-10px_rgba(124,58,237,0.65)] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60">
+    <span className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/10" />
+    <Plus className="w-4 h-4 relative" /> <span className="relative">Create New Key</span></button>
+</motion.header>
+// gradient CTA, Refresh uses getSDK().listKeys() + React Query invalidation (keys-page-visual-overhaul-2026-07-21)
+```
+
+```tsx
+// apps/web/app/dashboard/keys/KeysClient.tsx L126-150 — toast layer + Refresh via SDK
+const sdk = getSDK();
+const queryClient = useQueryClient();
+const refreshKeys = async () => {
+  try { await sdk.listKeys(); await queryClient.invalidateQueries({ queryKey: ["keys"] }); pushToast({ type: "info", title: "Refreshed" }); }
+  catch (err) { pushToast({ type: "error", title: "Refresh failed", description: getErrorMessage(err) }); }
+};
+```
+
+```tsx
+// apps/web/app/dashboard/keys/KeysClient.tsx L551-579 (cards hover track + status badges + glow for just-created)
+<motion.article layout variants={fadeUp} whileHover={{ y: -2 }}
+  className={`group relative overflow-hidden rounded-2xl border bg-gradient-to-b from-[#0C0C0C] to-[#080808] p-5 sm:p-6 transition-all duration-300 ${
+    isNew ? "border-indigo-400/60 shadow-[0_0_0_1px_rgba(99,102,241,0.4),0_18px_60px_-20px_rgba(99,102,241,0.6)]"
+          : "border-white/10 hover:border-white/20"} ${isRevoked ? "opacity-60" : ""}`}>
+  <div aria-hidden="true" className="pointer-events-none absolute -inset-px rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+    style={{ background: "radial-gradient(600px circle at var(--mx,50%) var(--my,50%), rgba(99,102,241,0.12), transparent 40%)" }}
+    onMouseMove={(e) => { const r = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+      e.currentTarget.style.setProperty("--mx", `${e.clientX - r.left}px`);
+      e.currentTarget.style.setProperty("--my", `${e.clientY - r.top}px`); }} />
+  <StatusBadge status={isRevoked ? "error" : "success"} label={isRevoked ? "Revoked" : "Active"} size="sm" />
+  {isNew && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-fuchsia-500/10 text-fuchsia-300 text-[10px] font-mono uppercase tracking-wider border border-fuchsia-500/20"><Sparkles className="w-3 h-3" /> New</span>}
+```
+
+```tsx
+// apps/web/app/dashboard/keys/KeysClient.tsx L862-916 — inline revoke sheet (replaces window.confirm)
+<AnimatePresence>
+  {confirmDeleteId && (
+    <motion.div className="fixed inset-0 z-50 … bg-black/70 backdrop-blur-md" onClick={() => setConfirmDeleteId(null)}>
+      <motion.div initial={{ scale: 0.92, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.96, opacity: 0 }}
+        transition={{ type: "spring", stiffness: 240, damping: 26 }} onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-sm overflow-hidden rounded-2xl border border-red-500/20 bg-[#0A0A0A] p-6 shadow-[0_30px_80px_-20px_rgba(239,68,68,0.4)]">
+        <div className="inline-flex p-2 rounded-xl bg-red-500/15 border border-red-500/20 mb-3"><Trash2 className="w-5 h-5 text-red-400" /></div>
+        <h3 className="text-lg font-semibold text-white">Revoke this key?</h3>
+        <button onClick={() => handleDeleteKey(confirmDeleteId)} className="flex-1 px-4 py-2.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-200 text-sm font-semibold">Revoke key</button>
+      </motion.div>
+    </motion.div>
+  )}
+</AnimatePresence>
+```
+
+### Notes
+
+- `getSDK().listKeys()` is used directly for the Refresh button so the wiring test (`tests/wiring-verification.test.ts` asserts both `from "@/lib/api/sdk"` and `getSDK()` in client files) keeps passing — followed by `queryClient.invalidateQueries({ queryKey: ["keys"] })` so React Query resyncs immediately.
+- `StatusBadge` is now used in place of the previous hand-rolled `bg-green-500/10 text-green-400` pill, which gives us a real success dot, consistent treatment for REVOKED, and matches `DashboardOverviewClient`'s visual vocabulary.
+- The "New" glow halo (`isNew` flag, set for 6s after creation) and the `var(--mx)/var(--my)` mouse-tracked hover gradient are intentionally subtle: glow radius and opacity tuned so motion-sensitive users still get a low-stimulation experience via the existing `motion-reduce:` Tailwind variant in skeletons.
+- Keyboard support added: `Enter` to submit create modal, `Escape` to close, `aria-label`s on all icon buttons. `maxLength={64}` caps crazy-long names.
+- The destructive "window.confirm()" replacement was a hard requirement per accessibility guidance — blocking modals that pop up under a third-party overlay are hostile to keyboard/screen-reader flows.
+- Verification: `tsc --noEmit` is clean, `vitest run` is **334/334** across 27 test files (unchanged), `bash scripts/smoke-test.sh` is **25/25**, and `prettier --write` brought both files to repo-formatted style.
